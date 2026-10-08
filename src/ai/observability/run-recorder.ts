@@ -24,6 +24,12 @@ export class RunRecorder {
   retries = 0;
   /** PHI-free snapshot of what the agent knew and could do for this request (see `context/agent-context.ts`). */
   context: { hash: string; snapshot: unknown } | null = null;
+  /** High-level goal or query intent. */
+  goal: string | null = null;
+  /** Structured decision chain. */
+  readonly decisions: Array<{ what: string; why: string; evidence?: any[] }> = [];
+  /** W6 action proposal IDs created/executed. */
+  readonly actionIds: string[] = [];
   private readonly spans: RunStep[] = [];
 
   constructor(
@@ -31,6 +37,21 @@ export class RunRecorder {
     readonly user: AuthUser,
     readonly model: string,
   ) {}
+
+  setGoal(goal: string) {
+    this.goal = goal;
+  }
+
+  addDecision(decision: { what: string; why: string; evidence?: any[] }) {
+    this.decisions.push(decision);
+  }
+
+  addActionId(actionId: string) {
+    if (!this.actionIds.includes(actionId)) {
+      this.actionIds.push(actionId);
+    }
+  }
+
 
   /** Times an async step; failures are recorded and re-thrown. */
   async step<T>(
@@ -109,6 +130,10 @@ export class RunRecorder {
       toolNames: this.trace.calls.map((c) => c.name),
       contextHash: this.context?.hash ?? null,
       context: this.context?.snapshot ?? null,
+      goal: this.goal,
+      decisions: this.decisions,
+      actionIds: this.actionIds,
     };
   }
 }
+

@@ -143,6 +143,12 @@ export class AdminController {
     return this.runs.get(id);
   }
 
+  @Get('agent/proposals/metrics')
+  agentProposalMetrics(@Query('hours') hours?: string) {
+    const h = Math.min(Math.max(parseInt(hours ?? '24', 10) || 24, 1), 168);
+    return this.runs.proposalMetrics(h);
+  }
+
   // --- Agent knowledge: documents the admin uploads become searchable by the agent immediately ---
   @Get('knowledge')
   listKnowledge() {

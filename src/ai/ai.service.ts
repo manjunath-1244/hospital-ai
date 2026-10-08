@@ -75,6 +75,7 @@ export class AiService {
   /** Every outcome (success or failure) is persisted as a trace; the caller gets the traceId either way. */
   async chat(user: AuthUser, dto: ChatDto) {
     const rec = new RunRecorder('chat', user, this.llm.label());
+    rec.setGoal(dto.message);
     let threadId: string | null = dto.threadId ?? null;
     let session:
       Awaited<ReturnType<PhiAnonymizerService['createSession']>> | undefined;
@@ -531,6 +532,7 @@ export class AiService {
       );
     }
     const rec = new RunRecorder('document', user, this.llm.label());
+    rec.setGoal(`Generate ${dto.type} document for patient ${dto.patientId}`);
     let session:
       Awaited<ReturnType<PhiAnonymizerService['createSession']>> | undefined;
     try {

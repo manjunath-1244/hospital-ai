@@ -21,11 +21,11 @@ Hospital AI platform: NestJS 11 + TypeORM 1.1 (PostgreSQL 16 + pgvector) + Mastr
 | **W7** | `consultation_requests` (referrals) + status machine, persisted per-user notifications (socket room `user:<id>`), notification rules, `patient_notices` stub adapter, REST endpoints (`/hospital/referrals`, `/hospital/notifications`) | ✅ |
 | **W8** | Specialist portal: my consultations inbox (by urgency), AI referral summary ("why was I referred?"), complete-consultation form (`specialist_assessments`), SPECIALIST role chart access & tool policy | ✅ |
 | **W9** | Follow-up plan proposals (`follow_up_plans` entity, W6 approval proposal submission), `lab_orders` entity & result linkage, visit status move `FOLLOW_UP` → `COMPLETED` | ✅ |
-| W10 | Agent run view: goal, context, decisions, action ids; acceptance/decline metrics | **next** |
+| **W10** | Agent observability: `agent_runs` extended with goal, context snapshot, decisions, action IDs; Admin run flow view (`Goal → Context → Steps → Decisions → Actions → Result`); proposal metrics (acceptance, decline, expiry rates, time-to-decision) | ✅ |
 | W11 | RAG: hybrid search, metadata filters, rewriting, rerank, citation spans, RAG eval set (after M4) | ⬜ |
 | W12 | Agent eval suite (scenario runner with fixtures, targets in backlog §W12) | ⬜ (grows each package; context checks already in `tests/evaluation/evaluator.ts`) |
 | W13 | Hardening: CI, provider failover, streaming, cookies/MFA, purge on delete, split `AiService` | ⬜ |
-Milestones: M1 ✅ (visit lifecycle), M2 ✅ (W4–W5 recommendation with evidence), M3 ✅ (W6–W7 approval + referral + notifications), M4 ✅ (W8 specialist loop), M5 🟡 (W9 follow-up agent + W10 observability).
+Milestones: M1 ✅ (visit lifecycle), M2 ✅ (W4–W5 recommendation with evidence), M3 ✅ (W6–W7 approval + referral + notifications), M4 ✅ (W8 specialist loop), M5 ✅ (W9 follow-up agent + W10 observability).
 
 ## 3. Architecture facts you must know
 - **Chat design (retrieve first):** `AiService.chat` → `gatherContext` (server fetches charts/lists/overview/policies via role-checked tools) → deterministic **Direct** answers (no model) for lookups/lists/counts/triage numbers → **Grounded** model (no tools, CONTEXT only) → full **Agent** (tools) for actions/open questions. PHI masked before the model (`PhiSession`). Guardrails, retries/timeout/circuit breaker, traces in `agent_runs`, drift metrics.

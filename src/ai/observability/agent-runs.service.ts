@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, MoreThan, Repository } from 'typeorm';
 import { AgentRunEntity } from '../../database/entities/agent-run.entity';
+import { AgentActionEntity } from '../../database/entities/agent-action.entity';
 import { computeMetrics, detectDrift, RunRow } from './metrics';
 
 const ROW_SELECT = {
@@ -22,6 +23,9 @@ export class AgentRunsService {
   constructor(
     @InjectRepository(AgentRunEntity)
     private readonly repo: Repository<AgentRunEntity>,
+    @Optional()
+    @InjectRepository(AgentActionEntity)
+    private readonly actionRepo?: Repository<AgentActionEntity>,
   ) {}
 
   /** Persists the trace and emits one structured log line (greppable by traceId). Never throws into the request path. */
@@ -40,6 +44,7 @@ export class AgentRunsService {
         retries: run.retries,
         guardrail: run.guardrailStatus,
         error: run.error,
+        goal: run.goal,
       }),
     );
     try {
@@ -59,6 +64,7 @@ export class AgentRunsService {
     return rows.map((r) => ({
       id: r.id,
       at: r.at,
+      goal: r.goal ?? null,
       userRole: r.userRole,
       model: r.model,
       status: r.status,
@@ -66,14 +72,57 @@ export class AgentRunsService {
       guardrailStatus: r.guardrailStatus,
       toolCalls: r.toolCallCount,
       retries: r.retries,
+      decisionsCount: (r.decisions ?? []).length,
+      actionIdsCount: (r.actionIds ?? []).length,
       error: r.error,
     }));
   }
 
+  /** Detailed Admin "Agent Run" view: Goal -> Context -> Tool calls -> Results -> Decisions -> Actions -> Final result */
   async get(id: string) {
     const r = await this.repo.findOne({ where: { id } });
     if (!r) throw new NotFoundException(`Run ${id} not found`);
-    return r;
+
+    let actions: AgentActionEntity[] = [];
+    if (this.actionRepo) {
+      try {
+        actions = await this.actionRepo.find({ where: { traceId: id } });
+      } catch {
+        actions = [];
+      }
+    }
+
+    return {
+      ...r,
+      goal: r.goal ?? null,
+      contextSnapshot: r.context ?? null,
+      decisions: r.decisions ?? [],
+      actionIds: r.actionIds ?? [],
+      actions: actions.map((a) => ({
+        id: a.id,
+        type: a.type,
+        tier: a.tier,
+        status: a.status,
+        summary: a.summary,
+        payload: a.payload,
+        createdAt: a.createdAt,
+        decidedAt: a.decidedAt,
+      })),
+      flow: {
+        goal: r.goal ?? null,
+        context: r.context ?? null,
+        steps: r.steps ?? [],
+        toolCallsCount: r.toolCallCount,
+        decisions: r.decisions ?? [],
+        actions: actions.map((a) => ({
+          id: a.id,
+          type: a.type,
+          status: a.status,
+          summary: a.summary,
+        })),
+        result: r.status === 'OK' ? 'SUCCESS' : r.error ?? 'FAILED',
+      },
+    };
   }
 
   async metrics(hours = 24) {
@@ -93,6 +142,76 @@ export class AgentRunsService {
     })) as RunRow[];
     const window = computeMetrics(current, hours);
     const baseline = computeMetrics(base, baselineHours);
-    return { window, baseline, drift: detectDrift(window, baseline) };
+    const proposals = await this.proposalMetrics(hours);
+    return {
+      window,
+      baseline,
+      drift: detectDrift(window, baseline),
+      proposals,
+    };
+  }
+
+  /** Analytics for action proposals: acceptance, decline, expiry rates, and time-to-decision */
+  async proposalMetrics(hours = 24) {
+    if (!this.actionRepo) {
+      return {
+        hours,
+        totalProposals: 0,
+        approved: 0,
+        declined: 0,
+        expired: 0,
+        pending: 0,
+        acceptanceRate: 0,
+        declineRate: 0,
+        expiryRate: 0,
+        avgTimeToDecisionMs: 0,
+        byType: {},
+      };
+    }
+    const since = new Date(Date.now() - hours * 3_600_000);
+    let actions: AgentActionEntity[] = [];
+    try {
+      actions = await this.actionRepo.find({
+        where: { createdAt: MoreThan(since) },
+      });
+    } catch {
+      actions = [];
+    }
+    const total = actions.length;
+    const approved = actions.filter(
+      (a) => a.status === 'APPROVED' || a.status === 'DONE',
+    ).length;
+    const declined = actions.filter((a) => a.status === 'DECLINED').length;
+    const expired = actions.filter((a) => a.status === 'EXPIRED').length;
+    const pending = actions.filter((a) => a.status === 'PENDING').length;
+    const resolved = approved + declined;
+
+    const times = actions
+      .filter((a) => a.decidedAt && a.createdAt)
+      .map((a) => a.decidedAt!.getTime() - a.createdAt.getTime());
+
+    const avgTimeMs = times.length
+      ? Math.round(times.reduce((s, t) => s + t, 0) / times.length)
+      : 0;
+
+    const byType: Record<string, number> = {};
+    for (const a of actions) {
+      byType[a.type] = (byType[a.type] || 0) + 1;
+    }
+
+    return {
+      hours,
+      totalProposals: total,
+      approved,
+      declined,
+      expired,
+      pending,
+      acceptanceRate: resolved ? Number((approved / resolved).toFixed(3)) : 0,
+      declineRate: resolved ? Number((declined / resolved).toFixed(3)) : 0,
+      expiryRate: total ? Number((expired / total).toFixed(3)) : 0,
+      avgTimeToDecisionMs: avgTimeMs,
+      byType,
+    };
   }
 }
+

@@ -50,4 +50,18 @@ export class AgentRunEntity {
   /** Fingerprint and PHI-free snapshot of the AgentContext this run used (null for runs before it existed). */
   @Column({ type: 'varchar', nullable: true }) contextHash: string | null;
   @Column({ type: 'jsonb', nullable: true }) context: unknown;
+
+  /** High-level goal or query intent for this run. */
+  @Column({ type: 'text', nullable: true }) goal: string | null;
+
+  /** Structured decision chain logged during this run. */
+  @Column({ type: 'jsonb', default: () => `'[]'` }) decisions: Array<{
+    what: string;
+    why: string;
+    evidence?: any[];
+  }>;
+
+  /** IDs of action proposals generated or executed during this run. */
+  @Column({ type: 'jsonb', default: () => `'[]'` }) actionIds: string[];
 }
+
