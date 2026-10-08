@@ -16,6 +16,9 @@ import { VisitEntity } from './visit.entity';
 import { VisitEventEntity } from './visit-event.entity';
 import { DoctorAvailabilityEntity } from './doctor-availability.entity';
 import { AgentActionEntity } from './agent-action.entity';
+import { ConsultationRequestEntity } from './consultation-request.entity';
+import { NotificationEntity } from './notification.entity';
+import { PatientNoticeEntity } from './patient-notice.entity';
 
 export const ALL_ENTITIES = [
   PatientEntity,
@@ -36,11 +39,17 @@ export const ALL_ENTITIES = [
   VisitEventEntity,
   DoctorAvailabilityEntity,
   AgentActionEntity,
+  ConsultationRequestEntity,
+  NotificationEntity,
+  PatientNoticeEntity,
 ];
 
 export {
   DoctorAvailabilityEntity,
   AgentActionEntity,
+  ConsultationRequestEntity,
+  NotificationEntity,
+  PatientNoticeEntity,
   VisitEntity,
   VisitEventEntity,
   KnowledgeDocumentEntity,
@@ -57,3 +66,4 @@ export {
   ImagingStudyEntity,
   AuditLogEntity,
 };
+

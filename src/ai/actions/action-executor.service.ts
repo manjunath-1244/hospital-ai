@@ -12,6 +12,7 @@ import { HospitalLifecycleService } from '../../hospital/hospital-lifecycle.serv
 import { HospitalService } from '../../hospital/hospital.service';
 import { ClinicalRecordsService } from '../../hospital/clinical-records.service';
 import { VisitsService } from '../../hospital/visits/visits.service';
+import { ReferralService } from '../../hospital/referrals/referral.service';
 import { AuthUser } from '../../security/auth-user';
 import { canApproveAction } from './action-policy';
 import { HospitalEventsGateway } from '../../events/hospital-events.gateway';
@@ -33,6 +34,7 @@ export class ActionExecutorService {
     private readonly records: ClinicalRecordsService,
     private readonly visits: VisitsService,
     private readonly eventsGateway: HospitalEventsGateway,
+    private readonly referralService: ReferralService,
   ) {}
 
   async approveAndExecute(
@@ -125,7 +127,24 @@ export class ActionExecutorService {
           break;
         }
 
-        case 'REFERRAL':
+        case 'REFERRAL': {
+          executionResult = await this.referralService.createReferral(
+            {
+              visitId: p.visitId,
+              patientId: p.patientId || action.patientId,
+              specialty: p.specialty,
+              assignedSpecialistId: p.assignedSpecialistId,
+              urgency: p.urgency || 'ROUTINE',
+              reason: p.reason,
+              aiRationale: p.aiRationale,
+              evidence: p.evidence,
+            },
+            approver,
+          );
+          checks.push(`Created consultation_request ${executionResult.id}`);
+          break;
+        }
+
         case 'FOLLOW_UP':
         case 'NOTIFICATION':
         case 'LAB_ORDER': {

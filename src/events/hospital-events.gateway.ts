@@ -45,6 +45,9 @@ export class HospitalEventsGateway
       const payload = await this.jwt.verifyAsync<JwtPayload>(token);
       client.data.user = payload;
       await client.join(`role:${payload.role}`);
+      if (payload.sub) {
+        await client.join(`user:${payload.sub}`);
+      }
     } catch {
       client.emit('error', { message: 'Unauthorized' });
       client.disconnect(true);
@@ -65,6 +68,19 @@ export class HospitalEventsGateway
       return;
     }
     this.server.to(roles.map((r) => `role:${r}`)).emit(event, payload);
+  }
+
+  emitNotificationToUser(userId: string, payload: unknown) {
+    if (!this.server) return;
+    this.server.to(`user:${userId}`).emit('notification.new', payload);
+  }
+
+  emitReferralCreated(p: unknown) {
+    this.emitTo('referral.created', p, [...CLINICAL, 'SPECIALIST']);
+  }
+
+  emitReferralUpdated(p: unknown) {
+    this.emitTo('referral.updated', p, [...CLINICAL, 'SPECIALIST']);
   }
 
   // Payloads are deliberately minimal (no phone/DOB/allergy data).

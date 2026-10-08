@@ -18,8 +18,8 @@ Hospital AI platform: NestJS 11 + TypeORM 1.1 (PostgreSQL 16 + pgvector) + Mastr
 | **W3** | `AgentContext` per request, state-aware tool visibility, patient binding for write tools, context hash+snapshot on `agent_runs` | ✅ |
 | **W4** | Tools: reorganise into domain folders (`patient`, `clinical`, `specialist`, `scheduling`, `notifications`, `actions`); new read tools (`getCurrentVisit`, `getVitalsHistory`, `getLabs`, `getMedications`, `getAllergies`, `searchClinicalGuidelines`); **propose** tools (`proposeReferral/FollowUp/Task/Notification/LabOrder`) that return proposals only | ✅ |
 | **W6** | Approval layer: `agent_actions` entity, policy tiers (`AUTO`/`ASK`/`ASK_HUMAN`/`NEVER`), proposal service, executor service (re-validation, read-back verification, idempotency), expiry job, REST endpoints (`/ai/actions`), socket events, guardrail against false completion claims | ✅ |
-| W7 | `consultation_requests` (referrals) + status machine, persisted per-user notifications (socket room `user:<id>`), notification rules, `patient_notices` stub adapter, header notification centre | **next** |
-| W8 | Specialist portal: my consultations, AI referral summary, complete-consultation form, chat with SPECIALIST tool set. Specialists currently see **no patient data** (access arrives with referrals) | ⬜ |
+| **W7** | `consultation_requests` (referrals) + status machine, persisted per-user notifications (socket room `user:<id>`), notification rules, `patient_notices` stub adapter, REST endpoints (`/hospital/referrals`, `/hospital/notifications`) | ✅ |
+| W8 | Specialist portal: my consultations, AI referral summary, complete-consultation form, chat with SPECIALIST tool set. Specialists currently see **no patient data** (access arrives with referrals) | **next** |
 | W9 | Follow-up plan proposals, minimal `lab_orders`, visit → FOLLOW_UP → COMPLETED | ⬜ |
 | W10 | Agent run view: goal, context, decisions, action ids; acceptance/decline metrics | ⬜ (context hash/snapshot already stored) |
 | W11 | RAG: hybrid search, metadata filters, rewriting, rerank, citation spans, RAG eval set (after M4) | ⬜ |

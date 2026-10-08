@@ -14,10 +14,19 @@ import { ReferralRulesService } from './referrals/referral-rules.service';
 import { ReferralVerifierService } from './referrals/referral-verifier.service';
 import { ReferralRecommendationService } from './referrals/referral-recommendation.service';
 
+import { NotificationService } from './notifications/notification.service';
+import { NotificationsController } from './notifications/notifications.controller';
+import { ReferralService } from './referrals/referral.service';
+import { ReferralsController } from './referrals/referrals.controller';
+
 /** Clinical workflows. Depends on data, knowledge, interop and events, but NOT on the AI module (no cycles). */
 @Module({
   imports: [DataModule, KnowledgeModule, InteropModule, EventsModule],
-  controllers: [HospitalController],
+  controllers: [
+    HospitalController,
+    NotificationsController,
+    ReferralsController,
+  ],
   providers: [
     HospitalLifecycleService,
     News2Service,
@@ -28,6 +37,8 @@ import { ReferralRecommendationService } from './referrals/referral-recommendati
     ReferralRulesService,
     ReferralVerifierService,
     ReferralRecommendationService,
+    NotificationService,
+    ReferralService,
   ],
   exports: [
     HospitalLifecycleService,
@@ -37,6 +48,8 @@ import { ReferralRecommendationService } from './referrals/referral-recommendati
     ReferralRulesService,
     ReferralVerifierService,
     ReferralRecommendationService,
+    NotificationService,
+    ReferralService,
   ],
 })
 export class HospitalModule {}
