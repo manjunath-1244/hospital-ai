@@ -51,6 +51,8 @@ import { SafetyReport } from './hospital.types';
  * Every clinical record belongs to a VISIT. Writes go to the patient's open visit (409 if there is none), and the
  * visit status only ever changes through `VisitsService.transition`.
  */
+import { LabOrdersService } from './labs/lab-orders.service';
+
 @Injectable()
 export class HospitalLifecycleService {
   private readonly logger = new Logger(HospitalLifecycleService.name);
@@ -71,6 +73,7 @@ export class HospitalLifecycleService {
     private readonly post: PostCommitService,
     private readonly events: HospitalEventsGateway,
     private readonly dataSource: DataSource,
+    private readonly labOrders: LabOrdersService,
   ) {}
 
   // ---- visits: the single place the workflow moves a visit -------------------------------------------------------
@@ -350,6 +353,8 @@ export class HospitalLifecycleService {
       date: new Date().toISOString().slice(0, 10),
       recordedBy: user.userName,
     });
+
+    await this.labOrders.linkResultToOrder(patient.id, dto.testName, lab.id);
 
     await this.post.index(RecordDocumentBuilder.lab(patient, lab));
     await this.post.run('FHIR Observation upsert', () =>

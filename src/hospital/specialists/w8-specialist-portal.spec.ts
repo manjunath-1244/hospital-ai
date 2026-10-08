@@ -75,7 +75,7 @@ describe('W8 Specialist Portal & AI Referral Summary', () => {
     };
 
     mockKnowledge = {
-      listDocuments: jest.fn().mockResolvedValue([
+      list: jest.fn().mockResolvedValue([
         {
           id: 'doc-1',
           title: 'Cardiology SOP Guidelines',

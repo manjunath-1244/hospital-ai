@@ -20,6 +20,8 @@ import { ConsultationRequestEntity } from './consultation-request.entity';
 import { NotificationEntity } from './notification.entity';
 import { PatientNoticeEntity } from './patient-notice.entity';
 import { SpecialistAssessmentEntity } from './specialist-assessment.entity';
+import { FollowUpPlanEntity } from './follow-up-plan.entity';
+import { LabOrderEntity } from './lab-order.entity';
 
 export const ALL_ENTITIES = [
   PatientEntity,
@@ -44,6 +46,8 @@ export const ALL_ENTITIES = [
   NotificationEntity,
   PatientNoticeEntity,
   SpecialistAssessmentEntity,
+  FollowUpPlanEntity,
+  LabOrderEntity,
 ];
 
 export {
@@ -53,6 +57,8 @@ export {
   NotificationEntity,
   PatientNoticeEntity,
   SpecialistAssessmentEntity,
+  FollowUpPlanEntity,
+  LabOrderEntity,
   VisitEntity,
   VisitEventEntity,
   KnowledgeDocumentEntity,

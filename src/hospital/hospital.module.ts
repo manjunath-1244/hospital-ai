@@ -21,6 +21,8 @@ import { ReferralsController } from './referrals/referrals.controller';
 import { SpecialistController } from './specialists/specialist.controller';
 import { SpecialistSummaryService } from './specialists/specialist-summary.service';
 import { SpecialistPortalService } from './specialists/specialist-portal.service';
+import { LabOrdersService } from './labs/lab-orders.service';
+import { LabOrdersController } from './labs/lab-orders.controller';
 
 /** Clinical workflows. Depends on data, knowledge, interop and events, but NOT on the AI module (no cycles). */
 @Module({
@@ -30,6 +32,7 @@ import { SpecialistPortalService } from './specialists/specialist-portal.service
     NotificationsController,
     ReferralsController,
     SpecialistController,
+    LabOrdersController,
   ],
   providers: [
     HospitalLifecycleService,
@@ -45,6 +48,7 @@ import { SpecialistPortalService } from './specialists/specialist-portal.service
     ReferralService,
     SpecialistSummaryService,
     SpecialistPortalService,
+    LabOrdersService,
   ],
   exports: [
     HospitalLifecycleService,
@@ -58,6 +62,7 @@ import { SpecialistPortalService } from './specialists/specialist-portal.service
     ReferralService,
     SpecialistSummaryService,
     SpecialistPortalService,
+    LabOrdersService,
   ],
 })
 export class HospitalModule {}
