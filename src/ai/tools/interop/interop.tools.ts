@@ -56,7 +56,7 @@ export function buildInteropTools(
           .optional()
           .describe('Optional relevance cutoff 0-1'),
       }),
-      roles: ALL_STAFF,
+      roles: [...ALL_STAFF, 'SPECIALIST'],
       async run({ query, topK, minScore }) {
         const found = await rag.searchPolicies(query, topK);
         const matches = found.filter((m) => m.score >= (minScore ?? 0));

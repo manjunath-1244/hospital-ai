@@ -42,12 +42,15 @@ import {
   VisitTransitionDto,
   WeeklyHoursDto,
 } from './dto/hospital.dto';
-import { Roles } from '../security/roles.decorator';
+import { Roles, USER_ROLES, type UserRole } from '../security/roles.decorator';
 import { AuthUser, CurrentUser } from '../security/auth-user';
 import { PatientEntity } from '../database/entities/patient.entity';
 
 import { ReferralService } from './referrals/referral.service';
 import { ReferralRecommendationService } from './referrals/referral-recommendation.service';
+
+/** Every signed-in staff role except SPECIALIST, who works only from their referral inbox (minimum necessary). */
+const STAFF_ROLES: UserRole[] = USER_ROLES.filter((r) => r !== 'SPECIALIST');
 
 /** Receptionists see demographics and queue status only: no clinical history (minimum necessary). */
 function viewFor<T extends PatientEntity>(user: AuthUser, p: T): T {
@@ -85,6 +88,7 @@ export class HospitalController {
 
   // --- Patients ---
   @Get('patients')
+  @Roles(...STAFF_ROLES)
   async patients(@Query() q: PatientQueryDto, @CurrentUser() user: AuthUser) {
     const { items, total } = await this.directory.list(q);
     return { items: items.map((p) => viewFor(user, p)), total };
@@ -129,6 +133,7 @@ export class HospitalController {
   }
 
   @Get('visits')
+  @Roles(...STAFF_ROLES)
   async visitList(@Query('status') status?: string) {
     const wanted = (status ?? '')
       .split(',')
@@ -144,7 +149,12 @@ export class HospitalController {
   }
 
   @Get('visits/:id')
-  visit(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async visit(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    if (user.role === 'SPECIALIST')
+      await this.assertPatientAccess(
+        user,
+        (await this.visits.get(id)).patientId,
+      );
     return this.lifecycle.visitDetail(id, user);
   }
 

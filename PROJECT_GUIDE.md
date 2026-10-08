@@ -66,6 +66,9 @@ Seeded accounts (password = `SEED_USER_PASSWORD` from `.env`):
 | `coordinator` | CARE_COORDINATOR | Care coordination | Generate AI drafts: prior-authorization letter, discharge instructions translated | Conditions, medications, consultations |
 | `admin` | ADMIN | Admin + "View as" any portal | Service health, audit log, agent metrics/drift/traces, upload hospital documents for the agent, close/delete patients | Everything |
 
+### Role matrix (tested)
+`tests/workflow/roles-matrix.mjs` checks **every role against every endpoint (415 combinations)** and the chart sections each role receives; `src/ai/tools/tool-roles.spec.ts` does the same for the agent's tools. They were written as the specification first; the failures they exposed were fixed: a specialist could list all patients and visits, the follow-up endpoints had no role check, and the agent's chart-read tools gave pharmacists, radiologists and coordinators vitals/allergies that the patient summary withholds. Rules worth remembering: a **specialist has no patient list or hospital-wide search**; they reach a patient only through a referral that is theirs (REST and agent tools alike); only the person who proposed an agent action (or an admin) can approve it; receptionists never receive allergies, medications, conditions, labs or vitals.
+
 ## 1.4 The patient journey (what happens to the data)
 1. **Receptionist searches, then registers** — a returning patient gets a new *visit*; a new person gets a `patients` row **and** a first visit (`WAITING_TRIAGE`). If name/phone/DOB resemble an existing patient the API answers 409 with `possibleMatches` until the receptionist confirms. Copy to FHIR, search index entry, live events (`patient.registered`, `visit.updated`).
 2. **Waiting too long** (>30 min, configurable) → the queue monitor raises *one* alert per visit.

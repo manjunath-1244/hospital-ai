@@ -1055,6 +1055,32 @@ async function main() {
         /Decision support only/.test(review.response),
       review.response?.slice(0, 250),
     );
+    // A specialist can read only patients referred to them, even through the agent.
+    const spec: AuthUser = {
+      userId: 'USR-CARDIOLOGIST',
+      userName: 'Dr. Sarah Wilson (Cardiology)',
+      role: 'SPECIALIST',
+    };
+    const specSet = tools.build({
+      user: spec,
+      phi: await phi.createSession(),
+      trace: new ToolTrace(),
+      context: await ctxFor(spec, ['P1001']),
+    });
+    const peek: any = await (specSet.getPatientSummary as any).execute(
+      { patientId: 'P1001' },
+      {},
+    );
+    check(
+      'a specialist cannot read a patient who is not referred to them, even via the agent tools',
+      peek.success === false && /not referred to you/.test(peek.error ?? ''),
+      JSON.stringify(peek).slice(0, 200),
+    );
+    check(
+      'a specialist has no patient-search or hospital-wide tool',
+      !tools.toolNamesFor(spec).includes('searchPatients') &&
+        !tools.toolNamesFor(spec).includes('getHospitalOverview'),
+    );
     await ds.query(`delete from agent_actions where "proposedByUserId"=$1`, [
       doctor.userId,
     ]);

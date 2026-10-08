@@ -80,3 +80,9 @@ Section 2 above says W4–W11 are done. A real test found that W6–W9 were **no
 - UI added for notifications bell, approval cards + pending panel, referrals panel, specialist inbox/detail/complete, lab entry form, follow-up panel (type-checked and built; **not browser-tested**).
 Gates at this point: unit 198, `test:eval` 135/135, `test:workflow` all 3 scripts pass, `retrieval-check` **23/24** (case "urgent consultation request who handles it" now returns the new cardiology/neurology guideline chunks above `appointment-policy.md`; needs retrieval tuning, e.g. metadata filters/boosting policy docs for policy questions), live-model eval not re-run.
 Known gaps: streaming chat path does not reconcile false claims; nurses on the visit are not notified; patient notices are a stub; approver shows as an id; `prettier --write src` was run repo-wide once, so the diff contains formatting-only changes in files unrelated to the feature work.
+
+### 8b. Role testing (spec-first) — added after section 8
+- `tests/workflow/roles-matrix.mjs` (part of `npm run test:workflow`): 8 roles × 52 endpoints + per-role chart sections + unauthenticated checks. It must never create or change data (an early version wiped the cardiologist's working hours with `PUT .../hours`; fixed, use unknown ids for destructive routes).
+- `src/ai/tools/tool-roles.spec.ts`: agent tools per role. Fixes it forced: SPECIALIST now has read tools (summary, labs, vitals, medications, allergies, visit, guidelines, policies) but each call is checked against referral access (`ClinicalToolsFactory.specialistViolation`); vitals/labs/allergies tools aligned with the summary's minimum-necessary rules.
+- Eval gate now 137 checks. Browser (Playwright) tests per role: delegated; see git log for `tests/ui` if it landed.
+- Machine note: RAM is nearly full (Ollama keeps ~5 GB); running a second Nest app (`ts-node` scripts) while the API runs can be OOM-killed (exit 137).

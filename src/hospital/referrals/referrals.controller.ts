@@ -36,7 +36,9 @@ export class ReferralsController {
   @Get('mine')
   @Roles('SPECIALIST')
   async mine(@CurrentUser() user: AuthUser) {
-    const items = await this.referralService.listForSpecialist(user.userId);
+    const items = await this.referralService.withPatientInfo(
+      await this.referralService.listForSpecialist(user.userId),
+    );
     return { success: true, count: items.length, referrals: items };
   }
 
@@ -59,13 +61,15 @@ export class ReferralsController {
     @Query('specialty') specialty?: string,
     @Query('status') status?: string,
   ) {
-    const items = await this.referralService.listReferrals({
-      patientId,
-      visitId,
-      assignedSpecialistId,
-      specialty,
-      status: status as ReferralStatus | undefined,
-    });
+    const items = await this.referralService.withPatientInfo(
+      await this.referralService.listReferrals({
+        patientId,
+        visitId,
+        assignedSpecialistId,
+        specialty,
+        status: status as ReferralStatus | undefined,
+      }),
+    );
     return { success: true, count: items.length, referrals: items };
   }
 
@@ -74,7 +78,9 @@ export class ReferralsController {
   async getReferral(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     if (user.role === 'SPECIALIST')
       await this.referralService.assertSpecialistOwns(user.userId, id);
-    const referral = await this.referralService.getReferral(id);
+    const [referral] = await this.referralService.withPatientInfo([
+      await this.referralService.getReferral(id),
+    ]);
     return { success: true, referral };
   }
 

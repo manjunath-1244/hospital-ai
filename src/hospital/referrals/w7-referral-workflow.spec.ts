@@ -111,7 +111,9 @@ describe('W7 Referral Workflow & Notifications', () => {
     );
 
     mockPatientRepo = {
-      findOne: jest.fn().mockResolvedValue({ id: 'P1001', name: 'Eleanor Vance' }),
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ id: 'P1001', name: 'Eleanor Vance' }),
     };
     mockVisits = { transition: jest.fn() };
 

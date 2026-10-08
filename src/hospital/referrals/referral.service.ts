@@ -329,6 +329,31 @@ export class ReferralService {
     return qb.getMany();
   }
 
+  /** Adds the patient's name/age/gender to each referral so no screen has to look patients up (a specialist cannot list patients). */
+  async withPatientInfo<T extends { patientId: string }>(
+    items: T[],
+  ): Promise<
+    Array<
+      T & {
+        patientName: string | null;
+        patientAge: number | null;
+        patientGender: string | null;
+      }
+    >
+  > {
+    const ids = [...new Set(items.map((i) => i.patientId))];
+    const patients = ids.length
+      ? await this.patientRepo.find({ where: { id: In(ids) } })
+      : [];
+    const byId = new Map(patients.map((p) => [p.id, p]));
+    return items.map((i) => ({
+      ...i,
+      patientName: byId.get(i.patientId)?.name ?? null,
+      patientAge: byId.get(i.patientId)?.age ?? null,
+      patientGender: byId.get(i.patientId)?.gender ?? null,
+    }));
+  }
+
   /** Referrals a specialist may work on: assigned to them, or unassigned and in their specialty. */
   async listForSpecialist(
     userId: string,

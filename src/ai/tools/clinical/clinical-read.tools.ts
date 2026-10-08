@@ -23,7 +23,7 @@ export function buildClinicalReadTools(d: {
       description:
         'Get details of the current open or latest visit for a patient (visit ID, status, chief complaint, priority, arrivedAt, triagedAt, primaryDoctor, department).',
       inputSchema: z.object({ patientId }),
-      roles: ALL_STAFF,
+      roles: [...ALL_STAFF, 'SPECIALIST'],
       requires: { patientBound: true },
       async run({ patientId }) {
         const recentVisits = await d.visits.listForPatient(patientId, 1);
@@ -45,14 +45,7 @@ export function buildClinicalReadTools(d: {
         patientId,
         limit: looseInt({ min: 1, max: 50 }).default(10),
       }),
-      roles: [
-        'DOCTOR',
-        'NURSE',
-        'ADMIN',
-        'PHARMACIST',
-        'RADIOLOGIST',
-        'CARE_COORDINATOR',
-      ],
+      roles: ['DOCTOR', 'NURSE', 'ADMIN', 'SPECIALIST'],
       requires: { patientBound: true },
       async run({ patientId, limit }) {
         const vitals = await d.records.listVitals(patientId, limit);
@@ -81,7 +74,14 @@ export function buildClinicalReadTools(d: {
         patientId,
         limit: looseInt({ min: 1, max: 50 }).default(20),
       }),
-      roles: ['DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST'],
+      roles: [
+        'DOCTOR',
+        'NURSE',
+        'ADMIN',
+        'PHARMACIST',
+        'RADIOLOGIST',
+        'SPECIALIST',
+      ],
       requires: { patientBound: true },
       async run({ patientId, limit }) {
         const labs = await d.hospital.getPatientLabs(patientId);
@@ -104,7 +104,14 @@ export function buildClinicalReadTools(d: {
       description:
         'Get current active medications, allergies, and medication safety alerts for a patient.',
       inputSchema: z.object({ patientId }),
-      roles: ['DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR'],
+      roles: [
+        'DOCTOR',
+        'NURSE',
+        'ADMIN',
+        'PHARMACIST',
+        'CARE_COORDINATOR',
+        'SPECIALIST',
+      ],
       requires: { patientBound: true },
       async run({ patientId }) {
         const p = await d.hospital.getPatientById(patientId);
@@ -142,7 +149,7 @@ export function buildClinicalReadTools(d: {
         'ADMIN',
         'PHARMACIST',
         'RADIOLOGIST',
-        'CARE_COORDINATOR',
+        'SPECIALIST',
       ],
       requires: { patientBound: true },
       async run({ patientId }) {
@@ -162,7 +169,7 @@ export function buildClinicalReadTools(d: {
         query: z.string().min(2),
         topK: looseInt({ min: 1, max: 8 }).default(4),
       }),
-      roles: ALL_STAFF,
+      roles: [...ALL_STAFF, 'SPECIALIST'],
       async run({ query, topK }) {
         const found = await d.rag.searchPolicies(query, topK);
         return {

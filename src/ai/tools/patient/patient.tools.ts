@@ -55,7 +55,7 @@ export function buildPatientTools(d: {
       description:
         'Full chart for ONE patient by id: demographics, allergies, conditions, medications, recent labs, vitals, consultations, imaging and appointments (only the parts your role may see). Use this for any question about a specific patient.',
       inputSchema: z.object({ patientId }),
-      roles: ALL_STAFF,
+      roles: [...ALL_STAFF, 'SPECIALIST'],
       async run({ patientId }, { user }) {
         return {
           success: true,

@@ -52,6 +52,11 @@ async function main() {
   const ai = await call('cardiologist', 'GET', `/hospital/referrals/${rid}/ai-summary`);
   check('AI referral summary cites evidence', ai.status === 200 && JSON.stringify(ai.body).includes('0.85'), JSON.stringify(ai.body).slice(0, 200));
   const steal = await call('neurologist', 'POST', `/hospital/referrals/${rid}/complete`, { assessment: 'x y z', recommendation: 'x y z', treatment: 'x y z', followUp: 'x y z' });
+  const vd = await call('cardiologist', 'GET', `/hospital/visits/${vid}`);
+  check('cardiologist can open the referred visit', vd.status === 200, String(vd.status));
+  check('neurologist cannot open that visit (403)', (await call('neurologist', 'GET', `/hospital/visits/${vid}`)).status === 403);
+  check('neurologist has no patient list (403)', (await call('neurologist', 'GET', '/hospital/patients')).status === 403);
+  check('inbox rows carry the patient name (no patient lookup needed)', mine.body.referrals?.find((r) => r.id === rid)?.patientName === `Referral Test ${s}`);
   check('another specialist cannot complete it (403)', steal.status === 403, String(steal.status));
 
   const done = await call('cardiologist', 'POST', `/hospital/referrals/${rid}/complete`, { assessment: 'NSTEMI', recommendation: 'Admit to CCU, urgent catheterization', treatment: 'Aspirin, clopidogrel, heparin', followUp: 'Repeat ECG in 2 hours', followUpTests: ['Troponin T'], followUpDays: 7 });

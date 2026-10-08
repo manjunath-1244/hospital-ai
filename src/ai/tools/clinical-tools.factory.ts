@@ -24,6 +24,7 @@ import { buildClinicalReadTools } from './clinical/clinical-read.tools';
 import { buildClinicalAssessTools } from './clinical/clinical-assess.tools';
 import { buildSpecialistTools } from './specialist/specialist.tools';
 import { buildSchedulingTools } from './scheduling/scheduling.tools';
+import { ReferralService } from '../../hospital/referrals/referral.service';
 import { ReferralRecommendationService } from '../../hospital/referrals/referral-recommendation.service';
 import { ActionProposalService } from '../actions/action-proposal.service';
 import { buildProposeTools, type ProposalSaver } from './actions/propose.tools';
@@ -38,6 +39,7 @@ import { withTimeout } from '../reliability/resilience';
 export class ClinicalToolsFactory {
   private readonly definitions: ClinicalTool[];
   private readonly hospital: HospitalService;
+  private readonly referrals: ReferralService;
 
   constructor(
     hospital: HospitalService,
@@ -55,7 +57,9 @@ export class ClinicalToolsFactory {
     records: ClinicalRecordsService,
     proposals: ActionProposalService,
     referralRecommendations: ReferralRecommendationService,
+    referrals: ReferralService,
   ) {
+    this.referrals = referrals;
     this.hospital = hospital;
     // Proposals are saved for human approval, linked to the patient's open visit, conversation and trace.
     const saveProposal: ProposalSaver = async ({ type, payload }, run) => {
@@ -110,6 +114,8 @@ export class ClinicalToolsFactory {
     const startedAtMs = Date.now();
     try {
       const parsed = def.inputSchema.parse(args);
+      const refused = await this.specialistViolation(ctx.user, parsed);
+      if (refused) throw new Error(refused);
       const output = await withTimeout(
         () => def.run(parsed, { user: ctx.user }),
         Number(process.env.AI_TOOL_TIMEOUT_MS ?? 10_000),
@@ -150,6 +156,25 @@ export class ClinicalToolsFactory {
     return this.definitions
       .filter((t) => t.roles.includes(user.role))
       .map((t) => t.name);
+  }
+
+  /**
+   * A specialist may read only patients referred to them. The tool layer enforces what the REST API enforces, so the
+   * agent cannot be used to read around it. Returns an error message, or null when the call may go ahead.
+   */
+  private async specialistViolation(
+    user: AuthUser,
+    args: unknown,
+  ): Promise<string | null> {
+    if (user.role !== 'SPECIALIST') return null;
+    const raw = (args as { patientId?: unknown } | null)?.patientId;
+    if (typeof raw !== 'string' || !raw.trim()) return null;
+    return (await this.referrals.specialistCanSeePatient(
+      user.userId,
+      raw.trim().toUpperCase(),
+    ))
+      ? null
+      : `Refused: patient ${raw.trim().toUpperCase()} is not referred to you.`;
   }
 
   /**
@@ -194,7 +219,9 @@ export class ClinicalToolsFactory {
           const args = await this.resolvePatientArg(ctx.phi.unmaskDeep(input));
           const startedAtMs = Date.now();
           const timeoutMs = Number(process.env.AI_TOOL_TIMEOUT_MS ?? 10_000);
-          const violation = bindingViolation(def, args, ctx.context);
+          const violation =
+            bindingViolation(def, args, ctx.context) ??
+            (await this.specialistViolation(ctx.user, args));
           if (violation) {
             const output = { success: false, error: violation };
             ctx.trace.record(
