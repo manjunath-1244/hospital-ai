@@ -95,7 +95,7 @@ export const AppointmentBooking: React.FC<{ collapsible?: boolean }> = ({ collap
   const ready = patientId && doctorId && slot && reason.trim();
 
   return (
-    <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
+    <div data-testid="appointment-booking" className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
       <button
         type="button"
         onClick={() => collapsible && setOpen((o) => !o)}

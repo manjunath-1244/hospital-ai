@@ -27,7 +27,8 @@
     "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
     "migration:show": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:show",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "test:workflow": "node --env-file=.env tests/workflow/roles-matrix.mjs && node --env-file=.env tests/workflow/visit-flow.mjs && node --env-file=.env tests/workflow/specialists-flow.mjs && node --env-file=.env tests/workflow/referral-flow.mjs"
+    "test:workflow": "node --env-file=.env tests/workflow/roles-matrix.mjs && node --env-file=.env tests/workflow/visit-flow.mjs && node --env-file=.env tests/workflow/specialists-flow.mjs && node --env-file=.env tests/workflow/referral-flow.mjs",
+    "test:ui": "playwright test -c tests/ui/playwright.config.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.127",
@@ -67,6 +68,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@playwright/test": "^1.64.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.3.0",

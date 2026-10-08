@@ -22,7 +22,7 @@ import { LabOrderEntity } from '../database/entities/lab-order.entity';
 import { PatientNoticeEntity } from '../database/entities/patient-notice.entity';
 import { newId } from '../common/ids';
 import { TaskPriority } from './hospital.types';
-import { findMentionedPatients } from './mention-matching';
+import { findFuzzyPatients, findMentionedPatients } from './mention-matching';
 import { resolveBirth } from './patient-identity';
 import { VisitsService } from './visits/visits.service';
 
@@ -71,6 +71,11 @@ export class HospitalService {
       skip: Math.max(opts.offset ?? 0, 0),
     });
     return { items, total };
+  }
+
+  /** Patients a message refers to with a typing mistake in the name (only used when nothing matched exactly). */
+  async findFuzzy(message: string) {
+    return findFuzzyPatients(message, await this.patients.find());
   }
 
   /** Patients a message refers to by id or name (see `mention-matching.ts`). */

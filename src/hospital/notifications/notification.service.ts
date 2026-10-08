@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import {
   NotificationChannel,
   NotificationEntity,
@@ -126,7 +126,7 @@ export class NotificationService {
     return this.notifRepo.count({
       where: {
         recipientUserId: userId,
-        readAt: null as any,
+        readAt: IsNull(),
       },
     });
   }

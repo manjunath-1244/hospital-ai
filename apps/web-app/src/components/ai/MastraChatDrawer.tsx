@@ -172,6 +172,7 @@ export const MastraChatDrawer: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle AI assistant"
+        data-testid="chat-toggle"
         title="AI Assistant"
         className="group fixed bottom-6 right-6 z-50 flex h-16 items-center gap-3 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 pl-5 pr-6 text-white shadow-xl shadow-black/50 border border-indigo-300/30 hover:from-indigo-500 hover:to-indigo-400"
       >
@@ -180,7 +181,7 @@ export const MastraChatDrawer: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-28 right-6 z-50 flex h-[80vh] max-h-[760px] w-[520px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl glass-panel border border-slate-600 shadow-2xl overflow-hidden">
+        <div data-testid="chat-drawer" className="fixed bottom-28 right-6 z-50 flex h-[80vh] max-h-[760px] w-[520px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl glass-panel border border-slate-600 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-5 py-4">
             <div className="flex items-center space-x-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600/30 border border-indigo-500/40">

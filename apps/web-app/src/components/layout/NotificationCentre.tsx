@@ -96,6 +96,7 @@ export const NotificationCentre: React.FC = () => {
         className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-slate-200 hover:text-white hover:bg-slate-800 border border-slate-700"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
         aria-expanded={open}
+        data-testid="notification-bell"
       >
         <BellRing className="h-5 w-5" aria-hidden="true" />
         {unread > 0 && (

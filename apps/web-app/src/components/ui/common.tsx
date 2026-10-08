@@ -11,7 +11,7 @@ export const labelCls = 'block text-sm font-semibold text-slate-200 mb-1.5';
 
 export const ErrorBox: React.FC<{ message: string }> = ({ message }) =>
   message ? (
-    <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm font-semibold text-rose-300">
+    <div role="alert" data-testid="error-banner" className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm font-semibold text-rose-300">
       <AlertCircle className="h-5 w-5 shrink-0" />
       <span className="break-words">{message}</span>
     </div>

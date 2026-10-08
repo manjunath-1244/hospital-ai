@@ -41,6 +41,7 @@ export const LoginScreen: React.FC = () => {
           <label className="block text-sm font-semibold text-slate-200 mb-1.5">Username</label>
           <input
             autoFocus
+            data-testid="login-username"
             required
             autoComplete="username"
             value={username}
@@ -54,6 +55,7 @@ export const LoginScreen: React.FC = () => {
           <input
             required
             type="password"
+            data-testid="login-password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -63,7 +65,7 @@ export const LoginScreen: React.FC = () => {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm font-semibold text-rose-300">
+          <div data-testid="login-error" className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-sm font-semibold text-rose-300">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -71,6 +73,7 @@ export const LoginScreen: React.FC = () => {
 
         <button
           type="submit"
+          data-testid="login-submit"
           disabled={loading || !username || !password}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 hover:opacity-90 disabled:opacity-50"
         >

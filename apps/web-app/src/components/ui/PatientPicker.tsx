@@ -46,6 +46,7 @@ export const PatientPicker: React.FC<Props> = ({ value, onChange, label = 'Patie
         onChange={(e) => onChange(e.target.value, patients.find((p) => p.id === e.target.value))}
         className={inputCls}
         disabled={loading}
+        data-testid="patient-picker"
       >
         <option value="">{loading ? 'Loading patients...' : patients.length ? 'Select a patient' : 'No patients found'}</option>
         {patients.map((p) => (

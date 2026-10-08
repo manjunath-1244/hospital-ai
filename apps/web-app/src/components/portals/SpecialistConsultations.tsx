@@ -5,7 +5,6 @@ import { Inbox, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtime, useRole } from '../../context/RoleContext';
 import { apiFetch, errorMessage } from '../../lib/api';
-import { resolvePatientNames, type PatientRef } from '../../lib/patients';
 import {
   REFERRAL_STATUS_BADGE,
   REFERRAL_STATUS_LABEL,
@@ -49,7 +48,6 @@ export const SpecialistConsultations: React.FC = () => {
   const { ownRole, navTarget, clearNav } = useRole();
   const isAdmin = ownRole === 'ADMIN';
   const [referrals, setReferrals] = useState<Referral[] | null>(null);
-  const [names, setNames] = useState<Map<string, PatientRef>>(new Map());
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState('');
 
@@ -61,7 +59,6 @@ export const SpecialistConsultations: React.FC = () => {
       list.sort(byReferralUrgency);
       setReferrals(list);
       setError('');
-      setNames(await resolvePatientNames(list.map((r) => r.patientId)));
     } catch (e) {
       setError(errorMessage(e));
       setReferrals((p) => p ?? []);
@@ -82,11 +79,11 @@ export const SpecialistConsultations: React.FC = () => {
   }, [navTarget, referrals, clearNav]);
 
   const selected = referrals?.find((r) => r.id === selectedId) ?? null;
-  const nameOf = (id: string) => names.get(id)?.name;
+  const nameOf = (r: Referral) => r.patientName ?? undefined;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <div className={`${card} xl:col-span-1`}>
+      <div className={`${card} xl:col-span-1`} data-testid="consultations-inbox">
         <h3 className={`${h3} flex items-center gap-2`}><Inbox className="h-5 w-5 text-teal-400" /> My consultations</h3>
         {!referrals && !error && <Loading text="Loading consultations..." />}
         <ErrorBox message={error} />
@@ -99,7 +96,7 @@ export const SpecialistConsultations: React.FC = () => {
               className={`w-full text-left rounded-xl border p-4 space-y-1 ${selectedId === r.id ? 'bg-teal-600/20 border-teal-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'} ${isOpenReferral(r) ? '' : 'opacity-60'}`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-lg font-bold text-white">{nameOf(r.patientId) ?? r.patientId}</span>
+                <span className="text-lg font-bold text-white">{nameOf(r) ?? r.patientId}</span>
                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${URGENCY_BADGE[r.urgency]}`}>{r.urgency}</span>
               </div>
               <p className="text-sm font-mono text-slate-400">{r.patientId} • {r.id}</p>
@@ -114,9 +111,9 @@ export const SpecialistConsultations: React.FC = () => {
         </div>
       </div>
 
-      <div className="xl:col-span-2 space-y-6">
+      <div className="xl:col-span-2 space-y-6" data-testid="consultation-detail">
         {!selected && <div className={card}><Empty text="Select a consultation to see the referral and patient chart." /></div>}
-        {selected && <ConsultationDetail key={selected.id} referral={selected} patientName={nameOf(selected.patientId)} onChanged={load} />}
+        {selected && <ConsultationDetail key={selected.id} referral={selected} patientName={nameOf(selected)} onChanged={load} />}
       </div>
     </div>
   );

@@ -22,6 +22,12 @@ export interface GatheredContext {
   subjectIds: string[];
   /** Rules-based referral review of the single patient the question is about (only when asked for). */
   referral?: { patientId: string; result: any } | null;
+  /** The user's spelling was corrected to a patient (shown to the user, never silent). */
+  corrected?: { typed: string; patientId: string; name: string } | null;
+  /** Several patients are equally close to what was typed: ask, do not guess. */
+  didYouMean?: Array<{ typed: string; patientId: string; name: string }>;
+  /** A lookup named someone who is not in the system (answered directly, no model). */
+  unknownName?: string | null;
 }
 
 @Injectable()
@@ -57,6 +63,27 @@ export class AiContextService {
         !otherIntent);
 
     const subjectIds = mentioned.map((p) => p.id);
+
+    // Nothing matched exactly: a typing mistake in a name ("James Mllelr") is corrected, or the user is asked.
+    let corrected: GatheredContext['corrected'] = null;
+    let didYouMean: GatheredContext['didYouMean'] = [];
+    if (
+      !mentioned.length &&
+      !extractPatientIds(message).length &&
+      !otherIntent &&
+      !intent.triage
+    ) {
+      const fuzzy = await this.hospital.findFuzzy(message);
+      const found = fuzzy.map((f) => ({
+        typed: f.typed,
+        patientId: f.patient.id,
+        name: f.patient.name,
+      }));
+      if (found.length === 1) {
+        corrected = found[0];
+        subjectIds.push(found[0].patientId);
+      } else didYouMean = found.slice(0, 4);
+    }
     if (!subjectIds.length && refersBack && activePatientId)
       subjectIds.push(activePatientId);
 
@@ -73,6 +100,51 @@ export class AiContextService {
       !intent.triage &&
       (REFERS_BACK.test(message) || isSectionLookup);
 
+    // "details about Jon Smith" and nobody (not even approximately) is called that: say so, do not let a model improvise.
+    const named = message.match(
+      /\b(?:about|for|of|on|regarding)\s+([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,2})\s*[?.!]*$/,
+    );
+    if (
+      !subjectIds.length &&
+      !didYouMean.length &&
+      !otherIntent &&
+      !intent.write &&
+      !intent.medication &&
+      !intent.triage &&
+      !intent.review &&
+      !REFERS_BACK.test(message) &&
+      !extractPatientIds(message).length &&
+      isPureLookup(message) &&
+      named &&
+      !/^(the|a|an|this|that|my|our|patient|patients|him|her|them|it)$/i.test(
+        named[1].trim(),
+      )
+    ) {
+      return {
+        text: null,
+        sources: 0,
+        notFound: [],
+        onlyNotFound: false,
+        charts,
+        needsPatient: false,
+        subjectIds: [],
+        unknownName: named[1].trim(),
+      };
+    }
+
+    if (didYouMean.length) {
+      return {
+        text: null,
+        sources: 0,
+        notFound: [],
+        onlyNotFound: false,
+        charts,
+        needsPatient: false,
+        subjectIds: [],
+        didYouMean,
+      };
+    }
+
     if (needsPatient) {
       return {
         text: null,
@@ -85,6 +157,13 @@ export class AiContextService {
       };
     }
 
+    if (corrected)
+      parts.push({
+        source: 'name correction',
+        data: {
+          note: `The user typed "${corrected.typed}"; the system understood this as ${corrected.name} (${corrected.patientId}). Mention this correction in the answer.`,
+        },
+      });
     for (const id of subjectIds) {
       const chart = await this.tools.runDirect(
         'getPatientSummary',
@@ -207,6 +286,7 @@ export class AiContextService {
       needsPatient: false,
       subjectIds,
       referral,
+      corrected,
     };
   }
 }

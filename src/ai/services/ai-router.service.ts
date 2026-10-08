@@ -38,6 +38,9 @@ export class AiRouterService {
       needsPatient: boolean;
       text: string | null;
       referral?: { patientId: string; result: any } | null;
+      corrected?: { typed: string; patientId: string; name: string } | null;
+      didYouMean?: Array<{ typed: string; patientId: string; name: string }>;
+      unknownName?: string | null;
     },
     rec: RunRecorder,
   ): DirectResponseResult {
@@ -118,7 +121,11 @@ export class AiRouterService {
           )
         : null;
 
-    const directText = vitals
+    const clarify = context.didYouMean?.length
+      ? `I could not find an exact match. Did you mean ${context.didYouMean.map((d) => `${d.name} (${d.patientId})`).join(' or ')}? Tell me the name or ID and I will look it up.`
+      : null;
+
+    const directText0 = vitals
       ? renderTriage(vitals, this.news2.assess(vitals))
       : referralText
         ? referralText
@@ -138,6 +145,17 @@ export class AiRouterService {
                 : pureList
                   ? renderPatientList(rec.trace)
                   : null;
+
+    const unknown = context.unknownName
+      ? `I could not find a patient named "${context.unknownName}", not even a close spelling. Check the name, or ask me to list the patients.`
+      : null;
+
+    const directText =
+      clarify ??
+      unknown ??
+      (directText0 && context.corrected
+        ? `Showing ${context.corrected.name} (${context.corrected.patientId}); you typed "${context.corrected.typed}".\n${directText0}`
+        : directText0);
 
     return {
       directText,

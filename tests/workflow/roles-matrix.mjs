@@ -236,27 +236,76 @@ async function main() {
   }
   console.log(`\n${cells} role/endpoint combinations checked`);
 
-  console.log('\n▶ Each role sees only the chart sections it needs (minimum necessary)');
-  const SECTIONS = ['conditions', 'allergies', 'currentMedications', 'labs', 'recentVitals', 'recentConsultations', 'imaging', 'appointments', 'medicationSafetyAlerts'];
-  const CLINICAL = ['conditions', 'allergies', 'currentMedications', 'labs', 'recentVitals', 'recentConsultations', 'imaging', 'appointments', 'medicationSafetyAlerts'];
+  console.log(
+    '\n▶ Each role sees only the chart sections it needs (minimum necessary)',
+  );
+  const SECTIONS = [
+    'conditions',
+    'allergies',
+    'currentMedications',
+    'labs',
+    'recentVitals',
+    'recentConsultations',
+    'imaging',
+    'appointments',
+    'medicationSafetyAlerts',
+  ];
+  const CLINICAL = [
+    'conditions',
+    'allergies',
+    'currentMedications',
+    'labs',
+    'recentVitals',
+    'recentConsultations',
+    'imaging',
+    'appointments',
+    'medicationSafetyAlerts',
+  ];
   const SEES = {
     RECEPTIONIST: ['appointments'],
     NURSE: CLINICAL,
     DOCTOR: CLINICAL,
     ADMIN: CLINICAL,
     RADIOLOGIST: ['conditions', 'allergies', 'labs', 'imaging'],
-    PHARMACIST: ['conditions', 'allergies', 'currentMedications', 'labs', 'recentConsultations', 'medicationSafetyAlerts'],
-    CARE_COORDINATOR: ['conditions', 'currentMedications', 'recentConsultations', 'appointments'],
+    PHARMACIST: [
+      'conditions',
+      'allergies',
+      'currentMedications',
+      'labs',
+      'recentConsultations',
+      'medicationSafetyAlerts',
+    ],
+    CARE_COORDINATOR: [
+      'conditions',
+      'currentMedications',
+      'recentConsultations',
+      'appointments',
+    ],
   };
   for (const [role, sees] of Object.entries(SEES)) {
     const r = await call(ROLES[role], 'GET', `/hospital/patients/${P}/summary`);
     const present = SECTIONS.filter((k) => k in r.body);
     const extra = present.filter((k) => !sees.includes(k));
-    const missing = sees.filter((k) => !present.includes(k) && k !== 'medicationSafetyAlerts');
-    check(`${role}: sees ${sees.length ? sees.join(', ') : 'demographics only'}`, r.status === 200 && !extra.length && !missing.length && r.body.patient?.id === P, `status ${r.status}; too much: [${extra}]; missing: [${missing}]`);
+    const missing = sees.filter(
+      (k) => !present.includes(k) && k !== 'medicationSafetyAlerts',
+    );
+    check(
+      `${role}: sees ${sees.length ? sees.join(', ') : 'demographics only'}`,
+      r.status === 200 &&
+        !extra.length &&
+        !missing.length &&
+        r.body.patient?.id === P,
+      `status ${r.status}; too much: [${extra}]; missing: [${missing}]`,
+    );
   }
   const rec = await call(ROLES.RECEPTIONIST, 'GET', `/hospital/patients/${P}`);
-  check('RECEPTIONIST: patient record has no allergies, medications or conditions', rec.status === 200 && !rec.body.allergies?.length && !rec.body.currentMedications?.length && !rec.body.conditions?.length);
+  check(
+    'RECEPTIONIST: patient record has no allergies, medications or conditions',
+    rec.status === 200 &&
+      !rec.body.allergies?.length &&
+      !rec.body.currentMedications?.length &&
+      !rec.body.conditions?.length,
+  );
 
   console.log('\n▶ Unauthenticated requests are refused');
   for (const p of [

@@ -43,7 +43,7 @@ const TRIAGE = (t: string) =>
   (/\b(news2|triage|vitals?)\b/i.test(t) && /\d/.test(t)) ||
   (VITAL_WORDS.filter((r) => r.test(t)).length >= 3 && /\d/.test(t));
 const MEDICATION = rx(
-  /\b(prescrib\w*|safe|safely|interaction|interactions|contraindicat\w*|dosage|dose|administer|give|giving|start(ing)? (on|him|her|them))\b/i,
+  /\b(prescrib\w*|safe|safely|interaction|interactions|contraindicat\w*|dosage|dose|administer|start(ing)? (on|him|her|them))\b|\b(give|giving|gave)\s+(him|her|them|the patient|it|this|that)\b/i,
 );
 const CROSS = rx(
   /\b(which|who)\b[^.?!]*\b(patients?|has|have|had|are|is|on|taking|allergic|diagnosed|suffering|complain)/i,

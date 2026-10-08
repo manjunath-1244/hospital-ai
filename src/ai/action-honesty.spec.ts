@@ -110,3 +110,17 @@ describe('referral review rendering', () => {
     ).toMatch(/no specialist referral is indicated/);
   });
 });
+
+describe('"give details" is a lookup, not a medication question', () => {
+  it('only drug-giving phrasing counts as medication', () => {
+    expect(classifyIntent('give details about James Miller').medication).toBe(
+      false,
+    );
+    expect(classifyIntent('what did the doctor give him?').medication).toBe(
+      true,
+    );
+    expect(classifyIntent('is it safe to give her aspirin').medication).toBe(
+      true,
+    );
+  });
+});

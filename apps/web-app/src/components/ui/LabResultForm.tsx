@@ -69,7 +69,7 @@ export const LabResultForm: React.FC<Props> = ({ patientId, open, onSaved, accen
   };
 
   return (
-    <form onSubmit={submit} className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3">
+    <form data-testid="lab-form" onSubmit={submit} className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3">
       <p className="font-bold text-slate-300 text-sm uppercase flex items-center gap-1">
         <FlaskConical className="h-4 w-4" /> Add lab result
       </p>

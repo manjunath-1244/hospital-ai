@@ -17,26 +17,37 @@ export const SpecialistPortal: React.FC = () => {
   const [appts, setAppts] = useState<AppointmentRow[] | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // An admin viewing this portal is not a specialist: they pick whose portal to look at.
+  const [all, setAll] = useState<Specialist[]>([]);
+  const [chosen, setChosen] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [sp, av, ap] = await Promise.allSettled([
-      apiFetch<Specialist[]>('/hospital/specialists'),
-      apiFetch<AvailabilityResponse>(`/hospital/specialists/${encodeURIComponent(user.id)}/availability?limit=12`),
+    const errs: string[] = [];
+    let list: Specialist[] = [];
+    try {
+      list = await apiFetch<Specialist[]>('/hospital/specialists');
+      setAll(list);
+    } catch (e) {
+      errs.push(errorMessage(e));
+    }
+    const id = ownRole === 'ADMIN' ? (chosen || list[0]?.id || '') : user.id;
+    if (ownRole === 'ADMIN' && !chosen && id) setChosen(id);
+    if (!id) {
+      setError(errs.join('; ') || (ownRole === 'ADMIN' ? 'No specialists exist yet.' : ''));
+      return;
+    }
+    setMe(list.find((s) => s.id === id) ?? null);
+    const [av, ap] = await Promise.allSettled([
+      apiFetch<AvailabilityResponse>(`/hospital/specialists/${encodeURIComponent(id)}/availability?limit=12`),
       apiFetch<AppointmentRow[]>('/hospital/appointments'),
     ]);
-    const errs: string[] = [];
-    if (sp.status === 'fulfilled') setMe(sp.value.find((s) => s.id === user.id) ?? null);
-    else errs.push(errorMessage(sp.reason));
     if (av.status === 'fulfilled') setAvail(av.value);
     else errs.push(errorMessage(av.reason));
-    if (ap.status === 'fulfilled') {
-      // An admin viewing this portal has no appointments of their own: show everyone's.
-      const mine = ownRole === 'ADMIN' ? ap.value : ap.value.filter((a) => a.doctorId === user.id);
-      setAppts(mine);
-    } else errs.push(errorMessage(ap.reason));
+    if (ap.status === 'fulfilled') setAppts(ap.value.filter((a) => a.doctorId === id));
+    else errs.push(errorMessage(ap.reason));
     setError(errs.join('; '));
-  }, [user, ownRole]);
+  }, [user, ownRole, chosen]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
@@ -46,7 +57,7 @@ export const SpecialistPortal: React.FC = () => {
     if (!user || !me) return;
     setSaving(true);
     try {
-      await apiFetch(`/hospital/specialists/${encodeURIComponent(user.id)}/availability`, { method: 'PATCH', body: { isAvailable: !me.isAvailable } });
+      await apiFetch(`/hospital/specialists/${encodeURIComponent(me.id)}/availability`, { method: 'PATCH', body: { isAvailable: !me.isAvailable } });
       await load();
     } catch (e) {
       setError(errorMessage(e));
@@ -66,7 +77,7 @@ export const SpecialistPortal: React.FC = () => {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             <Stethoscope className="h-8 w-8 text-teal-400" />
-            {user?.displayName ?? 'Specialist'}
+            {ownRole === 'ADMIN' ? (me?.name ?? 'Specialist') : (user?.displayName ?? 'Specialist')}
           </h2>
           <p className="text-base text-slate-300 mt-1.5">
             {me?.specialty ?? user?.specialty ?? '—'}{(me?.department ?? user?.department) ? ` • ${me?.department ?? user?.department}` : ''}
@@ -84,6 +95,24 @@ export const SpecialistPortal: React.FC = () => {
           </button>
         )}
       </div>
+
+      {ownRole === 'ADMIN' && all.length > 0 && (
+        <label className="flex items-center gap-3 text-base text-slate-200">
+          Viewing the portal of
+          <select
+            data-testid="specialist-select"
+            value={chosen}
+            onChange={(e) => setChosen(e.target.value)}
+            className="rounded-xl bg-slate-950 border border-slate-700 px-4 py-2 min-h-12"
+          >
+            {all.map((sp) => (
+              <option key={sp.id} value={sp.id}>
+                {sp.name} — {sp.specialty}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <ErrorBox message={error} />
       {!avail && !error && <Loading />}

@@ -197,6 +197,7 @@ export const DoctorWorkbenchPortal: React.FC = () => {
             {list.map((pt) => (
               <button
                 key={pt.id}
+                data-testid="patient-list-item"
                 onClick={() => select(pt.id)}
                 className={`w-full text-left rounded-xl border p-3 text-sm transition-all ${
                   selectedId === pt.id ? 'bg-indigo-600/20 border-indigo-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'

@@ -1086,6 +1086,40 @@ async function main() {
     ]);
   }
 
+  // ---------------------------------------------------------------- typing mistakes in names
+  section('names with typing mistakes');
+  {
+    const none = scripted(() => ({ text: 'model should not run' }));
+    llm.useModel(none.model);
+    const fixed: any = await ai.chat(doctor, {
+      message: 'show details for Marcsu',
+    });
+    check(
+      'a misspelt name is corrected, shown to the user, and answered from the data without the model',
+      none.calls() === 0 &&
+        /Marcus Brody/.test(fixed.response) &&
+        /you typed "marcsu"/.test(fixed.response),
+      fixed.response?.slice(0, 200),
+    );
+    const gone: any = await ai.chat(doctor, {
+      message: 'give details about Jon Smith',
+    });
+    check(
+      'a name nobody has is reported as not found (no model improvisation)',
+      none.calls() === 0 &&
+        /could not find a patient named "Jon Smith"/.test(gone.response),
+      gone.response?.slice(0, 200),
+    );
+    const give: any = await ai.chat(doctor, {
+      message: 'give details about Marcus Brody',
+    });
+    check(
+      '"give details about X" is a lookup, not a medication question',
+      none.calls() === 0 && /Marcus Brody \(P1002\)/.test(give.response),
+      give.response?.slice(0, 200),
+    );
+  }
+
   section('observability');
   const run = await runs.get(f3.traceId);
   const types = new Set(run.steps.map((s) => s.type));

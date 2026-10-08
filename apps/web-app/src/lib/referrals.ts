@@ -6,6 +6,9 @@ export interface Referral {
   id: string;
   visitId: string;
   patientId: string;
+  patientName?: string | null;
+  patientAge?: number | null;
+  patientGender?: string | null;
   requestedById: string;
   requestedByName: string;
   specialty: string;

@@ -75,6 +75,7 @@ npm test                      # ~120 unit tests (NEWS2, drug safety, lab rules, 
 npm run test:eval             # 100+ checks on the real app: tools, RBAC, memory, retries/timeouts/breaker, tracing, routing
 npx ts-node tests/evaluation/retrieval-check.ts   # new data searchable at once; policy/patient retrieval; delete cleanup
 npm run test:workflow          # roles x endpoints matrix (415 combinations) + (visit, specialists and the full referral/approval/follow-up loop) # patient journey end to end against the RUNNING API (creates and deletes its own patients)
+npm run test:ui                # Playwright browser tests (tests/ui): signs in as all 9 logins on the RUNNING UI (3001) + API (3000); checks portals, role-only controls, no error banner, no 401/403/5xx (uses /usr/bin/google-chrome; UI_CHROME_PATH / UI_URL override)
 npm run test:eval:live        # also asks the REAL configured model 10 questions (tool/data choice + grounded answers)
 npm run test:eval:baseline    # accept current results as the regression baseline (compared on every run)
 ```

@@ -86,3 +86,9 @@ Known gaps: streaming chat path does not reconcile false claims; nurses on the v
 - `src/ai/tools/tool-roles.spec.ts`: agent tools per role. Fixes it forced: SPECIALIST now has read tools (summary, labs, vitals, medications, allergies, visit, guidelines, policies) but each call is checked against referral access (`ClinicalToolsFactory.specialistViolation`); vitals/labs/allergies tools aligned with the summary's minimum-necessary rules.
 - Eval gate now 137 checks. Browser (Playwright) tests per role: delegated; see git log for `tests/ui` if it landed.
 - Machine note: RAM is nearly full (Ollama keeps ~5 GB); running a second Nest app (`ts-node` scripts) while the API runs can be OOM-killed (exit 137).
+
+### 8c. Names and the chat (2026-10-08, evening)
+- Report: "give details about James Mllelr" answered "no patient found". Causes: (1) names were matched exactly (typos missed), (2) the word "give" made the question a *medication* question, which skips the direct data path and sends it to the slow model. Semantic (embedding) search is the wrong tool for names; the fix is fuzzy matching (`findFuzzyPatients`, edit distance, 1 typo for 5 letters, 2 from 6; ambiguous => "Did you mean A or B?"; unique => answered with "Showing X; you typed Y"; unknown name => "could not find a patient named ..." without the model).
+- `NotificationService.getUnreadCount` crashed with HTTP 500 for every user (TypeORM v1 refuses `null` in `where`; use `IsNull()`); found by the browser tests. `roles-matrix.mjs` now also fails on any 5xx from an allowed call.
+- Admin "View as: Specialist" showed an error banner (the admin is not a specialist): the portal now has a specialist selector for admins (source changed in `SpecialistPortal.tsx`; **web app rebuild + `npm run test:ui` pending** — the rebuild was interrupted by the user).
+- `npm run test:ui` (Playwright, `tests/ui`): 9 of 10 passed before the fix above; the 10th (admin View as) is the specialist-portal bug.

@@ -1,4 +1,8 @@
-import { findMentionedPatients } from './mention-matching';
+import {
+  editDistance,
+  findFuzzyPatients,
+  findMentionedPatients,
+} from './mention-matching';
 
 const patients = [
   { id: 'P1001', name: 'Eleanor Vance' },
@@ -35,5 +39,52 @@ describe('findMentionedPatients', () => {
     expect(
       findMentionedPatients('P1001 P1002 PX1 PX2', patients, 2),
     ).toHaveLength(2);
+  });
+});
+
+describe('fuzzy name matching (typing mistakes)', () => {
+  const people = [
+    { id: 'P1', name: 'James Miller' },
+    { id: 'P2', name: 'Sarah Wilson' },
+    { id: 'P3', name: 'Marcus Brody' },
+  ];
+  it('finds the patient despite a typo', () => {
+    const m = findFuzzyPatients('give details about James Mllelr', people);
+    expect(m.map((x) => x.patient.id)).toEqual(['P1']);
+    expect(m[0].typed).toBe('mllelr');
+  });
+  it('handles swapped letters and a short slip', () => {
+    expect(findFuzzyPatients('show marcsu', people)[0].patient.id).toBe('P3');
+    expect(findFuzzyPatients('info on wilsno', people)[0].patient.id).toBe(
+      'P2',
+    );
+  });
+  it('does not match unrelated words', () => {
+    expect(
+      findFuzzyPatients('show me the medication list please', people),
+    ).toEqual([]);
+  });
+  it('returns every equally close candidate so the caller can ask', () => {
+    const two = [...people, { id: 'P4', name: 'Jim Miler' }];
+    expect(findFuzzyPatients('details for mller', two).length).toBeGreaterThan(
+      1,
+    );
+  });
+  it('measures edits with swaps counting once', () => {
+    expect(editDistance('miller', 'mllelr')).toBe(2);
+    expect(editDistance('wilson', 'wilsno')).toBe(1);
+  });
+});
+
+describe('short slips', () => {
+  const people = [
+    { id: 'P1', name: 'Sarah' },
+    { id: 'P2', name: 'Wendell Gray' },
+  ];
+  it('a 4-letter slip that starts like the name matches; a different start does not', () => {
+    expect(findFuzzyPatients('details about Sarh', people)[0].patient.id).toBe(
+      'P1',
+    );
+    expect(findFuzzyPatients('details about Barh', people)).toEqual([]);
   });
 });
