@@ -8,6 +8,8 @@ import { Agent } from '@mastra/core/agent';
 import { HospitalService } from '../hospital/hospital.service';
 import { ClinicalRecordsService } from '../hospital/clinical-records.service';
 import { PhiAnonymizerService } from './security/phi-anonymizer.service';
+import { AgentContextBuilder } from './context/agent-context.builder';
+import { contextHash } from './context/agent-context';
 import { VisitsService } from '../hospital/visits/visits.service';
 import { toVisitSummary } from '../hospital/visits/visit-summary';
 import { ClinicalToolsFactory } from './tools/clinical-tools.factory';
@@ -66,6 +68,7 @@ export class AiService {
     private readonly runs: AgentRunsService,
     private readonly summaries: PatientSummaryService,
     private readonly visits: VisitsService,
+    private readonly contexts: AgentContextBuilder,
     private readonly news2: News2Service,
   ) {}
 
@@ -104,13 +107,36 @@ export class AiService {
       // wrong). Actions and open-ended questions still run the full tool agent.
       const grounded =
         !!context.text && !intent.write && !intent.medication && !intent.triage;
+      const agentContext = await rec.step(
+        'memory',
+        'build-agent-context',
+        async () =>
+          this.tools.applyPolicy(
+            await this.contexts.build({
+              user,
+              subjectIds: context.subjectIds,
+              thread: {
+                id: thread.id,
+                activePatientId: thread.activePatientId,
+                summarized: ctx.summarized,
+              },
+            }),
+          ),
+      );
+      rec.context = { hash: contextHash(agentContext), snapshot: agentContext };
       const agent = grounded
         ? createGroundedAgent({ model, role: user.role })
         : createHospitalAgent({
             model,
             role: user.role,
-            tools: this.tools.build({ user, phi: session, trace: rec.trace }),
+            tools: this.tools.build({
+              user,
+              phi: session,
+              trace: rec.trace,
+              context: agentContext,
+            }),
             focusPatientId: thread.activePatientId,
+            context: agentContext,
           });
 
       const messages = [
@@ -184,8 +210,9 @@ export class AiService {
         pureOverview && overviewOut
           ? [
               renderOverview(overviewOut),
-              intent.waiting && overviewOut.waitingForDoctor > 0
-                ? `\n${renderPatientList(rec.trace, 'Waiting for a doctor') ?? ''}`
+              intent.waiting &&
+              overviewOut.waitingForDoctor + overviewOut.waitingForTriage > 0
+                ? `\n${renderPatientList(rec.trace, 'Waiting (for triage or a doctor)') ?? ''}`
                 : '',
             ]
               .join('')
@@ -352,6 +379,7 @@ export class AiService {
     onlyNotFound: boolean;
     charts: Map<string, any>;
     needsPatient: boolean;
+    subjectIds: string[];
   }> {
     const parts: Array<{ source: string; data: unknown }> = [];
     const ctx = { user, trace: rec.trace };
@@ -385,6 +413,7 @@ export class AiService {
         onlyNotFound: false,
         charts,
         needsPatient: true,
+        subjectIds: [],
       };
     }
 
@@ -402,14 +431,14 @@ export class AiService {
     if (intent.list) {
       const r = await this.tools.runDirect(
         'searchPatients',
-        { status: 'ALL', limit: 100 },
+        { stage: 'ALL', limit: 100 },
         ctx,
       );
       if (r) parts.push({ source: 'all patients', data: r });
     } else if (intent.waiting) {
       const r = await this.tools.runDirect(
         'searchPatients',
-        { status: 'WAITING', limit: 100 },
+        { stage: 'WAITING', limit: 100 },
         ctx,
       );
       if (r) parts.push({ source: 'patients waiting for a doctor', data: r });
@@ -476,6 +505,7 @@ export class AiService {
         onlyNotFound: false,
         charts,
         needsPatient,
+        subjectIds,
       };
 
     const body = parts
@@ -490,6 +520,7 @@ export class AiService {
       onlyNotFound: notFound.length > 0 && parts.length === notFound.length,
       charts,
       needsPatient: false,
+      subjectIds,
     };
   }
 

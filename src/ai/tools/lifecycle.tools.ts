@@ -57,6 +57,7 @@ export function buildLifecycleTools(d: {
         notes: z.string().min(1),
       }),
       roles: ['DOCTOR', 'ADMIN'],
+      requires: { openVisit: true, patientBound: true },
       run: async (i, { user }) =>
         d.lifecycle.recordDoctorConsultation(
           await validateDto(ConsultationDto, i),

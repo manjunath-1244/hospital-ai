@@ -22,6 +22,8 @@ export class RunRecorder {
   readonly trace = new ToolTrace();
   readonly t0 = Date.now();
   retries = 0;
+  /** PHI-free snapshot of what the agent knew and could do for this request (see `context/agent-context.ts`). */
+  context: { hash: string; snapshot: unknown } | null = null;
   private readonly spans: RunStep[] = [];
 
   constructor(
@@ -105,6 +107,8 @@ export class RunRecorder {
       toolCallCount: this.trace.calls.length,
       toolFailureCount: this.trace.calls.filter((c) => !c.success).length,
       toolNames: this.trace.calls.map((c) => c.name),
+      contextHash: this.context?.hash ?? null,
+      context: this.context?.snapshot ?? null,
     };
   }
 }

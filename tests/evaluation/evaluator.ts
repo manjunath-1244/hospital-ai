@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { MockLanguageModelV3, simulateReadableStream } from 'ai/test';
 import { AppModule } from '../../src/app.module';
+import { AgentContextBuilder } from '../../src/ai/context/agent-context.builder';
 import { ClinicalToolsFactory } from '../../src/ai/tools/clinical-tools.factory';
 import { ToolTrace } from '../../src/ai/tools/tool-registry';
 import { PhiAnonymizerService } from '../../src/ai/security/phi-anonymizer.service';
@@ -172,6 +173,16 @@ async function main() {
     logger: ['error'],
   });
   const tools = app.get(ClinicalToolsFactory);
+  const contexts = app.get(AgentContextBuilder);
+  /** The context the server would build for a request about these patients. */
+  const ctxFor = async (user: AuthUser, ids: string[] = []) =>
+    tools.applyPolicy(
+      await contexts.build({
+        user,
+        subjectIds: ids,
+        thread: { id: null, activePatientId: null, summarized: false },
+      }),
+    );
   const phi = app.get(PhiAnonymizerService);
   const rag = app.get(VectorRagService);
   const ai = app.get(AiService);
@@ -203,9 +214,15 @@ async function main() {
     section(`tools ${tc.id}: ${tc.tool}`);
     const session = await phi.createSession();
     const out: any = await (
-      tools.build({ user: doctor, phi: session, trace: new ToolTrace() })[
-        tc.tool
-      ] as any
+      tools.build({
+        user: doctor,
+        phi: session,
+        trace: new ToolTrace(),
+        context: await ctxFor(
+          doctor,
+          tc.args?.patientId ? [tc.args.patientId] : [],
+        ),
+      })[tc.tool] as any
     ).execute(tc.args, {});
     check('tool returns success', out?.success === true, JSON.stringify(out));
     check(
@@ -223,7 +240,15 @@ async function main() {
     const agent = createHospitalAgent({
       model: sm.model,
       role: doctor.role,
-      tools: tools.build({ user: doctor, phi: s2, trace: t2 }),
+      tools: tools.build({
+        user: doctor,
+        phi: s2,
+        trace: t2,
+        context: await ctxFor(
+          doctor,
+          tc.args?.patientId ? [tc.args.patientId] : [],
+        ),
+      }),
     });
     const res = await agent.generate(
       [
@@ -288,6 +313,7 @@ async function main() {
     user: receptionist,
     phi: await phi.createSession(),
     trace: new ToolTrace(),
+    context: await ctxFor(receptionist, ['P1001']),
   });
   const recSummary: any = await (recSet.getPatientSummary as any).execute(
     { patientId: 'P1001' },
@@ -776,6 +802,7 @@ async function main() {
       user: doctor,
       phi: await phi.createSession(),
       trace: new ToolTrace(),
+      context: await ctxFor(doctor),
     }).searchPatients as any
   ).execute({}, {});
   const missingIds = (allPatients.patients ?? [])
@@ -818,6 +845,96 @@ async function main() {
   );
 
   // ---------------------------------------------------------------- 7. observability
+  // ---------------------------------------------------------------- agent context
+  section('agent context');
+  {
+    const bookArgs = {
+      patientId: 'P1002',
+      doctorName: 'Dr. Test',
+      department: 'Cardiology',
+      dateTime: '2030-01-07T09:00:00.000Z',
+      reason: 'eval',
+    };
+    const open = await ctxFor(doctor, ['P1001']);
+    check(
+      'context carries the patient, the open visit and the tools for this role',
+      open.patient?.id === 'P1001' &&
+        open.visit?.isOpen === true &&
+        open.permissions.tools.includes('bookAppointment') &&
+        !open.permissions.tools.includes('registerOpPatient'),
+      JSON.stringify(open).slice(0, 300),
+    );
+    check(
+      'context is PHI-free (no names or phone numbers)',
+      !/Eleanor|Vance|555-0/.test(JSON.stringify(open)),
+    );
+    const t1 = new ToolTrace();
+    const set = tools.build({
+      user: doctor,
+      phi: await phi.createSession(),
+      trace: t1,
+      context: open,
+    });
+    const refused: any = await (set.bookAppointment as any).execute(
+      bookArgs,
+      {},
+    );
+    check(
+      'a write tool refuses a patient that is not in the context (nothing booked)',
+      refused.success === false && /not the patient/.test(refused.error),
+      JSON.stringify(refused),
+    );
+    const noPatient = await ctxFor(doctor);
+    check(
+      'with no patient in context, a write aimed at some patient is refused too',
+      (
+        (await (
+          tools.build({
+            user: doctor,
+            phi: await phi.createSession(),
+            trace: new ToolTrace(),
+            context: noPatient,
+          }).bookAppointment as any
+        ).execute(bookArgs, {})) as any
+      ).success === false,
+    );
+    const rows = await ds.query(
+      `select count(*)::int n from appointments where "patientId"='P1002' and reason='eval'`,
+    );
+    check('no appointment was created by the refused calls', rows[0].n === 0);
+
+    // A finished visit withholds visit-bound tools and tells the model why.
+    const probe: any = await ds.query(
+      `select id from patients where id not in (select "patientId" from visits where status in ('WAITING_TRIAGE','TRIAGED','IN_CONSULTATION','UNDER_REVIEW','TREATMENT','FOLLOW_UP')) limit 1`,
+    );
+    if (probe[0]) {
+      const fin = await ctxFor(doctor, [probe[0].id]);
+      check(
+        'for a patient without an open visit, consultation/booking tools are withheld with a reason',
+        !fin.permissions.tools.includes('recordDoctorConsultation') &&
+          fin.permissions.withheld.some((w) => w.tool === 'bookAppointment'),
+        JSON.stringify(fin.permissions),
+      );
+    }
+    const recCtx = await ctxFor(receptionist, ['P1001']);
+    check(
+      'a receptionist context holds no clinical tools',
+      !recCtx.permissions.tools.includes('searchClinicalRecords') &&
+        !recCtx.permissions.tools.includes('recordDoctorConsultation'),
+    );
+
+    // The run trace stores the context fingerprint.
+    const chatRes: any = await ai.chat(doctor, {
+      message: 'How many patients are waiting?',
+    });
+    const row: any = await runs.get(chatRes.traceId);
+    check(
+      'the stored run carries the context hash and snapshot',
+      !!row?.contextHash && !!row?.context,
+      JSON.stringify(row?.context ?? null).slice(0, 120),
+    );
+  }
+
   section('observability');
   const run = await runs.get(f3.traceId);
   const types = new Set(run.steps.map((s) => s.type));

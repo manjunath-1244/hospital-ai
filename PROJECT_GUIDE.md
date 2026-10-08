@@ -147,7 +147,7 @@ Module dependencies point **downward only** (no cycles): `DataModule` depends on
 | `audit_logs` | Who touched what | `userId`, `role`, `method`, `path`, `patientId`, `statusCode`, `at` |
 | `knowledge_documents` | Admin-uploaded policies | `title`, `filename`, `content`, `ragSource`, `uploadedBy` |
 | `chat_threads` / `chat_messages` | AI conversation memory | thread: `userId`, `title`, `summary`, `summarizedCount`, `activePatientId`; message: `role`, `content` |
-| `agent_runs` | One trace per AI request | `model`, `status`, `durationMs`, `steps` (jsonb spans), `usage`, `toolNames`, `guardrailStatus`, `retries`, `error` |
+| `agent_runs` | One trace per AI request | `model`, `status`, `durationMs`, `steps` (jsonb spans), `usage`, `toolNames`, `guardrailStatus`, `retries`, `error`, `contextHash` + `context` (PHI-free AgentContext snapshot) |
 | `document_embeddings` | **Derived** vector index | `source`, `kind` (`policy`/`patient_record`), `patient_id`, `heading`, `content`, `content_hash`, `embedding vector(768)` + HNSW cosine index |
 
 Schema creation: **TypeORM migrations** (`src/database/migrations`; `synchronize` is off; `DB_MIGRATIONS_RUN=false` skips auto-run). `Baseline` captures the original schema (skipped if tables exist); `VisitsAndLifecycle` adds visits/visit_events, links `visitId` onto vitals, labs, imaging, consultations, appointments and tasks, and backfills one visit per existing patient (old CLOSED → COMPLETED, SEEN → IN_CONSULTATION, WAITING → TRIAGED if vitals exist else WAITING_TRIAGE). The vector table `document_embeddings` is created by its service and excluded from sync. Entities and migrations must agree: run `npm run migration:generate` after any entity change.
@@ -440,6 +440,16 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Improve:** a real confirm step (the tool returns a *proposal*, the UI shows Confirm, then the REST API executes), per-tool rate limits, tool result caching for repeated identical calls inside a request, richer tools (lab trends, discharge summary).
 * **Status:** ✅ · 🟡 write-confirmation is soft.
 
+## 4.5b AgentContext (what the agent knows and may do, per request)
+* **What:** before the model runs, the server builds an `AgentContext`: the user (id, role, specialty), the patient this request is about, the patients write tools may act on, that patient's open (or latest) visit, conversation info, and the **tools visible in this state**. Ids and statuses only — no names.
+* **Why:** (1) safety: a model — or an instruction hidden in a note or document — must not be able to act on a patient the user never named; (2) state: nobody should book or consult on a finished visit; (3) traceability: a trace shows exactly what the agent could see and do.
+* **How:** `AgentContextBuilder.build` (subjects from `gatherContext` = patients named in the message or "him/her", plus the conversation's current patient; visit via `VisitsService`) then `ClinicalToolsFactory.applyPolicy` → `applyToolPolicy`. Tools declare `requires: { openVisit?, patientBound? }` (e.g. `recordDoctorConsultation`, `bookAppointment`, `createStaffTask`); the policy (`context/tool-policy.ts`, pure and unit-tested) withholds `openVisit` tools when the visit is finished and says why in the prompt (`describeContext`), and every `patientBound` call is checked at run time: a `patientId` outside `allowedPatientIds` is refused with an explanation and nothing is written. Read tools can still look up any patient the role may see ("search"). The run stores `contextHash` + `context` (`agent_runs`).
+* **Where:** `src/ai/context/{agent-context,tool-policy,agent-context.builder}.ts`, `ai.service.ts` (built after `gatherContext`), `clinical-tools.factory.ts` (`applyPolicy`, `build`), `agent.ts` (`describeContext`), `run-recorder.ts`.
+* **Can go wrong:** the allowed set is name/id matching on the message (a typo'd name yields no patient, so a write is refused rather than guessed); a confirmation like "yes" relies on the conversation's current patient; read tools are not bound; the context is a snapshot at request start (a visit that changes mid-request is still caught by the service layer's own 409).
+* **Explain it:** "Before the AI answers, the system hands it a work order: this user, this patient, this visit, these tools. Anything outside the work order is refused."
+* **Improve:** show the context in the admin run view, bind read tools by purpose, add referral/approval state (W6/W7), compare context hashes across runs.
+* **Status:** ✅ (W3) · 🟡 not yet visible in the UI.
+
 ## 4.6 Intent routing and direct answers
 * **What:** the deterministic layer in `src/ai/routing/`.
 * **Why:** exact lookups should be exact, instant and model-independent.
@@ -511,7 +521,7 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 
 ## 4.13 Observability, metrics and drift
 * **What:** every AI request becomes a **trace**; aggregates reveal when the agent's behaviour changes ("drift").
-* **How:** `RunRecorder` records spans — `memory` (load-thread, build-context, retrieve-context), `llm` (agent.generate), `tool` (each call, with masked args, duration, success) — plus retries, token usage, guardrail status, error; saved to `agent_runs`, and one JSON log line per run (`event: "agent.run"`, grep by `traceId`). `computeMetrics` (error rate, guardrail-warning rate, tool-failure rate, "answered without any tool" rate, average tool calls, p50/p95 latency, average tokens, top tools, models) over the last N hours vs a **baseline of the preceding 7 days**; `detectDrift` flags rises ≥ 10 pp (critical ≥ 25 pp), p95 latency ≥ 1.5× (critical ≥ 2.5×), average tool calls ±40 %, and a primary-model change — but only when both windows have ≥ 20 runs. Admin UI: metric cards, breaker state, drift box, top tools, run table, waterfall for one run.
+* **How:** `RunRecorder` records spans — `memory` (load-thread, build-context, retrieve-context, build-agent-context), `llm` (agent.generate), `tool` (each call, with masked args, duration, success) — plus retries, token usage, guardrail status, error; saved to `agent_runs`, and one JSON log line per run (`event: "agent.run"`, grep by `traceId`). `computeMetrics` (error rate, guardrail-warning rate, tool-failure rate, "answered without any tool" rate, average tool calls, p50/p95 latency, average tokens, top tools, models) over the last N hours vs a **baseline of the preceding 7 days**; `detectDrift` flags rises ≥ 10 pp (critical ≥ 25 pp), p95 latency ≥ 1.5× (critical ≥ 2.5×), average tool calls ±40 %, and a primary-model change — but only when both windows have ≥ 20 runs. Admin UI: metric cards, breaker state, drift box, top tools, run table, waterfall for one run.
 * **Where:** `src/ai/observability/*`, admin endpoints `GET /admin/agent/metrics|runs|runs/:id`, UI `AgentObservability.tsx`.
 * **Can go wrong:** with few runs (like a demo) drift shows "not enough data" by design; metrics are computed on request in JS from up to 5 000 rows (fine for a POC); no alert is sent when drift is detected; no export to OpenTelemetry/Datadog; direct answers count as runs with 0 LLM calls (fine, but changes averages).
 * **Improve:** OpenTelemetry export, alerts (Slack/e-mail) on drift, per-role dashboards, cost tracking, user feedback (thumbs up/down) feeding the eval set, sampling/retention policy.
@@ -806,6 +816,7 @@ Line counts are approximate. **Status** uses the legend at the top. "Spec" = uni
 | `llm/model.ts`, `llm-provider.ts`, `warmup.service.ts` | providers, injectable model seam, Ollama keep-warm | ✅ |
 | `routing/intent.ts`, `chart-view.ts`, `vitals-parser.ts`, `overview-view.ts` (+specs) | deterministic routing and direct answers | ✅ |
 | `tools/tool-registry.ts` | `ClinicalTool` type, `ToolTrace`, role sets | ✅ |
+| `context/agent-context.ts`, `agent-context.builder.ts`, `tool-policy.ts` | per-request AgentContext, state-aware tool visibility, patient binding for writes ✅ |
 | `tools/clinical-tools.factory.ts` | per-request, role-filtered, masked, traced Mastra tools; `runDirect` | ✅ |
 | `tools/hospital.tools.ts`, `rag.tools.ts`, `lifecycle.tools.ts` | the 13 core tools | ✅ |
 | `tools/fhir-hapi.tools.ts` | 2 admin/radiology report tools | 🟡 marginal |

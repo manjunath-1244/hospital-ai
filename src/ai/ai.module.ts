@@ -12,6 +12,7 @@ import { OllamaWarmupService } from './llm/warmup.service';
 import { LlmRunner } from './reliability/llm-runner';
 import { ConversationMemoryService } from './memory/conversation-memory.service';
 import { SummarizerService } from './memory/summarizer.service';
+import { AgentContextBuilder } from './context/agent-context.builder';
 import { AgentRunsService } from './observability/agent-runs.service';
 
 @Module({
@@ -27,6 +28,7 @@ import { AgentRunsService } from './observability/agent-runs.service';
     ConversationMemoryService,
     SummarizerService,
     AgentRunsService,
+    AgentContextBuilder,
   ],
   exports: [
     AiService,

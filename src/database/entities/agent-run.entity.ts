@@ -47,4 +47,7 @@ export class AgentRunEntity {
   @Column({ type: 'int', default: 0 }) toolCallCount: number;
   @Column({ type: 'int', default: 0 }) toolFailureCount: number;
   @Column({ type: 'jsonb', default: () => `'[]'` }) toolNames: string[];
+  /** Fingerprint and PHI-free snapshot of the AgentContext this run used (null for runs before it existed). */
+  @Column({ type: 'varchar', nullable: true }) contextHash: string | null;
+  @Column({ type: 'jsonb', nullable: true }) context: unknown;
 }

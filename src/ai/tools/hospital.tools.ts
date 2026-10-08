@@ -154,6 +154,7 @@ export function buildHospitalTools(d: {
         reason: z.string(),
       }),
       roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'],
+      requires: { openVisit: true, patientBound: true },
       async run(i) {
         return {
           success: true,
@@ -172,6 +173,7 @@ export function buildHospitalTools(d: {
         priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
       }),
       roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+      requires: { patientBound: true },
       async run(i) {
         return {
           success: true,

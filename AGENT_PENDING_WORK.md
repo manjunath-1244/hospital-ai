@@ -114,7 +114,7 @@ Persisted per recipient; delivered over the socket to room `user:<id>`; unread c
 
 Effort = one developer, working days. **AC** = acceptance criteria.
 
-> **Status (2026-10-08):** W0.1 migrations ✅ done · W1 visit lifecycle ✅ done (W1.1–W1.7, backend + UI; verified by `npm run test:workflow`, unit tests, `test:eval`, `retrieval-check`). W2 specialists ✅ done (W2.1–W2.3: specialist role + specialty, availability, bookings by doctor id; `npm run test:workflow`). Next: W3 AgentContext. Remaining W0 items (W0.2–W0.5) still open.
+> **Status (2026-10-08):** W0.1 migrations ✅ done · W1 visit lifecycle ✅ done (W1.1–W1.7, backend + UI; verified by `npm run test:workflow`, unit tests, `test:eval`, `retrieval-check`). W2 specialists ✅ done (W2.1–W2.3: specialist role + specialty, availability, bookings by doctor id; `npm run test:workflow`). W3 AgentContext ✅ done (context builder, state-aware tool policy, patient binding for write tools, hash/snapshot on every run). Next: W4 tools. Remaining W0 items (W0.2–W0.5) still open.
 
 ### W0 Foundations and decisions (3–4 days)
 | ID | Task | Effort | AC |

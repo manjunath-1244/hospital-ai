@@ -1,13 +1,38 @@
 import { Agent } from '@mastra/core/agent';
+import type { AgentContext } from './context/agent-context';
 import type { UserRole } from '../security/roles.decorator';
+
+/** One line the model gets about where this request stands (ids and states only, no names). */
+export function describeContext(ctx?: AgentContext | null): string {
+  if (!ctx) return '';
+  const parts = [
+    ctx.patient
+      ? `Current patient: ${ctx.patient.id}${
+          ctx.visit
+            ? ` (visit ${ctx.visit.id} is ${ctx.visit.status.toLowerCase().replace(/_/g, ' ')}${ctx.visit.isOpen ? '' : ', finished'})`
+            : ' (no visit on record)'
+        }.`
+      : 'No patient is selected for this request.',
+  ];
+  if (ctx.permissions.withheld.length)
+    parts.push(
+      `Not available right now: ${ctx.permissions.withheld.map((w) => `${w.tool} (${w.reason})`).join('; ')}. Explain this if the user asks for it.`,
+    );
+  parts.push(
+    "Write tools only work for the patient named in the user's message or the current patient; otherwise ask the user to name the patient.",
+  );
+  return parts.join(' ');
+}
 
 export function buildInstructions(
   role: UserRole,
   toolNames: string[],
   focusPatientId?: string | null,
+  context?: AgentContext | null,
 ): string {
   return `
 You are the Hospital AI Care Coordinator assisting a signed-in ${role}. Your tools: ${toolNames.join(', ') || 'none'}.
+${describeContext(context)}
 
 How to answer:
 - Everything you state about patients or hospital data must come from tool results in this conversation. Never guess or fill gaps; if a tool returns an error or nothing, say so.
@@ -30,6 +55,7 @@ export function createHospitalAgent(opts: {
   role: UserRole;
   tools: Record<string, any>;
   focusPatientId?: string | null;
+  context?: AgentContext | null;
 }) {
   return new Agent({
     id: 'hospital-ai-coordinator',
@@ -38,6 +64,7 @@ export function createHospitalAgent(opts: {
       opts.role,
       Object.keys(opts.tools),
       opts.focusPatientId,
+      opts.context,
     ),
     model: opts.model,
     tools: opts.tools,

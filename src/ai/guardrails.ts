@@ -46,6 +46,7 @@ interface ListedPatient {
   age?: number;
   gender?: string;
   status?: string;
+  statusLabel?: string;
   chiefComplaint?: string | null;
 }
 
@@ -103,7 +104,11 @@ export function renderPatientList(
   const total = last.output?.total ?? patients.length;
   if (!patients.length) return 'No patients match.';
   const lines = patients.map((p, i) => {
-    const bits = [`${p.age ?? '?'} y`, p.gender ?? '', p.status ?? '']
+    const bits = [
+      `${p.age ?? '?'} y`,
+      p.gender ?? '',
+      p.statusLabel ?? p.status ?? '',
+    ]
       .filter(Boolean)
       .join(', ');
     return `${i + 1}. ${p.name} (${p.id}) — ${bits}${p.chiefComplaint ? ` — ${p.chiefComplaint}` : ''}`;

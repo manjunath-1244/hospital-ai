@@ -238,7 +238,7 @@ async function main() {
             age: 30,
             gender: 'male',
             phone: '+1 555 010 3030',
-          allowDuplicate: true,
+            allowDuplicate: true,
             bloodType: 'O+',
           } as any,
           doctor,

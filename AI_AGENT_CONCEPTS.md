@@ -407,6 +407,9 @@ New chat, "what medicines gave to him?"           → no active patient → "Whi
 
 ---
 
+## 4.9b AgentContext: the work order
+Every request gets a server-built context: user and role, the patient(s) the user actually named (plus the conversation's current patient), that patient's visit state, and the tools visible in that state. Write tools (`recordDoctorConsultation`, `bookAppointment`, `createStaffTask`) may only act on those patients — an id the model found inside a note or document is refused, so a hidden instruction cannot make the agent edit someone else's chart. Tools that need an open visit are withheld once the visit is finished, and the prompt says why. The PHI-free snapshot and its hash are stored on the run. Code: `src/ai/context/*`; see PROJECT_GUIDE 4.5b.
+
 ## 4.10 Reliability: timeouts, retries, circuit breaker
 **The idea.** Model providers are slow, rate-limited and sometimes down. Don't let that hang or crash the hospital app.
 **Analogy.** Phoning a busy specialist: set a time limit, try again a couple of times, and if their line is dead, stop calling for a minute instead of jamming it.
@@ -497,6 +500,7 @@ Reading it: *in the policy run 99.6 % of the time is the model; everything else 
 | Minimum-necessary views | seeing data a role doesn't need | `PatientSummaryService` |
 | Input validation | malformed/unknown fields; the model creating invalid records | ValidationPipe, `validate-dto.ts` |
 | Deterministic clinical checks | unsafe prescriptions, mis-scored vitals, missed critical labs | `MedicationSafetyService` (409 unless override reason), `News2Service`, `lab-rules` |
+| Context binding | a write aimed at a patient the user never named (also prompt injection) | `bindingViolation` in `context/tool-policy.ts` |
 | Open-visit guard | clinical writes to a visit that is finished or does not exist | `VisitsService.requireActive` |
 | Grounding + guardrails | invented facts, dropped items, raw JSON | section 4.7 |
 | Privacy | names to the model | section 4.8 |

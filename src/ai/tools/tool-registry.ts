@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AuthUser } from '../../security/auth-user';
+import type { ToolRequirements } from '../context/tool-policy';
 import type { UserRole } from '../../security/roles.decorator';
 
 export interface Citation {
@@ -21,6 +22,8 @@ export interface ClinicalTool {
   inputSchema: z.ZodObject<any>;
   /** Roles that may use this tool; the agent for any other role never even sees it. */
   roles: UserRole[];
+  /** State rules enforced by the context policy (see `context/tool-policy.ts`). */
+  requires?: ToolRequirements;
   run(input: any, ctx: ToolRunContext): Promise<unknown>;
   /** Optional: extract source citations from the tool output. */
   citations?(output: any): Citation[];

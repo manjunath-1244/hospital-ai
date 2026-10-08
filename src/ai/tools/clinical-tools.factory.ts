@@ -11,6 +11,8 @@ import { OrthancClient } from '../dicom/orthanc.client';
 import { PhiSession } from '../security/phi-anonymizer.service';
 import type { AuthUser } from '../../security/auth-user';
 import { ClinicalTool, ToolTrace } from './tool-registry';
+import type { AgentContext } from '../context/agent-context';
+import { applyToolPolicy, bindingViolation } from '../context/tool-policy';
 import { buildHospitalTools } from './hospital.tools';
 import { PatientDirectoryService } from '../../hospital/patient-directory.service';
 import { SpecialistService } from '../../hospital/specialists/specialist.service';
@@ -115,10 +117,20 @@ export class ClinicalToolsFactory {
       .map((t) => t.name);
   }
 
-  build(ctx: { user: AuthUser; phi: PhiSession; trace: ToolTrace }) {
+  /** Adds the permissions (tools visible for this role in this visit state) to a freshly built context. */
+  applyPolicy(base: Omit<AgentContext, 'permissions'>): AgentContext {
+    return applyToolPolicy(base, this.definitions);
+  }
+
+  build(ctx: {
+    user: AuthUser;
+    phi: PhiSession;
+    trace: ToolTrace;
+    context: AgentContext;
+  }) {
     const tools: Record<string, ReturnType<typeof createTool>> = {};
     for (const def of this.definitions.filter((t) =>
-      t.roles.includes(ctx.user.role),
+      ctx.context.permissions.tools.includes(t.name),
     )) {
       tools[def.name] = createTool({
         id: def.name,
@@ -128,6 +140,22 @@ export class ClinicalToolsFactory {
           const args = ctx.phi.unmaskDeep(input);
           const startedAtMs = Date.now();
           const timeoutMs = Number(process.env.AI_TOOL_TIMEOUT_MS ?? 10_000);
+          const violation = bindingViolation(def, args, ctx.context);
+          if (violation) {
+            const output = { success: false, error: violation };
+            ctx.trace.record(
+              {
+                name: def.name,
+                args,
+                success: false,
+                startedAtMs,
+                durationMs: 0,
+                error: violation,
+              },
+              output,
+            );
+            return ctx.phi.maskDeep(output);
+          }
           try {
             const output = await withTimeout(
               () => def.run(args, { user: ctx.user }),
