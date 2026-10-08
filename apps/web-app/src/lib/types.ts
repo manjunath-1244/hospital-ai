@@ -7,13 +7,16 @@ export type BackendRole =
   | 'ADMIN'
   | 'CARE_COORDINATOR'
   | 'PHARMACIST'
-  | 'RADIOLOGIST';
+  | 'RADIOLOGIST'
+  | 'SPECIALIST';
 
 export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
   role: BackendRole;
+  specialty?: string | null;
+  department?: string | null;
 }
 
 export interface LoginResponse {

@@ -15,6 +15,7 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import {
   VISIT_OUTCOMES,
@@ -160,10 +161,43 @@ export class ImagingUploadDto {
 
 export class AppointmentDto {
   @Matches(patientIdRule) patientId: string;
-  @Transform(trim) @IsString() @MinLength(2) @MaxLength(120) doctorName: string;
-  @Transform(trim) @IsString() @MinLength(2) @MaxLength(120) department: string;
+  /** Book against a real doctor account (checks their working hours and availability). */
+  @IsOptional() @IsString() @MaxLength(64) doctorId?: string;
+  /** Free-text name; required only when no `doctorId` is given. */
+  @ValidateIf((o) => !o.doctorId)
+  @Transform(trim)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  doctorName?: string;
+  /** Defaults to the doctor's department/specialty when a `doctorId` is given. */
+  @ValidateIf((o) => !o.doctorId)
+  @Transform(trim)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  department?: string;
   @IsISO8601() dateTime: string;
   @Transform(trim) @IsString() @MinLength(2) @MaxLength(500) reason: string;
+}
+
+export class WeeklyHoursDto {
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => WorkingWindowDto)
+  windows: WorkingWindowDto[];
+}
+
+export class WorkingWindowDto {
+  @Type(() => Number) @IsInt() @Min(0) @Max(6) weekday: number;
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) startTime: string;
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) endTime: string;
+  @Type(() => Number) @IsInt() @Min(5) @Max(240) slotMinutes: number;
+}
+
+export class SetAvailabilityDto {
+  @IsBoolean() isAvailable: boolean;
 }
 
 export class TaskDto {

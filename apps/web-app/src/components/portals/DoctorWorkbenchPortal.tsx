@@ -18,6 +18,7 @@ import type {
 import type { VisitSummary } from '../../lib/visits';
 import { byUrgency, isActiveStatus, STAGE_TABS, type PatientStage } from '../../lib/visits';
 import { Empty, ErrorBox, Loading, PriorityBadge, SafetyPanel, StatusBadge, SuccessBox, fmtTime, fmtWait, inputCls, labelCls, splitList } from '../ui/common';
+import { AppointmentBooking } from '../ui/AppointmentBooking';
 import { VisitHistory, VisitPanel } from '../ui/VisitPanel';
 
 interface Emr {
@@ -155,6 +156,8 @@ export const DoctorWorkbenchPortal: React.FC = () => {
         </h2>
         <p className="text-base text-slate-300 mt-1.5">Review a patient record and record a consultation. Prescriptions are checked by the backend medication safety audit.</p>
       </div>
+
+      <AppointmentBooking collapsible />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Patient list */}

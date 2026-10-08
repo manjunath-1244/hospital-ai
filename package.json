@@ -27,7 +27,7 @@
     "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
     "migration:show": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:show",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "test:workflow": "node --env-file=.env tests/workflow/visit-flow.mjs"
+    "test:workflow": "node --env-file=.env tests/workflow/visit-flow.mjs && node --env-file=.env tests/workflow/specialists-flow.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.127",

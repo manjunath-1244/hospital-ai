@@ -13,6 +13,7 @@ import { NurseWardPortal } from '../components/portals/NurseWardPortal';
 import { RadiologyPortal } from '../components/portals/RadiologyPortal';
 import { PharmacyPortal } from '../components/portals/PharmacyPortal';
 import { CareCoordinatorPortal } from '../components/portals/CareCoordinatorPortal';
+import { SpecialistPortal } from '../components/portals/SpecialistPortal';
 import { AdminPortal } from '../components/portals/AdminPortal';
 
 export default function Home() {
@@ -41,6 +42,8 @@ export default function Home() {
         return <PharmacyPortal />;
       case 'CARE_COORDINATOR':
         return <CareCoordinatorPortal />;
+      case 'SPECIALIST':
+        return <SpecialistPortal />;
       case 'ADMIN':
         return <AdminPortal />;
     }

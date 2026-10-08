@@ -234,6 +234,7 @@ export class HospitalService {
   async bookAppointment(input: {
     patientId: string;
     visitId: string | null;
+    doctorId?: string | null;
     doctorName: string;
     department: string;
     dateTime: string;
@@ -258,6 +259,7 @@ export class HospitalService {
           id: newId('APT-'),
           patientId: input.patientId.toUpperCase(),
           visitId: input.visitId,
+          doctorId: input.doctorId ?? null,
           doctorName: input.doctorName,
           department: input.department,
           dateTime: input.dateTime,

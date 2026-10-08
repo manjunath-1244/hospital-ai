@@ -11,6 +11,8 @@ import { ClinicalRecordsService } from './clinical-records.service';
 import { News2Service } from './news2.service';
 import { MedicationSafetyService } from './medication-safety.service';
 import { PostCommitService } from './post-commit.service';
+import { SpecialistService } from './specialists/specialist.service';
+import { slotKey } from './specialists/availability';
 import { PatientDirectoryService } from './patient-directory.service';
 import { VisitsService } from './visits/visits.service';
 import { toVisitSummary } from './visits/visit-summary';
@@ -58,6 +60,7 @@ export class HospitalLifecycleService {
     private readonly records: ClinicalRecordsService,
     private readonly visits: VisitsService,
     private readonly directory: PatientDirectoryService,
+    private readonly specialists: SpecialistService,
     private readonly news2: News2Service,
     private readonly medSafety: MedicationSafetyService,
     private readonly fhirMapper: FhirService,
@@ -502,7 +505,31 @@ export class HospitalLifecycleService {
   async bookAppointment(dto: AppointmentDto) {
     const patient = await this.hospital.getPatientById(dto.patientId);
     const visit = await this.visits.requireActive(patient.id);
-    return this.hospital.bookAppointment({ ...dto, visitId: visit.id });
+    // Against a real doctor account: the slot must be one they offer and be free; name/department come from the account.
+    if (dto.doctorId) {
+      const doctor = await this.specialists.assertBookable(
+        dto.doctorId,
+        dto.dateTime,
+      );
+      return this.hospital.bookAppointment({
+        patientId: patient.id,
+        visitId: visit.id,
+        doctorId: doctor.id,
+        doctorName: doctor.displayName,
+        department:
+          dto.department ?? doctor.specialty ?? doctor.department ?? 'General',
+        dateTime: slotKey(dto.dateTime),
+        reason: dto.reason,
+      });
+    }
+    return this.hospital.bookAppointment({
+      patientId: patient.id,
+      visitId: visit.id,
+      doctorName: dto.doctorName!,
+      department: dto.department!,
+      dateTime: dto.dateTime,
+      reason: dto.reason,
+    });
   }
 
   async createTask(dto: TaskDto) {

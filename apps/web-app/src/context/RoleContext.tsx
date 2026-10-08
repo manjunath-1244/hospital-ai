@@ -13,7 +13,8 @@ export type UserRole =
   | 'RADIOLOGIST'
   | 'PHARMACIST'
   | 'CARE_COORDINATOR'
-  | 'ADMIN';
+  | 'ADMIN'
+  | 'SPECIALIST';
 
 export const toPortalRole = (r: BackendRole): UserRole => (r === 'NURSE' ? 'ED_NURSE' : r);
 

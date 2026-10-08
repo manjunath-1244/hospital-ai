@@ -14,6 +14,7 @@ const roleLabels: Record<UserRole, { title: string; color: string }> = {
   RADIOLOGIST: { title: 'Radiologist', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
   PHARMACIST: { title: 'Pharmacist', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
   CARE_COORDINATOR: { title: 'Care Coordinator', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
+  SPECIALIST: { title: 'Specialist', color: 'bg-teal-500/20 text-teal-400 border-teal-500/30' },
   ADMIN: { title: 'Admin', color: 'bg-rose-500/20 text-rose-400 border-rose-500/30' },
 };
 

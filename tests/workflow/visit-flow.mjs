@@ -4,34 +4,7 @@
  * Creates its own test patients and deletes them at the end. Exits non-zero if any step fails.
  * Env: API_URL, SEED_USER_PASSWORD (read from .env by `npm run test:workflow`).
  */
-const API = process.env.API_URL ?? 'http://localhost:3000';
-const PASSWORD = process.env.SEED_USER_PASSWORD;
-let failed = 0;
-const tokens = {};
-
-const check = (name, ok, detail = '') => {
-  if (!ok) failed++;
-  console.log(`  ${ok ? '✅' : '❌'} ${name}${ok ? '' : `  → ${detail}`}`);
-};
-
-async function call(role, method, path, body) {
-  const res = await fetch(`${API}${path}`, {
-    method,
-    headers: {
-      'content-type': 'application/json',
-      ...(role ? { authorization: `Bearer ${tokens[role]}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    json = text;
-  }
-  return { status: res.status, body: json };
-}
+import { call, check, finish, login } from './client.mjs';
 
 const vitals = (patientId, extra = {}) => ({
   patientId,
@@ -46,12 +19,7 @@ const vitals = (patientId, extra = {}) => ({
 });
 
 async function main() {
-  if (!PASSWORD) throw new Error('SEED_USER_PASSWORD is not set');
-  for (const u of ['receptionist', 'nurse', 'doctor', 'admin']) {
-    const r = await call(null, 'POST', '/auth/login', { username: u, password: PASSWORD });
-    tokens[u] = r.body.accessToken ?? r.body.access_token ?? r.body.token;
-    if (!tokens[u]) throw new Error(`login failed for ${u}: ${JSON.stringify(r.body)}`);
-  }
+  await login('receptionist', 'nurse', 'doctor', 'admin');
   const stamp = Date.now().toString().slice(-6);
   const name = `Flow Test ${stamp}`;
   const phone = `+1 555 ${stamp.slice(0, 3)} ${stamp.slice(3)}9`;
@@ -141,12 +109,4 @@ async function main() {
   }
 }
 
-main()
-  .catch((e) => {
-    failed++;
-    console.error('FATAL', e.message);
-  })
-  .finally(() => {
-    console.log(failed ? `\n❌ ${failed} check(s) failed` : '\n✅ all workflow checks passed');
-    process.exit(failed ? 1 : 0);
-  });
+finish(main);

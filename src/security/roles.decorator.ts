@@ -11,6 +11,7 @@ export const USER_ROLES = [
   'CARE_COORDINATOR',
   'PHARMACIST',
   'RADIOLOGIST',
+  'SPECIALIST',
 ] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 

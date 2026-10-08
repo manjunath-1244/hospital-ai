@@ -6,6 +6,7 @@ import { useRealtime } from '../../context/RoleContext';
 import { ApiError, apiFetch, errorMessage } from '../../lib/api';
 import type { Patient, PatientList, PossibleMatch, QueueResponse, RegisterOpResponse } from '../../lib/types';
 import { isActiveStatus } from '../../lib/visits';
+import { AppointmentBooking } from '../ui/AppointmentBooking';
 import { ErrorBox, SuccessBox, Loading, Empty, PriorityBadge, StatusBadge, fmtWait, inputCls, labelCls } from '../ui/common';
 
 const emptyForm = { name: '', age: '', dob: '', gender: 'Male', phone: '', bloodType: 'O+', chiefComplaint: '' };
@@ -183,6 +184,8 @@ export const ReceptionistPortal: React.FC = () => {
       <SuccessBox message={successMsg} />
       <SuccessBox message={actionMsg} />
       <ErrorBox message={actionError} />
+
+      <AppointmentBooking collapsible />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">

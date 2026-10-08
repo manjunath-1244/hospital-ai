@@ -13,6 +13,7 @@ import type { AuthUser } from '../../security/auth-user';
 import { ClinicalTool, ToolTrace } from './tool-registry';
 import { buildHospitalTools } from './hospital.tools';
 import { PatientDirectoryService } from '../../hospital/patient-directory.service';
+import { SpecialistService } from '../../hospital/specialists/specialist.service';
 import { OverviewService } from '../../hospital/overview.service';
 import { buildRagTools } from './rag.tools';
 import { buildInteropTools } from './fhir-hapi.tools';
@@ -31,6 +32,7 @@ export class ClinicalToolsFactory {
     hospital: HospitalService,
     summaries: PatientSummaryService,
     directory: PatientDirectoryService,
+    specialists: SpecialistService,
     overview: OverviewService,
     lifecycle: HospitalLifecycleService,
     news2: News2Service,
@@ -44,6 +46,7 @@ export class ClinicalToolsFactory {
         hospital,
         summaries,
         directory,
+        specialists,
         overview,
         lifecycle,
       }),

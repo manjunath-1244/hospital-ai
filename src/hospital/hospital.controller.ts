@@ -3,9 +3,12 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
+  Patch,
   Post,
+  Put,
   Query,
   StreamableFile,
   UploadedFile,
@@ -18,6 +21,7 @@ import { ClinicalRecordsService } from './clinical-records.service';
 import { HospitalLifecycleService } from './hospital-lifecycle.service';
 import { PatientSummaryService } from './patient-summary.service';
 import { PatientDirectoryService } from './patient-directory.service';
+import { SpecialistService } from './specialists/specialist.service';
 import { OverviewService } from './overview.service';
 import { VisitsService } from './visits/visits.service';
 import { toVisitSummary } from './visits/visit-summary';
@@ -33,8 +37,10 @@ import {
   RegistrationDto,
   StartVisitDto,
   TaskDto,
+  SetAvailabilityDto,
   TriageDto,
   VisitTransitionDto,
+  WeeklyHoursDto,
 } from './dto/hospital.dto';
 import { Roles } from '../security/roles.decorator';
 import { AuthUser, CurrentUser } from '../security/auth-user';
@@ -58,6 +64,7 @@ export class HospitalController {
     private readonly directory: PatientDirectoryService,
     private readonly overview: OverviewService,
     private readonly visits: VisitsService,
+    private readonly specialists: SpecialistService,
   ) {}
 
   // --- Patients ---
@@ -123,6 +130,65 @@ export class HospitalController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.lifecycle.transitionVisit(id, dto, user);
+  }
+
+  // --- Specialists and availability ---
+  @Get('specialists')
+  specialistList(
+    @Query('specialty') specialty?: string,
+    @Query('available') available?: string,
+  ) {
+    return this.specialists.find({
+      specialty,
+      onlyAvailable: available === 'true',
+    });
+  }
+
+  @Get('specialties')
+  specialtyList() {
+    return this.specialists.specialties();
+  }
+
+  @Get('specialists/:id/availability')
+  async specialistAvailability(
+    @Param('id') id: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parse = (v?: string) => {
+      if (!v) return undefined;
+      const d = new Date(v);
+      if (Number.isNaN(d.getTime()))
+        throw new BadRequestException(`Invalid date: ${v}`);
+      return d;
+    };
+    return {
+      ...(await this.specialists.getAvailability(id, {
+        from: parse(from),
+        to: parse(to),
+        limit: limit ? Math.min(Number(limit) || 50, 200) : undefined,
+      })),
+      weeklyHours: await this.specialists.weeklyHours(id),
+    };
+  }
+
+  @Patch('specialists/:id/availability')
+  @Roles('ADMIN', 'SPECIALIST')
+  async setAvailable(
+    @Param('id') id: string,
+    @Body() dto: SetAvailabilityDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (user.role === 'SPECIALIST' && user.userId !== id)
+      throw new ForbiddenException('You can only change your own availability');
+    return this.specialists.setAvailable(id, dto.isAvailable);
+  }
+
+  @Put('specialists/:id/hours')
+  @Roles('ADMIN')
+  setHours(@Param('id') id: string, @Body() dto: WeeklyHoursDto) {
+    return this.specialists.setWeeklyHours(id, dto.windows);
   }
 
   @Get('overview')

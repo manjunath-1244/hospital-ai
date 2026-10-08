@@ -6,6 +6,7 @@ import { ClinicalRecordsService } from '../hospital/clinical-records.service';
 import { VisitsService } from '../hospital/visits/visits.service';
 import { PatientDirectoryService } from '../hospital/patient-directory.service';
 import { OverviewService } from '../hospital/overview.service';
+import { SpecialistService } from '../hospital/specialists/specialist.service';
 import { SeedService } from './seed.service';
 
 /** Persistence layer: entities + data-access services. Depends on nothing else in the app (breaks old Ai<->Hospital cycle). */
@@ -17,6 +18,7 @@ import { SeedService } from './seed.service';
     VisitsService,
     PatientDirectoryService,
     OverviewService,
+    SpecialistService,
     SeedService,
   ],
   exports: [
@@ -26,6 +28,7 @@ import { SeedService } from './seed.service';
     VisitsService,
     PatientDirectoryService,
     OverviewService,
+    SpecialistService,
   ],
 })
 export class DataModule {}

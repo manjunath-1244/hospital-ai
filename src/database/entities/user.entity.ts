@@ -17,4 +17,15 @@ export class UserEntity {
 
   @Column({ type: 'varchar' })
   role: UserRole;
+
+  /** Clinical specialty of a SPECIALIST (e.g. Cardiology); null for other staff. */
+  @Column({ type: 'varchar', nullable: true })
+  specialty: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  department: string | null;
+
+  /** Switch off to stop new referrals and bookings (leave, sick day) without deleting the account. */
+  @Column({ type: 'boolean', default: true })
+  isAvailable: boolean;
 }

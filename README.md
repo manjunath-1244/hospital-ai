@@ -19,7 +19,7 @@ npm install && npm run start:dev                         # API :3000
 cd apps/web-app && cp .env.local.example .env.local && npm install && npm run dev -- -p 3001
 ```
 
-Sign in as `receptionist`, `nurse`, `doctor`, `radiologist`, `pharmacist`, `coordinator` or `admin` with `SEED_USER_PASSWORD`.
+Sign in as `receptionist`, `nurse`, `doctor`, `radiologist`, `pharmacist`, `coordinator`, `admin`, `cardiologist` or `neurologist` (specialists) with `SEED_USER_PASSWORD`.
 
 ### Choosing the AI models (`.env`)
 | Setting | Options |

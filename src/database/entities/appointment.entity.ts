@@ -1,6 +1,11 @@
 import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 
 @Entity('appointments')
+// Same guarantee per doctor ACCOUNT (the name is only for display and for legacy rows without an id).
+@Index('uq_appointment_doctorid_slot', ['doctorId', 'dateTime'], {
+  unique: true,
+  where: `"status" = 'SCHEDULED' AND "doctorId" IS NOT NULL`,
+})
 // A doctor can have at most one SCHEDULED appointment per slot (enforced by the database, not only by app code).
 @Index('uq_appointment_doctor_slot', ['doctorName', 'dateTime'], {
   unique: true,
@@ -18,6 +23,10 @@ export class AppointmentEntity {
   @Index()
   @Column({ type: 'varchar', nullable: true })
   visitId: string | null;
+
+  /** The doctor's user id when booked against a real account (null for free-text legacy bookings). */
+  @Column({ type: 'varchar', nullable: true })
+  doctorId: string | null;
 
   @Column({ type: 'varchar' })
   doctorName: string;

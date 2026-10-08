@@ -59,7 +59,8 @@ Seeded accounts (password = `SEED_USER_PASSWORD` from `.env`):
 |---|---|---|---|---|
 | `receptionist` | RECEPTIONIST | Front desk | Register patients, watch the waiting queue, notify doctor (creates a task) | Demographics and queue only — never allergies, labs, medications |
 | `nurse` | NURSE | ED Triage + Ward board | Enter vitals (NEWS2, sepsis screen, urgency suggestion), see sickest patients first, draft SBAR handoff (AI) | Vitals, labs, chart |
-| `doctor` | DOCTOR | EMR workbench | Open a chart, record consultation (diagnosis, prescriptions, notes), close/reopen a session | Full chart |
+| `doctor` | DOCTOR | EMR workbench | Open a chart, record consultation (diagnosis, prescriptions, notes), complete/reopen a visit, book appointments | Full chart |
+| `cardiologist`, `neurologist` | SPECIALIST (+ `specialty`) | Specialist portal | Manage own availability, see own appointments. Referral inbox and patient access come with the referral work (W7/W8) — until then a specialist sees **no patient data** | Own profile and appointments |
 | `radiologist` | RADIOLOGIST | Radiology | Upload DICOM scans with an impression, enter lab results, preview images | Imaging, labs |
 | `pharmacist` | PHARMACIST | Pharmacy | See every new prescription with its safety result; check any drug list for any patient | Medications, allergies, labs |
 | `coordinator` | CARE_COORDINATOR | Care coordination | Generate AI drafts: prior-authorization letter, discharge instructions translated | Conditions, medications, consultations |
@@ -129,10 +130,11 @@ Module dependencies point **downward only** (no cycles): `DataModule` depends on
 ## 2.2 The golden rule
 > **PostgreSQL is the single source of truth.** FHIR, the PACS pixel store and the vector index are *derived copies*. If they ever disagree with Postgres, Postgres is right and the copies are rebuilt (server start, or admin "Re-index everything").
 
-## 2.3 Database tables (16)
+## 2.3 Database tables (17)
 | Table | Purpose | Key columns |
 |---|---|---|
-| `users` | Staff accounts | `username` (unique), `passwordHash` (bcrypt cost 12), `role`, `displayName` |
+| `users` | Staff accounts | `username` (unique), `passwordHash` (bcrypt cost 12), `role`, `displayName`, `specialty`, `department`, `isAvailable` (leave switch) |
+| `doctor_availability` | A doctor's weekly working hours | `doctorId`, `weekday` (0=Sunday), `startTime`/`endTime` (`HH:mm`, UTC), `slotMinutes` |
 | `patients` | The person | `id` (`P`+6 chars, seeds `P1001–P1003`), demographics (`dob` + `dobApproximate`), `allergies`/`currentMedications`/`conditions` (jsonb arrays), `registeredAt`, `fhirSynced`. **No status** — that lives on the visit |
 | `visits` | One episode of care (the workflow state) | `id` (`V`+7), `patientId`, `status` (9 values, see 3.10), `chiefComplaint`, `priority` (1–5), `primaryDoctorId/Name`, `arrivedAt/triagedAt/consultationStartedAt/completedAt`, `waitAlertedAt`, `outcome`, `closeReason`. Partial unique index: one open visit per patient |
 | `visit_events` | Timeline of every status change | `visitId`, `fromStatus`, `toStatus`, `actorId/Name/Role`, `note`, `at` |
@@ -140,7 +142,7 @@ Module dependencies point **downward only** (no cycles): `DataModule` depends on
 | `vitals` | One triage measurement | `visitId`, HR, systolic BP, SpO2, temp, RR, symptoms, glucose, consciousness, on-oxygen, `news2Score`, `riskLevel`, `recordedBy` |
 | `lab_results` | One lab value | `testName`, `value`, `unit`, `referenceRange`, `status` (NORMAL/ABNORMAL/CRITICAL), `recordedBy` |
 | `imaging_studies` | Scan **metadata** (pixels live in Orthanc) | `studyInstanceUid`, `modality`, `description`, `impression`, `orthancInstanceId`, `fhirId`, `uploadedBy` |
-| `appointments` | Bookings | unique index on (`doctorName`,`dateTime`) where `SCHEDULED` — double-booking impossible at DB level |
+| `appointments` | Bookings | `doctorId` (real account, optional for legacy free-text bookings), `doctorName`; unique indexes on (`doctorId`,`dateTime`) and (`doctorName`,`dateTime`) where `SCHEDULED` — double-booking impossible at DB level |
 | `staff_tasks` | To-dos for staff | `title`, `assignedTo`, `patientId`, `priority`, `status` |
 | `audit_logs` | Who touched what | `userId`, `role`, `method`, `path`, `patientId`, `statusCode`, `at` |
 | `knowledge_documents` | Admin-uploaded policies | `title`, `filename`, `content`, `ragSource`, `uploadedBy` |
@@ -319,9 +321,18 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 
 ## 3.13 Pharmacy, appointments, tasks
 * **Pharmacy:** `GET /hospital/pharmacy/queue` lists recent consultations with prescriptions + stored safety result; `POST /hospital/pharmacy/audit` screens any list for any patient. ✅ screening · ⬜ dispensing, stock, approve/reject.
-* **Appointments:** `bookAppointment` is transactional with a pessimistic lock and a unique partial index (no double booking) and rejects closed patients. API + AI agent can book; **there is no appointment screen in the UI** (🟡).
+* **Appointments:** transactional with a pessimistic lock and unique partial indexes (no double booking), and they require an open visit. Booking with a `doctorId` also checks the doctor is available and the time is one of their real slots (`SpecialistService.assertBookable`); name and department are filled from the account. Free-text booking (no `doctorId`) still works for legacy use. API, AI agent and UI (reception + doctor "Book appointment") can book.
 * **Tasks:** simple staff to-dos (`POST /hospital/tasks`); the receptionist "Notify doctor" button creates one with `assignedTo: 'doctor'` (free text, not a real user) (🟡).
 * **Improve:** pharmacist verify/dispense workflow, appointment calendar UI + reminders, tasks assigned to real users with due times and status updates.
+
+## 3.13b Specialists and availability
+* **What:** specialists are users with role `SPECIALIST` and a `specialty`; each has weekly working hours and an availability switch. The system can answer "who is a cardiologist, and when are they free?" and book a real slot.
+* **Why:** referrals (next work packages) must go to a real person with a real free time, not a typed name.
+* **How:** `availability.ts` (pure, tested) turns weekly windows into free slots (skips past and already-booked slots, UTC) and validates a requested time is a real slot. `SpecialistService`: `find`, `specialties`, `getAvailability`, `nextFreeSlot`, `assertBookable`, `setAvailable`, `setWeeklyHours`. API: `GET /hospital/specialists`, `/specialties`, `/specialists/:id/availability`, `PATCH /specialists/:id/availability` (admin or the specialist themself), `PUT /specialists/:id/hours` (admin). Agent tools: `findSpecialists`, `getSpecialistAvailability` (read-only), and `bookAppointment` accepts `doctorId`. Seeded: `cardiologist` (Dr. Sarah Wilson), `neurologist` (Dr. Michael Chen), Monday–Friday 09:00–17:00 UTC, 30-minute slots (added automatically to existing databases when `SEED_USER_PASSWORD` is set).
+* **Where:** `src/hospital/specialists/*`, `database/entities/doctor-availability.entity.ts`, `seed.service.ts`, UI `SpecialistPortal.tsx`, `AppointmentBooking.tsx`.
+* **Can go wrong:** hours are UTC (no time zones, holidays, breaks or leave calendar); slot length is per window; a specialist with no hours has no slots; doctors (role DOCTOR) have no hours yet, so only specialists can be booked by `doctorId`.
+* **Improve:** time zones, exceptions (leave/holidays), multiple locations, rescheduling and cancellation, waiting list.
+* **Status:** ✅ basic · 🟡 no calendar exceptions.
 
 ## 3.14 Patient summary (role-aware 360° view)
 * **What:** one function that builds the chart view for REST and for the AI.
@@ -333,7 +344,7 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Status:** ✅.
 
 ## 3.15 Seed data
-* `SeedService` (first start only): 7 staff accounts (bcrypt), 3 demo patients (`P1001 Eleanor Vance`, `P1002 Marcus Brody`, `P1003 Sophia Martinez`) and 2 labs for P1001 (HbA1c 7.8 %, creatinine 1.9 mg/dL). `SEED_DEMO_DATA=false` skips patients.
+* `SeedService`: 9 staff accounts on first start (bcrypt; the two specialists are also added to older databases) with the 3 demo patients below, each placed at a different visit stage (P1001 in consultation, P1002 waiting for doctor, P1003 waiting for triage) by walking the real workflow, 3 demo patients (`P1001 Eleanor Vance`, `P1002 Marcus Brody`, `P1003 Sophia Martinez`) and 2 labs for P1001 (HbA1c 7.8 %, creatinine 1.9 mg/dL). `SEED_DEMO_DATA=false` skips patients.
 * **Can go wrong:** the seeded password is shared by all accounts; demo patients appear in a real database if not disabled.
 * **Improve:** force password change at first login; separate demo seeding command.
 * **Status:** ✅.
@@ -417,7 +428,9 @@ Every concept uses the same template: **What · Why · How it works · Where · 
   | `checkUnconsultedAlerts` | doctor, nurse, receptionist, admin | long waits |
   | `registerOpPatient` | receptionist, admin | create a patient (**write**) |
   | `recordDoctorConsultation` | doctor, admin | save a consultation (**write**) |
-  | `bookAppointment` | doctor, nurse, receptionist, admin | (**write**) |
+  | `findSpecialists` | doctor, nurse, receptionist, coordinator, admin | specialists + specialties |
+  | `getSpecialistAvailability` | same | free slots + next free slot |
+  | `bookAppointment` | doctor, nurse, receptionist, admin | (**write**) books a slot (prefer `doctorId`) |
   | `createStaffTask` | doctor, nurse, receptionist, coordinator, admin | (**write**) |
   | `queryLiveHapiFhirPatients` | admin | what FHIR holds (marginal) |
   | `queryLiveOrthancStudies` | radiologist, admin | what the PACS holds (marginal) |

@@ -10,34 +10,61 @@ import { LabResultEntity } from './entities/lab-result.entity';
 import { VisitsService } from '../hospital/visits/visits.service';
 import type { VisitStatus } from '../hospital/visits/visit-status';
 import type { AuthUser } from '../security/auth-user';
+import { DoctorAvailabilityEntity } from './entities/doctor-availability.entity';
+import { newId } from '../common/ids';
 import type { UserRole } from '../security/roles.decorator';
 
-const USERS: Array<{ username: string; displayName: string; role: UserRole }> =
-  [
-    {
-      username: 'receptionist',
-      displayName: 'Alex Rivera (Front Desk)',
-      role: 'RECEPTIONIST',
-    },
-    { username: 'nurse', displayName: 'Kelly Nguyen, RN', role: 'NURSE' },
-    { username: 'doctor', displayName: 'Dr. Sarah Jenkins', role: 'DOCTOR' },
-    {
-      username: 'radiologist',
-      displayName: 'Dr. Omar Haddad (Radiology)',
-      role: 'RADIOLOGIST',
-    },
-    {
-      username: 'pharmacist',
-      displayName: 'Priya Shah, PharmD',
-      role: 'PHARMACIST',
-    },
-    {
-      username: 'coordinator',
-      displayName: 'Jordan Lee (Care Coordination)',
-      role: 'CARE_COORDINATOR',
-    },
-    { username: 'admin', displayName: 'System Administrator', role: 'ADMIN' },
-  ];
+interface SeedUser {
+  username: string;
+  displayName: string;
+  role: UserRole;
+  specialty?: string;
+  department?: string;
+}
+
+const USERS: SeedUser[] = [
+  {
+    username: 'receptionist',
+    displayName: 'Alex Rivera (Front Desk)',
+    role: 'RECEPTIONIST',
+  },
+  { username: 'nurse', displayName: 'Kelly Nguyen, RN', role: 'NURSE' },
+  { username: 'doctor', displayName: 'Dr. Sarah Jenkins', role: 'DOCTOR' },
+  {
+    username: 'radiologist',
+    displayName: 'Dr. Omar Haddad (Radiology)',
+    role: 'RADIOLOGIST',
+  },
+  {
+    username: 'pharmacist',
+    displayName: 'Priya Shah, PharmD',
+    role: 'PHARMACIST',
+  },
+  {
+    username: 'coordinator',
+    displayName: 'Jordan Lee (Care Coordination)',
+    role: 'CARE_COORDINATOR',
+  },
+  { username: 'admin', displayName: 'System Administrator', role: 'ADMIN' },
+  {
+    username: 'cardiologist',
+    displayName: 'Dr. Sarah Wilson (Cardiology)',
+    role: 'SPECIALIST',
+    specialty: 'Cardiology',
+    department: 'Cardiology',
+  },
+  {
+    username: 'neurologist',
+    displayName: 'Dr. Michael Chen (Neurology)',
+    role: 'SPECIALIST',
+    specialty: 'Neurology',
+    department: 'Neurology',
+  },
+];
+
+/** Default consulting hours for seeded specialists: Monday to Friday, 09:00-17:00 UTC, 30-minute slots. */
+const SEED_WORKING_DAYS = [1, 2, 3, 4, 5];
+const SEED_HOURS = { startTime: '09:00', endTime: '17:00', slotMinutes: 30 };
 
 const DEMO_PATIENTS: Array<Partial<PatientEntity>> = [
   {
@@ -123,11 +150,14 @@ export class SeedService implements OnApplicationBootstrap {
     private readonly patients: Repository<PatientEntity>,
     @InjectRepository(LabResultEntity)
     private readonly labs: Repository<LabResultEntity>,
+    @InjectRepository(DoctorAvailabilityEntity)
+    private readonly hours: Repository<DoctorAvailabilityEntity>,
     private readonly visits: VisitsService,
   ) {}
 
   async onApplicationBootstrap() {
     await this.seedUsers();
+    await this.ensureSpecialists();
     if (this.config.get('SEED_DEMO_DATA') !== 'false')
       await this.seedDemoPatients();
   }
@@ -152,6 +182,51 @@ export class SeedService implements OnApplicationBootstrap {
     this.logger.log(
       `Seeded ${USERS.length} staff accounts (${USERS.map((u) => u.username).join(', ')}).`,
     );
+  }
+
+  /**
+   * Accounts added after the first install (existing databases): create any seeded specialist that is missing
+   * and give them working hours. Needs SEED_USER_PASSWORD (a generated one could not be shown for a later account).
+   */
+  private async ensureSpecialists() {
+    for (const u of USERS.filter((x) => x.role === 'SPECIALIST')) {
+      const existing = await this.users.findOne({
+        where: { username: u.username },
+      });
+      if (!existing) {
+        const password = this.config.get<string>('SEED_USER_PASSWORD');
+        if (!password) {
+          this.logger.warn(
+            `Specialist '${u.username}' not created: set SEED_USER_PASSWORD to add accounts to an existing database.`,
+          );
+          continue;
+        }
+        await this.users.save(
+          this.users.create({
+            ...u,
+            specialty: u.specialty ?? null,
+            department: u.department ?? null,
+            isAvailable: true,
+            id: `USR-${u.username.toUpperCase()}`,
+            passwordHash: await bcrypt.hash(password, 12),
+          }),
+        );
+        this.logger.log(`Seeded specialist account '${u.username}'.`);
+      }
+      const id = existing?.id ?? `USR-${u.username.toUpperCase()}`;
+      if ((await this.hours.count({ where: { doctorId: id } })) === 0) {
+        await this.hours.save(
+          SEED_WORKING_DAYS.map((weekday) =>
+            this.hours.create({
+              id: newId('AVL-'),
+              doctorId: id,
+              weekday,
+              ...SEED_HOURS,
+            }),
+          ),
+        );
+      }
+    }
   }
 
   private async seedDemoPatients() {

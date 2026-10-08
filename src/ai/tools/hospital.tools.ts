@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { HospitalService } from '../../hospital/hospital.service';
 import { PatientDirectoryService } from '../../hospital/patient-directory.service';
+import { SpecialistService } from '../../hospital/specialists/specialist.service';
 import { OverviewService } from '../../hospital/overview.service';
 import { HospitalLifecycleService } from '../../hospital/hospital-lifecycle.service';
 import { PatientSummaryService } from '../../hospital/patient-summary.service';
@@ -19,6 +20,7 @@ export function buildHospitalTools(d: {
   directory: PatientDirectoryService;
   overview: OverviewService;
   lifecycle: HospitalLifecycleService;
+  specialists: SpecialistService;
 }): ClinicalTool[] {
   return [
     {
@@ -84,6 +86,39 @@ export function buildHospitalTools(d: {
       },
     },
     {
+      name: 'findSpecialists',
+      description:
+        'List specialists (id, name, specialty, whether they are available). Optionally only one specialty, e.g. Cardiology or Neurology. Use it before booking or referring so you use a real doctor id.',
+      inputSchema: z.object({ specialty: z.string().optional() }),
+      roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+      async run({ specialty }) {
+        return {
+          success: true,
+          specialties: await d.specialists.specialties(),
+          specialists: await d.specialists.find({ specialty }),
+        };
+      },
+    },
+    {
+      name: 'getSpecialistAvailability',
+      description:
+        'Free appointment slots (ISO date-times, earliest first) for one specialist by doctor id, plus the next free slot. Never invent a time: book only one of these.',
+      inputSchema: z.object({
+        doctorId: z.string(),
+        limit: looseInt({ min: 1, max: 50 }).default(10),
+      }),
+      roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+      async run({ doctorId, limit }) {
+        const { doctor, slots } = await d.specialists.getAvailability(
+          doctorId,
+          {
+            limit,
+          },
+        );
+        return { success: true, doctor, nextFreeSlot: slots[0] ?? null, slots };
+      },
+    },
+    {
       name: 'getAppointmentsAndTasks',
       description:
         'List scheduled appointments and staff tasks, optionally for one patient.',
@@ -109,8 +144,12 @@ export function buildHospitalTools(d: {
         'Book an appointment. Only call after the user has explicitly confirmed patient, doctor, department and time.',
       inputSchema: z.object({
         patientId,
-        doctorName: z.string(),
-        department: z.string(),
+        doctorId: z
+          .string()
+          .optional()
+          .describe('Doctor account id from findSpecialists (preferred)'),
+        doctorName: z.string().optional(),
+        department: z.string().optional(),
         dateTime: z.string().describe('ISO 8601 date-time'),
         reason: z.string(),
       }),
