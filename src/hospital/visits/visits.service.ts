@@ -28,6 +28,11 @@ const DEFAULT_OUTCOME: Partial<Record<VisitStatus, VisitOutcome>> = {
 };
 
 export interface TransitionOptions {
+  /**
+   * The change is made by the workflow itself on someone's behalf (e.g. a specialist completing a referral hands the
+   * visit back to the doctor). The role check is skipped; an impossible move is still refused. The actor is still recorded.
+   */
+  system?: boolean;
   note?: string;
   outcome?: VisitOutcome;
   /** Pass the open transaction's manager when the status change must commit together with other writes. */
@@ -219,7 +224,9 @@ export class VisitsService {
         actor.role,
         opts.note,
       );
-      if (!verdict.ok) {
+      const systemOverride =
+        !verdict.ok && verdict.kind === 'ROLE' && opts.system === true;
+      if (!verdict.ok && !systemOverride) {
         if (verdict.kind === 'ROLE')
           throw new ForbiddenException(verdict.message);
         if (verdict.kind === 'NOTE')

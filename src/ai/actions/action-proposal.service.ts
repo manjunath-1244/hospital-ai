@@ -107,7 +107,9 @@ export class ActionProposalService {
         proposedBy: saved.proposedByUserId,
       });
     } catch (err: any) {
-      this.logger.warn(`Failed to broadcast action proposal event: ${err.message}`);
+      this.logger.warn(
+        `Failed to broadcast action proposal event: ${err.message}`,
+      );
     }
 
     return saved;

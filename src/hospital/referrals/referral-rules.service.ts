@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  EvidenceItem,
-  ReferralRulesResult,
-  RuleMatch,
-} from './referral.types';
+import { EvidenceItem, ReferralRulesResult, RuleMatch } from './referral.types';
 
 export interface ClinicalContextInput {
   patientId: string;
@@ -51,7 +47,8 @@ export class ReferralRulesService {
     const missingInfo: string[] = [];
 
     const complaint = (ctx.chiefComplaint ?? '').toLowerCase();
-    const latestVitals = ctx.vitals && ctx.vitals.length > 0 ? ctx.vitals[0] : null;
+    const latestVitals =
+      ctx.vitals && ctx.vitals.length > 0 ? ctx.vitals[0] : null;
     const labs = ctx.labs ?? [];
     const recentNotes = (ctx.consultations ?? [])
       .map((c) => `${c.diagnosis ?? ''} ${c.notes ?? ''}`)
@@ -90,7 +87,10 @@ export class ReferralRulesService {
           source: 'Current Visit Presentation',
         },
       ];
-      if (latestVitals?.news2Score !== undefined && latestVitals?.news2Score !== null) {
+      if (
+        latestVitals?.news2Score !== undefined &&
+        latestVitals?.news2Score !== null
+      ) {
         facts.push({
           field: 'NEWS2 Score',
           value: String(latestVitals.news2Score),
@@ -100,8 +100,7 @@ export class ReferralRulesService {
       matches.push({
         ruleId: 'CARD_RULE_01',
         specialty: 'Cardiology',
-        urgency:
-          (latestVitals?.news2Score ?? 0) >= 5 ? 'EMERGENCY' : 'URGENT',
+        urgency: (latestVitals?.news2Score ?? 0) >= 5 ? 'EMERGENCY' : 'URGENT',
         description: 'Acute chest pain or angina-equivalent symptoms',
         matchedFacts: facts,
       });
@@ -160,7 +159,13 @@ export class ReferralRulesService {
     }
 
     // CARD_RULE_04: ECG Abnormalities
-    const ecgKeywords = ['st elevation', 'st depression', 'lbbb', 'ischemic ecg', 'vtach'];
+    const ecgKeywords = [
+      'st elevation',
+      'st depression',
+      'lbbb',
+      'ischemic ecg',
+      'vtach',
+    ];
     const hasEcgChange = ecgKeywords.some((kw) => recentNotes.includes(kw));
     if (hasEcgChange) {
       matches.push({

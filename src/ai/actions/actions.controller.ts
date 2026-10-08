@@ -1,21 +1,18 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AgentActionEntity, ActionStatus } from '../../database/entities/agent-action.entity';
+import {
+  AgentActionEntity,
+  ActionStatus,
+} from '../../database/entities/agent-action.entity';
 import { ActionExecutorService } from './action-executor.service';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
 
 export class ActionDecisionDto {
-  overrideReason?: string;
-  decisionNote?: string;
-  reason?: string;
+  @IsOptional() @IsString() @MaxLength(1000) overrideReason?: string;
+  @IsOptional() @IsString() @MaxLength(1000) decisionNote?: string;
+  @IsOptional() @IsString() @MaxLength(1000) reason?: string;
 }
 
 @Controller('ai/actions')
@@ -28,11 +25,15 @@ export class ActionsController {
 
   @Get()
   async listActions(
+    @CurrentUser() user: AuthUser,
     @Query('status') status?: string,
     @Query('patientId') patientId?: string,
     @Query('limit') limit?: string,
   ) {
     const qb = this.actionsRepo.createQueryBuilder('a');
+    // Everyone sees their own proposals; only an admin sees everyone's.
+    if (user.role !== 'ADMIN')
+      qb.andWhere('a.proposedByUserId = :me', { me: user.userId });
     if (status) {
       qb.andWhere('a.status = :status', { status });
     }
@@ -47,9 +48,12 @@ export class ActionsController {
   }
 
   @Get(':id')
-  async getAction(@Param('id') id: string) {
+  async getAction(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     const action = await this.actionsRepo.findOne({ where: { id } });
-    if (!action) {
+    if (
+      !action ||
+      (user.role !== 'ADMIN' && action.proposedByUserId !== user.userId)
+    ) {
       return { success: false, error: 'Action not found' };
     }
     return { success: true, action };
@@ -72,7 +76,11 @@ export class ActionsController {
     @Body() dto: ActionDecisionDto,
     @CurrentUser() user: AuthUser,
   ) {
-    const action = await this.executor.decline(id, user, dto.reason || dto.decisionNote);
+    const action = await this.executor.decline(
+      id,
+      user,
+      dto.reason || dto.decisionNote,
+    );
     return { success: true, action };
   }
 }

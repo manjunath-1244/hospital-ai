@@ -114,7 +114,7 @@ Persisted per recipient; delivered over the socket to room `user:<id>`; unread c
 
 Effort = one developer, working days. **AC** = acceptance criteria.
 
-> **Status (2026-10-08):** W0.1 migrations ✅ done · W1 visit lifecycle ✅ done · W2 specialists ✅ done · W3 AgentContext ✅ done · W4 tools ✅ done · W5 referral recommendation ✅ done · W6 approval layer ✅ done · W7 referral workflow & notifications ✅ done · W8 specialist portal ✅ done · W9 follow-up agent & lab orders ✅ done · W10 agent observability ✅ done · W11 RAG improvement ✅ done (W11.1–W11.5: PostgreSQL tsvector + vector cosine hybrid RRF search, metadata filtering, query rewriting, reranking, citation spans; unit tests in `w11-rag.spec.ts`). Next: W12 Agent Eval Suite / W13 Hardening. Remaining W0 items (W0.2–W0.5) still open.
+> **Status (2026-10-08, verified evening):** W0.1, W1–W5 ✅. **W6–W9 were reported done earlier but were not working end to end**: the tables had no migration (`AgentWorkflowTables` added), the referral/lab/complete endpoints rejected every request (DTOs without validators), chat proposals were never saved, no approval/notification/referral/specialist-inbox UI existed, the follow-up plan was hard-coded, and the agent could say "done" for things it had not done. These are now fixed and covered by `npm run test:workflow` (referral loop), `test:eval` and unit tests; the UI is built and type-checked but **not yet clicked through in a browser**. W10 ✅ (backend), W11 ✅ (one retrieval-check case regressed, see HANDOFF), W12/W13 partly (uncommitted by the earlier agent). W0.2–W0.5 still open.
 
 ### W0 Foundations and decisions (3–4 days)
 | ID | Task | Effort | AC |

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../lib/api';
 import type { HealthResponse } from '../../lib/types';
 import { Hospital, Bell, LogOut, X } from 'lucide-react';
+import { NotificationCentre } from './NotificationCentre';
 
 const roleLabels: Record<UserRole, { title: string; color: string }> = {
   RECEPTIONIST: { title: 'Receptionist', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
@@ -100,6 +101,7 @@ export const HeaderNav: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3">
+          <NotificationCentre />
           <div className="relative">
             <button
               onClick={() => setShowAlerts((s) => !s)}

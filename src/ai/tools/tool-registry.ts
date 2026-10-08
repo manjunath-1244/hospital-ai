@@ -10,6 +10,9 @@ export interface Citation {
 
 export interface ToolRunContext {
   user: AuthUser;
+  /** Conversation and trace this call belongs to (stored on any proposal it creates). */
+  threadId?: string | null;
+  traceId?: string;
 }
 
 /**

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Stethoscope, Activity, Search, FlaskConical, Pill, ImageIcon, FileText, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useRealtime } from '../../context/RoleContext';
+import { useRealtime, useRole } from '../../context/RoleContext';
 import { ApiError, apiFetch, errorMessage } from '../../lib/api';
 import type {
   ConsultationResponse,
@@ -18,6 +18,10 @@ import type {
 import type { VisitSummary } from '../../lib/visits';
 import { byUrgency, isActiveStatus, STAGE_TABS, type PatientStage } from '../../lib/visits';
 import { Empty, ErrorBox, Loading, PriorityBadge, SafetyPanel, StatusBadge, SuccessBox, fmtTime, fmtWait, inputCls, labelCls, splitList } from '../ui/common';
+import { PendingActionsPanel } from './PendingActionsPanel';
+import { ReferralsPanel } from './ReferralsPanel';
+import { FollowUpPanel } from './FollowUpPanel';
+import { LabResultForm } from '../ui/LabResultForm';
 import { AppointmentBooking } from '../ui/AppointmentBooking';
 import { VisitHistory, VisitPanel } from '../ui/VisitPanel';
 
@@ -105,6 +109,17 @@ export const DoctorWorkbenchPortal: React.FC = () => {
     loadEmr(id);
   };
 
+  const { navTarget, clearNav } = useRole();
+  useEffect(() => {
+    // A notification asked to open a patient: select them (the effect consumes the request once).
+    if (!navTarget?.patientId) return;
+    const id = navTarget.patientId;
+    clearNav();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    select(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTarget]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId) return;
@@ -156,6 +171,8 @@ export const DoctorWorkbenchPortal: React.FC = () => {
         </h2>
         <p className="text-base text-slate-300 mt-1.5">Review a patient record and record a consultation. Prescriptions are checked by the backend medication safety audit.</p>
       </div>
+
+      <PendingActionsPanel />
 
       <AppointmentBooking collapsible />
 
@@ -284,6 +301,9 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                       </tbody>
                     </table>
                   )}
+                  <div className="mt-3">
+                    <LabResultForm patientId={p.id} open={!closed} onSaved={() => loadEmr(p.id, true)} />
+                  </div>
                 </Section>
 
                 <Section title="Imaging studies" icon={<ImageIcon className="h-4 w-4" />}>
@@ -347,6 +367,9 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                 )}
                 </fieldset>
               </form>
+
+              <ReferralsPanel patientId={p.id} visitId={visit?.id ?? null} visitOpen={!closed} />
+              {visit && <FollowUpPanel visitId={visit.id} visitOpen={!closed} />}
             </>
           )}
         </div>

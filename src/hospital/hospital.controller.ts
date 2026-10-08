@@ -46,6 +46,7 @@ import { Roles } from '../security/roles.decorator';
 import { AuthUser, CurrentUser } from '../security/auth-user';
 import { PatientEntity } from '../database/entities/patient.entity';
 
+import { ReferralService } from './referrals/referral.service';
 import { ReferralRecommendationService } from './referrals/referral-recommendation.service';
 
 /** Receptionists see demographics and queue status only: no clinical history (minimum necessary). */
@@ -68,7 +69,19 @@ export class HospitalController {
     private readonly visits: VisitsService,
     private readonly specialists: SpecialistService,
     private readonly referralRecService: ReferralRecommendationService,
+    private readonly referrals: ReferralService,
   ) {}
+
+  /** A specialist may open a patient only through a referral that is theirs (minimum necessary). */
+  private async assertPatientAccess(user: AuthUser, patientId: string) {
+    if (
+      user.role === 'SPECIALIST' &&
+      !(await this.referrals.specialistCanSeePatient(user.userId, patientId))
+    )
+      throw new ForbiddenException(
+        'This patient is not referred to you. Open the patient from your consultations inbox.',
+      );
+  }
 
   // --- Patients ---
   @Get('patients')
@@ -79,13 +92,15 @@ export class HospitalController {
 
   @Get('patients/:id')
   async patient(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.assertPatientAccess(user, id);
     const item = await this.directory.getOne(id);
     if (!item) await this.hospital.getPatientById(id); // throws the 404
     return viewFor(user, item!);
   }
 
   @Get('patients/:id/summary')
-  summary(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+  async summary(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.assertPatientAccess(user, id);
     return this.summaries.summary(id, user.role);
   }
 
@@ -97,7 +112,8 @@ export class HospitalController {
 
   // --- Visits (one episode of care; the status lives here, not on the patient) ---
   @Get('patients/:id/visits')
-  async patientVisits(@Param('id') id: string) {
+  async patientVisits(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.assertPatientAccess(user, id);
     await this.hospital.getPatientById(id);
     return (await this.visits.listForPatient(id)).map((v) => toVisitSummary(v));
   }
@@ -254,9 +270,12 @@ export class HospitalController {
 
   // --- Appointments & tasks ---
   @Get('appointments')
-  @Roles('DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST')
-  appointments() {
-    return this.hospital.getAppointments();
+  @Roles('DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST', 'SPECIALIST')
+  appointments(@CurrentUser() user: AuthUser) {
+    // A specialist sees only their own appointments.
+    return this.hospital.getAppointments(
+      user.role === 'SPECIALIST' ? { doctorId: user.userId } : {},
+    );
   }
 
   @Post('appointments')

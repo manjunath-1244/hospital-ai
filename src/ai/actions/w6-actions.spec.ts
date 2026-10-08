@@ -45,7 +45,9 @@ describe('W6 Approval Layer & Actions Policy', () => {
         specialty: 'Cardiology',
         urgency: 'URGENT',
       });
-      expect(refSummary).toContain('Referral proposal to Cardiology for patient P1001');
+      expect(refSummary).toContain(
+        'Referral proposal to Cardiology for patient P1001',
+      );
     });
   });
 
@@ -60,7 +62,9 @@ describe('W6 Approval Layer & Actions Policy', () => {
       );
 
       expect(res.status).toBe('WARNING');
-      expect(res.notes.some((n) => n.includes('Completion claim detected'))).toBe(true);
+      expect(
+        res.notes.some((n) => n.includes('Completion claim detected')),
+      ).toBe(true);
     });
 
     it('passes verified safe if matching action was executed this turn', () => {

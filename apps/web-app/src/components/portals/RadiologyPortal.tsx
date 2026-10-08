@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Radio, FlaskConical, Upload } from 'lucide-react';
+import { Radio, Upload } from 'lucide-react';
 import { apiFetch, apiFetchBlobUrl, errorMessage } from '../../lib/api';
-import type { Patient, ImagingStudy, ImagingUploadResponse, LabResultResponse } from '../../lib/types';
+import type { Patient, ImagingStudy, ImagingUploadResponse } from '../../lib/types';
 import { Empty, ErrorBox, Loading, SuccessBox, fmtTime, inputCls, labelCls } from '../ui/common';
 import { isActiveStatus } from '../../lib/visits';
+import { LabResultForm } from '../ui/LabResultForm';
 import { PatientPicker } from '../ui/PatientPicker';
 import { useRealtime } from '../../context/RoleContext';
 
@@ -25,11 +26,6 @@ export const RadiologyPortal: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadMsg, setUploadMsg] = useState('');
-
-  const [lab, setLab] = useState({ testName: '', value: '', unit: '', referenceRange: '' });
-  const [labSubmitting, setLabSubmitting] = useState(false);
-  const [labError, setLabError] = useState('');
-  const [labMsg, setLabMsg] = useState('');
 
   const loadStudies = useCallback(async (id: string) => {
     if (!id) {
@@ -108,31 +104,6 @@ export const RadiologyPortal: React.FC = () => {
     }
   };
 
-  const submitLab = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLabSubmitting(true);
-    setLabError('');
-    setLabMsg('');
-    try {
-      const res = await apiFetch<LabResultResponse>('/hospital/lifecycle/lab-result', {
-        method: 'POST',
-        body: {
-          patientId,
-          testName: lab.testName.trim(),
-          value: lab.value.trim(),
-          unit: lab.unit.trim(),
-          ...(lab.referenceRange.trim() ? { referenceRange: lab.referenceRange.trim() } : {}),
-        },
-      });
-      setLabMsg(`Lab result recorded (${res.lab.status})${res.isCritical ? ' - CRITICAL value, alert raised' : ''}.`);
-      setLab({ testName: '', value: '', unit: '', referenceRange: '' });
-    } catch (err) {
-      setLabError(errorMessage(err));
-    } finally {
-      setLabSubmitting(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="rounded-2xl glass-panel p-7 border-l-4 border-l-cyan-500">
@@ -169,34 +140,7 @@ export const RadiologyPortal: React.FC = () => {
             </button>
           </form>
 
-          <form onSubmit={submitLab} className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-            <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-              <FlaskConical className="h-5 w-5 text-cyan-400" /> Record Lab Result
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className={labelCls}>Test name *</label>
-                <input required value={lab.testName} onChange={(e) => setLab({ ...lab, testName: e.target.value })} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Value *</label>
-                <input required value={lab.value} onChange={(e) => setLab({ ...lab, value: e.target.value })} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Unit *</label>
-                <input required value={lab.unit} onChange={(e) => setLab({ ...lab, unit: e.target.value })} className={inputCls} />
-              </div>
-              <div className="col-span-2">
-                <label className={labelCls}>Reference range</label>
-                <input value={lab.referenceRange} onChange={(e) => setLab({ ...lab, referenceRange: e.target.value })} className={inputCls} />
-              </div>
-            </div>
-            <ErrorBox message={labError} />
-            <SuccessBox message={labMsg} />
-            <button type="submit" disabled={labSubmitting || !patientId || patientClosed} className="w-full rounded-xl bg-cyan-600 py-3 text-base font-bold text-white hover:bg-cyan-500 disabled:opacity-50">
-              {labSubmitting ? 'Saving...' : 'Record lab result'}
-            </button>
-          </form>
+          <LabResultForm patientId={patientId} open={!!patientId && !patientClosed} accent="bg-cyan-600 hover:bg-cyan-500" />
         </div>
 
         <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">

@@ -16,8 +16,12 @@ export class DocumentEmbeddingsMetadata1791439900000 implements MigrationInterfa
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IF EXISTS document_embeddings_metadata`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS document_embeddings_metadata`,
+    );
     await queryRunner.query(`DROP INDEX IF EXISTS document_embeddings_tsv`);
-    await queryRunner.query(`ALTER TABLE "document_embeddings" DROP COLUMN IF EXISTS "metadata"`);
+    await queryRunner.query(
+      `ALTER TABLE "document_embeddings" DROP COLUMN IF EXISTS "metadata"`,
+    );
   }
 }

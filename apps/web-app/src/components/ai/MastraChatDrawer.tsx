@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Send, Bot, CheckCircle2, XCircle, BookOpen, AlertTriangle, Plus, History, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch, errorMessage, newId } from '../../lib/api';
+import { ApprovalCard } from './ApprovalCard';
+import type { AgentAction } from '../../lib/actions';
 import type { ChatResponse, ChatThreadDetail, ChatThreadSummary, ChatToolCall } from '../../lib/types';
 
 interface ChatMessage {
@@ -18,6 +20,7 @@ interface ChatMessage {
   guardrailNotes?: string[];
   traceId?: string;
   summarized?: boolean;
+  proposals?: AgentAction[];
 }
 
 export const MastraChatDrawer: React.FC = () => {
@@ -83,6 +86,7 @@ export const MastraChatDrawer: React.FC = () => {
             guardrailNotes: data.guardrailNotes,
             traceId: data.traceId,
             summarized: data.memory?.summarized,
+            proposals: Array.isArray(data.proposals) ? data.proposals : undefined,
           },
         ]);
       }
@@ -278,6 +282,13 @@ export const MastraChatDrawer: React.FC = () => {
                     </div>
                   )}
                 </div>
+                {msg.proposals && msg.proposals.length > 0 && (
+                  <div className="mt-2 w-full max-w-[96%] space-y-2">
+                    {msg.proposals.map((a) => (
+                      <ApprovalCard key={a.id} action={a} />
+                    ))}
+                  </div>
+                )}
                 {msg.summarized && (
                   <span className="mt-1 rounded-full border border-slate-700 bg-slate-900 px-3 py-0.5 text-xs text-slate-300">older turns summarized</span>
                 )}

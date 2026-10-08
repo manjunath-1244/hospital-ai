@@ -1,5 +1,6 @@
 import { HospitalService } from '../../hospital/hospital.service';
 import { PatientDirectoryService } from '../../hospital/patient-directory.service';
+import { ReferralRecommendationService } from '../../hospital/referrals/referral-recommendation.service';
 import { SpecialistService } from '../../hospital/specialists/specialist.service';
 import { OverviewService } from '../../hospital/overview.service';
 import { HospitalLifecycleService } from '../../hospital/hospital-lifecycle.service';
@@ -20,10 +21,14 @@ export function buildHospitalTools(d: {
   overview: OverviewService;
   lifecycle: HospitalLifecycleService;
   specialists: SpecialistService;
+  referrals: ReferralRecommendationService;
 }): ClinicalTool[] {
   return [
     ...buildPatientTools({ directory: d.directory, summaries: d.summaries }),
-    ...buildSpecialistTools({ specialists: d.specialists }),
+    ...buildSpecialistTools({
+      specialists: d.specialists,
+      referrals: d.referrals,
+    }),
     ...buildSchedulingTools({
       hospital: d.hospital,
       lifecycle: d.lifecycle,

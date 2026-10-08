@@ -1,15 +1,28 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { PatientEntity } from '../../database/entities/patient.entity';
+import { VisitsService } from '../visits/visits.service';
+import { isActiveStatus } from '../visits/visit-status';
 import {
   ConsultationRequestEntity,
-  ReferralStatus,
-  ReferralUrgency,
+  type ReferralStatus,
+  type ReferralUrgency,
 } from '../../database/entities/consultation-request.entity';
 import { VisitEntity } from '../../database/entities/visit.entity';
 import { UserEntity } from '../../database/entities/user.entity';
@@ -19,14 +32,16 @@ import { AuthUser } from '../../security/auth-user';
 import { newId } from '../../common/ids';
 
 export class CreateReferralDto {
-  visitId!: string;
-  patientId!: string;
-  specialty!: string;
-  assignedSpecialistId?: string;
+  @Matches(/^[A-Za-z0-9-]{2,32}$/) visitId!: string;
+  @Matches(/^[A-Za-z0-9-]{2,32}$/) patientId!: string;
+  @IsString() @MinLength(2) @MaxLength(80) specialty!: string;
+  @IsOptional() @IsString() @MaxLength(64) assignedSpecialistId?: string;
+  @IsOptional()
+  @IsIn(['ROUTINE', 'URGENT', 'EMERGENCY'])
   urgency?: ReferralUrgency;
-  reason!: string;
-  aiRationale?: string;
-  evidence?: any;
+  @IsString() @MinLength(5) @MaxLength(2000) reason!: string;
+  @IsOptional() @IsString() @MaxLength(4000) aiRationale?: string;
+  @IsOptional() evidence?: any;
 }
 
 const ALLOWED_TRANSITIONS: Record<ReferralStatus, ReferralStatus[]> = {
@@ -48,6 +63,9 @@ export class ReferralService {
     private readonly visitRepo: Repository<VisitEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(PatientEntity)
+    private readonly patientRepo: Repository<PatientEntity>,
+    private readonly visits: VisitsService,
     private readonly notificationService: NotificationService,
     private readonly eventsGateway: HospitalEventsGateway,
   ) {}
@@ -60,6 +78,30 @@ export class ReferralService {
     if (!visit) {
       throw new NotFoundException(`Visit ${dto.visitId} not found`);
     }
+    const patientId = dto.patientId.toUpperCase();
+    if (visit.patientId !== patientId)
+      throw new BadRequestException(
+        `Visit ${visit.id} belongs to patient ${visit.patientId}, not ${patientId}.`,
+      );
+    if (!isActiveStatus(visit.status))
+      throw new ConflictException(
+        `Visit ${visit.id} is ${visit.status.toLowerCase().replace(/_/g, ' ')}; reopen it before referring.`,
+      );
+    const duplicate = await this.referralRepo.findOne({
+      where: {
+        visitId: visit.id,
+        specialty: dto.specialty,
+        status: In(['REQUESTED', 'ACCEPTED', 'IN_PROGRESS']),
+      },
+    });
+    if (duplicate)
+      throw new ConflictException(
+        `A ${dto.specialty} referral (${duplicate.id}, ${duplicate.status}) is already open for this visit.`,
+      );
+    const patient = await this.patientRepo.findOne({
+      where: { id: patientId },
+    });
+    const who = patient ? `${patient.name} (${patient.id})` : patientId;
 
     let assignedSpecialistName: string | undefined;
     if (dto.assignedSpecialistId) {
@@ -75,9 +117,10 @@ export class ReferralService {
     const referral = this.referralRepo.create({
       id: newId('CR', 6),
       visitId: dto.visitId,
-      patientId: dto.patientId,
+      patientId,
       requestedById: reqUserId,
-      requestedByName: (requestedBy as any).displayName || requestedBy.userName || 'Unknown',
+      requestedByName:
+        (requestedBy as any).displayName || requestedBy.userName || 'Unknown',
       specialty: dto.specialty,
       assignedSpecialistId: dto.assignedSpecialistId || null,
       assignedSpecialistName: assignedSpecialistName || null,
@@ -96,8 +139,12 @@ export class ReferralService {
         recipientUserId: dto.assignedSpecialistId,
         type: 'REFERRAL_CREATED',
         title: `New Referral (${saved.urgency})`,
-        body: `You have been assigned a referral for Patient ${saved.patientId} (${saved.specialty}). Reason: ${saved.reason}`,
-        payload: { referralId: saved.id, visitId: saved.visitId, patientId: saved.patientId },
+        body: `New ${saved.urgency.toLowerCase()} ${saved.specialty} referral for patient ${who}. Reason: ${saved.reason}`,
+        payload: {
+          referralId: saved.id,
+          visitId: saved.visitId,
+          patientId: saved.patientId,
+        },
       });
     } else {
       // Find specialists matching specialty
@@ -109,8 +156,12 @@ export class ReferralService {
           recipientUserId: spec.id,
           type: 'REFERRAL_CREATED',
           title: `New Referral Request (${saved.urgency})`,
-          body: `A new ${saved.specialty} referral has been requested for Patient ${saved.patientId}. Reason: ${saved.reason}`,
-          payload: { referralId: saved.id, visitId: saved.visitId, patientId: saved.patientId },
+          body: `New ${saved.urgency.toLowerCase()} ${saved.specialty} referral request for patient ${who}. Reason: ${saved.reason}`,
+          payload: {
+            referralId: saved.id,
+            visitId: saved.visitId,
+            patientId: saved.patientId,
+          },
         });
       }
     }
@@ -121,8 +172,12 @@ export class ReferralService {
         recipientUserId: visit.primaryDoctorId,
         type: 'REFERRAL_CREATED',
         title: 'Referral Placed for Your Patient',
-        body: `A ${saved.specialty} referral was requested for Patient ${saved.patientId}.`,
-        payload: { referralId: saved.id, visitId: saved.visitId, patientId: saved.patientId },
+        body: `A ${saved.specialty} referral was requested for patient ${who}.`,
+        payload: {
+          referralId: saved.id,
+          visitId: saved.visitId,
+          patientId: saved.patientId,
+        },
       });
     }
 
@@ -153,7 +208,9 @@ export class ReferralService {
     actor: AuthUser,
     cancellationReason?: string,
   ): Promise<ConsultationRequestEntity> {
-    const referral = await this.referralRepo.findOne({ where: { id: referralId } });
+    const referral = await this.referralRepo.findOne({
+      where: { id: referralId },
+    });
     if (!referral) {
       throw new NotFoundException(`Referral ${referralId} not found`);
     }
@@ -173,7 +230,8 @@ export class ReferralService {
       referral.acceptedAt = now;
       if (!referral.assignedSpecialistId && actor.role === 'SPECIALIST') {
         referral.assignedSpecialistId = actorUserId;
-        referral.assignedSpecialistName = (actor as any).displayName || actor.userName || 'Unknown';
+        referral.assignedSpecialistName =
+          (actor as any).displayName || actor.userName || 'Unknown';
       }
     } else if (toStatus === 'COMPLETED') {
       referral.completedAt = now;
@@ -188,12 +246,29 @@ export class ReferralService {
 
     // Rule on Completion: Notify primary requester & patient notice
     if (toStatus === 'COMPLETED') {
+      const done = await this.patientRepo.findOne({
+        where: { id: saved.patientId },
+      });
+      const whoDone = done ? `${done.name} (${done.id})` : saved.patientId;
+      // The specialist's part is finished: hand the visit back to the doctor for follow-up.
+      const visit = await this.visitRepo.findOne({
+        where: { id: saved.visitId },
+      });
+      if (visit?.status === 'IN_CONSULTATION')
+        await this.visits.transition(visit, 'FOLLOW_UP', actor, {
+          note: `${saved.specialty} consultation completed`,
+          system: true,
+        });
       await this.notificationService.sendNotification({
         recipientUserId: saved.requestedById,
         type: 'REFERRAL_COMPLETED',
         title: 'Referral Completed',
-        body: `The ${saved.specialty} consultation for Patient ${saved.patientId} has been completed.`,
-        payload: { referralId: saved.id, visitId: saved.visitId, patientId: saved.patientId },
+        body: `The ${saved.specialty} consultation for patient ${whoDone} has been completed. Visit moved to follow-up.`,
+        payload: {
+          referralId: saved.id,
+          visitId: saved.visitId,
+          patientId: saved.patientId,
+        },
       });
 
       await this.notificationService.createPatientNotice({
@@ -252,5 +327,49 @@ export class ReferralService {
 
     qb.orderBy('r.createdAt', 'DESC');
     return qb.getMany();
+  }
+
+  /** Referrals a specialist may work on: assigned to them, or unassigned and in their specialty. */
+  async listForSpecialist(
+    userId: string,
+  ): Promise<ConsultationRequestEntity[]> {
+    const me = await this.userRepo.findOne({ where: { id: userId } });
+    const qb = this.referralRepo.createQueryBuilder('r');
+    if (me?.specialty)
+      qb.where(
+        '(r."assignedSpecialistId" = :id OR (r.specialty = :sp AND r."assignedSpecialistId" IS NULL))',
+        { id: userId, sp: me.specialty },
+      );
+    else qb.where('r."assignedSpecialistId" = :id', { id: userId });
+    const rank: Record<string, number> = {
+      EMERGENCY: 0,
+      URGENT: 1,
+      ROUTINE: 2,
+    };
+    return (await qb.getMany()).sort(
+      (a, b) =>
+        (rank[a.urgency] ?? 9) - (rank[b.urgency] ?? 9) ||
+        b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  }
+
+  /** A specialist may see a referral only if it is theirs (see `listForSpecialist`). */
+  async assertSpecialistOwns(userId: string, referralId: string) {
+    const mine = await this.listForSpecialist(userId);
+    const hit = mine.find((r) => r.id === referralId);
+    if (!hit)
+      throw new ForbiddenException('This referral is not assigned to you.');
+    return hit;
+  }
+
+  /** A specialist may see a patient only through a referral that is theirs and not cancelled. */
+  async specialistCanSeePatient(
+    userId: string,
+    patientId: string,
+  ): Promise<boolean> {
+    return (await this.listForSpecialist(userId)).some(
+      (r) =>
+        r.patientId === patientId.toUpperCase() && r.status !== 'CANCELLED',
+    );
   }
 }

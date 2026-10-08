@@ -20,7 +20,13 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   CREATE_SELF_TASK: {
     type: 'CREATE_SELF_TASK',
     tier: 'AUTO',
-    rolesAllowed: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+    rolesAllowed: [
+      'DOCTOR',
+      'NURSE',
+      'RECEPTIONIST',
+      'CARE_COORDINATOR',
+      'ADMIN',
+    ],
     expiresInMinutes: 1440,
   },
 
@@ -48,7 +54,13 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   STAFF_TASK: {
     type: 'STAFF_TASK',
     tier: 'ASK',
-    rolesAllowed: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+    rolesAllowed: [
+      'DOCTOR',
+      'NURSE',
+      'RECEPTIONIST',
+      'CARE_COORDINATOR',
+      'ADMIN',
+    ],
     expiresInMinutes: 1440,
   },
   LAB_ORDER: {
@@ -61,7 +73,13 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   NOTIFICATION: {
     type: 'NOTIFICATION',
     tier: 'ASK',
-    rolesAllowed: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+    rolesAllowed: [
+      'DOCTOR',
+      'NURSE',
+      'RECEPTIONIST',
+      'CARE_COORDINATOR',
+      'ADMIN',
+    ],
     expiresInMinutes: 1440,
   },
   FOLLOW_UP: {
@@ -133,7 +151,10 @@ export function canApproveAction(type: string, role: UserRole): boolean {
 }
 
 /** Render a deterministic, human-readable summary strictly from payload values. */
-export function renderActionSummary(type: string, payload: Record<string, any>): string {
+export function renderActionSummary(
+  type: string,
+  payload: Record<string, any>,
+): string {
   switch (type.toUpperCase()) {
     case 'REFERRAL':
       return `Referral proposal to ${payload.specialty ?? 'Specialist'} for patient ${payload.patientId} (Urgency: ${payload.urgency ?? 'ROUTINE'})`;

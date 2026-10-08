@@ -30,7 +30,8 @@ export class ReferralVerifierService {
     const unverifiedEvidence: EvidenceItem[] = [];
 
     const complaint = (ctx.chiefComplaint ?? '').toLowerCase();
-    const latestVitals = ctx.vitals && ctx.vitals.length > 0 ? ctx.vitals[0] : null;
+    const latestVitals =
+      ctx.vitals && ctx.vitals.length > 0 ? ctx.vitals[0] : null;
     const labs = ctx.labs ?? [];
     const recentNotes = (ctx.consultations ?? [])
       .map((c) => `${c.diagnosis ?? ''} ${c.notes ?? ''}`)
@@ -42,23 +43,47 @@ export class ReferralVerifierService {
       const valLower = item.value.toLowerCase();
       let matched = false;
 
-      if (fieldLower.includes('complaint') || fieldLower.includes('presentation')) {
+      if (
+        fieldLower.includes('complaint') ||
+        fieldLower.includes('presentation')
+      ) {
         matched = complaint.includes(valLower) || valLower.includes(complaint);
       } else if (fieldLower.includes('news2')) {
-        if (latestVitals?.news2Score !== undefined && latestVitals?.news2Score !== null) {
+        if (
+          latestVitals?.news2Score !== undefined &&
+          latestVitals?.news2Score !== null
+        ) {
           matched = String(latestVitals.news2Score) === item.value.trim();
         }
-      } else if (fieldLower.includes('heart rate') || fieldLower.includes('pulse')) {
-        if (latestVitals?.heartRate !== undefined && latestVitals?.heartRate !== null) {
-          matched = String(latestVitals.heartRate) === item.value.replace(/[^0-9]/g, '');
+      } else if (
+        fieldLower.includes('heart rate') ||
+        fieldLower.includes('pulse')
+      ) {
+        if (
+          latestVitals?.heartRate !== undefined &&
+          latestVitals?.heartRate !== null
+        ) {
+          matched =
+            String(latestVitals.heartRate) ===
+            item.value.replace(/[^0-9]/g, '');
         }
-      } else if (fieldLower.includes('bp') || fieldLower.includes('blood pressure')) {
-        if (latestVitals?.bpSystolic !== undefined && latestVitals?.bpSystolic !== null) {
+      } else if (
+        fieldLower.includes('bp') ||
+        fieldLower.includes('blood pressure')
+      ) {
+        if (
+          latestVitals?.bpSystolic !== undefined &&
+          latestVitals?.bpSystolic !== null
+        ) {
           matched =
             valLower.includes(String(latestVitals.bpSystolic)) ||
-            (latestVitals.bpDiastolic !== null && valLower.includes(String(latestVitals.bpDiastolic)));
+            (latestVitals.bpDiastolic !== null &&
+              valLower.includes(String(latestVitals.bpDiastolic)));
         }
-      } else if (fieldLower.includes('troponin') || fieldLower.includes('lab')) {
+      } else if (
+        fieldLower.includes('troponin') ||
+        fieldLower.includes('lab')
+      ) {
         matched = labs.some(
           (l) =>
             fieldLower.includes(l.testName.toLowerCase()) ||
@@ -66,7 +91,10 @@ export class ReferralVerifierService {
             l.value.includes(item.value) ||
             item.value.includes(l.value),
         );
-      } else if (fieldLower.includes('consciousness') || fieldLower.includes('avpu')) {
+      } else if (
+        fieldLower.includes('consciousness') ||
+        fieldLower.includes('avpu')
+      ) {
         if (latestVitals?.consciousness) {
           matched = latestVitals.consciousness.toLowerCase() === valLower;
         }
@@ -104,7 +132,8 @@ export class ReferralVerifierService {
         verification: {
           verified: false,
           unverifiedEvidence,
-          reason: 'Evidence verification failed against current visit clinical data.',
+          reason:
+            'Evidence verification failed against current visit clinical data.',
         },
         proposal: null,
       };

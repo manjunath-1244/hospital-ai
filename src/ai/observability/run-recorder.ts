@@ -27,13 +27,14 @@ export class RunRecorder {
   /** High-level goal or query intent. */
   goal: string | null = null;
   /** Structured decision chain. */
-  readonly decisions: Array<{ what: string; why: string; evidence?: any[] }> = [];
+  readonly decisions: Array<{ what: string; why: string; evidence?: any[] }> =
+    [];
   /** W6 action proposal IDs created/executed. */
   readonly actionIds: string[] = [];
   private readonly spans: RunStep[] = [];
 
   constructor(
-    readonly kind: 'chat' | 'document',
+    readonly kind: 'chat' | 'chat-stream' | 'document',
     readonly user: AuthUser,
     readonly model: string,
   ) {}
@@ -51,7 +52,6 @@ export class RunRecorder {
       this.actionIds.push(actionId);
     }
   }
-
 
   /** Times an async step; failures are recorded and re-thrown. */
   async step<T>(
@@ -136,4 +136,3 @@ export class RunRecorder {
     };
   }
 }
-

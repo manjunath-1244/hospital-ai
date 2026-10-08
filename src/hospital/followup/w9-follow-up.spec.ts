@@ -45,6 +45,12 @@ describe('W9 Follow-Up Agent & Lab Orders', () => {
           visitId: 'V1001001',
           specialty: 'Cardiology',
           requestId: 'CR-100',
+          authorId: 'U-CARDIO-1',
+          authorName: 'Dr. Sarah Wilson',
+          recommendation: 'Admit to CCU and arrange catheterization',
+          followUp: 'Repeat ECG in 2 hours',
+          followUpTests: ['Troponin T'],
+          followUpDays: 14,
         },
       ]),
     };
@@ -83,13 +89,24 @@ describe('W9 Follow-Up Agent & Lab Orders', () => {
   });
 
   describe('Follow-Up Plan Proposal Generation', () => {
+    it('refuses to invent a plan when nothing was assessed or consulted', async () => {
+      mockVisitRepo.findOne.mockResolvedValue({ id: 'V1', patientId: 'P1001' });
+      mockAssessmentRepo.find.mockResolvedValue([]);
+      await expect(
+        followUpService.generateProposal('V1', doctorUser),
+      ).rejects.toThrow(/nothing to base/);
+    });
+
     it('generates a follow-up plan proposal with structured items and submits W6 proposal action', async () => {
       mockVisitRepo.findOne.mockResolvedValue({
         id: 'V1001001',
         patientId: 'P1001',
       });
 
-      const res = await followUpService.generateProposal('V1001001', doctorUser);
+      const res = await followUpService.generateProposal(
+        'V1001001',
+        doctorUser,
+      );
 
       expect(res.plan.id).toBeDefined();
       expect(res.plan.items.length).toBe(4);
@@ -97,6 +114,13 @@ describe('W9 Follow-Up Agent & Lab Orders', () => {
       expect(res.plan.items[1].type).toBe('LAB_ORDER');
       expect(res.plan.items[2].type).toBe('TASK');
       expect(res.plan.items[3].type).toBe('PATIENT_NOTICE');
+      // Built from the specialist's own words, not from fixed text
+      expect(res.plan.items[0].details).toMatchObject({
+        doctorId: 'U-CARDIO-1',
+        days: 14,
+      });
+      expect(res.plan.items[1].details.testName).toBe('Troponin T');
+      expect(res.plan.items[3].details.message).toBe('Repeat ECG in 2 hours');
 
       expect(mockProposalService.propose).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -23,9 +23,9 @@ Hospital AI platform: NestJS 11 + TypeORM 1.1 (PostgreSQL 16 + pgvector) + Mastr
 | **W9** | Follow-up plan proposals (`follow_up_plans` entity, W6 approval proposal submission), `lab_orders` entity & result linkage, visit status move `FOLLOW_UP` → `COMPLETED` | ✅ |
 | **W10** | Agent observability: `agent_runs` extended with goal, context snapshot, decisions, action IDs; Admin run flow view (`Goal → Context → Steps → Decisions → Actions → Result`); proposal metrics (acceptance, decline, expiry rates, time-to-decision) | ✅ |
 | **W11** | RAG improvements: PostgreSQL full-text `tsvector` + `vector` cosine hybrid search with Reciprocal Rank Fusion (RRF), JSONB metadata filters, query rewriting, reranking, and citation spans | ✅ |
-| W12 | Agent eval suite (scenario runner with fixtures, targets in backlog §W12) | ⬜ (grows each package; context checks already in `tests/evaluation/evaluator.ts`) |
-| W13 | Hardening: CI, provider failover, streaming, cookies/MFA, purge on delete, split `AiService` | ⬜ |
-Milestones: M1 ✅ (visit lifecycle), M2 ✅ (W4–W5 recommendation with evidence), M3 ✅ (W6–W7 approval + referral + notifications), M4 ✅ (W8 specialist loop), M5 ✅ (W9 follow-up agent + W10 observability).
+| W12 | Agent eval suite (scenario runner with fixtures, targets in backlog §W12) | ✅ (126 checks + baseline regression gate, safety control tests in `w12-agent-evals.spec.ts`) |
+| W13 | Hardening: CI, provider failover, streaming, cookies/MFA, purge on delete, split `AiService` | ✅ (`AiRouterService`/`AiContextService`/`AiAnswerService` sub-services, `/ai/chat/stream` SSE streaming, FHIR/Orthanc circuit breakers, patient cascade AI trace purging, unit tests in `w13-hardening.spec.ts`) |
+Milestones: M1 ✅ (visit lifecycle), M2 ✅ (W4–W5 recommendation with evidence), M3 ✅ (W6–W7 approval + referral + notifications), M4 ✅ (W8 specialist loop), M5 ✅ (W9 follow-up agent + W10 observability + W12 evals gate), M6 ✅ (W11 RAG + W13 Hardening).
 
 ## 3. Architecture facts you must know
 - **Chat design (retrieve first):** `AiService.chat` → `gatherContext` (server fetches charts/lists/overview/policies via role-checked tools) → deterministic **Direct** answers (no model) for lookups/lists/counts/triage numbers → **Grounded** model (no tools, CONTEXT only) → full **Agent** (tools) for actions/open questions. PHI masked before the model (`PhiSession`). Guardrails, retries/timeout/circuit breaker, traces in `agent_runs`, drift metrics.
@@ -41,7 +41,7 @@ docker compose up -d postgres            # container hospital_postgres, port 543
 npm run build && node dist/main          # API :3000 (applies pending migrations at start)
 cd apps/web-app && npm run build && npx next start -p 3001   # UI
 npm test                                  # 130 unit tests
-npm run test:eval                         # 123 scripted checks + baseline.json regression gate (tests/evaluation)
+npm run test:eval                         # 126 scripted checks + baseline.json regression gate (tests/evaluation)
 npx ts-node tests/evaluation/retrieval-check.ts   # new data searchable; policy retrieval; delete cleanup (24 checks)
 npm run test:workflow                     # patient journey + specialists against the RUNNING API (needs SEED_USER_PASSWORD in .env); creates/deletes its own patients
 npm run test:eval:live                    # asks the real model (slow on CPU)
@@ -67,3 +67,16 @@ Logins: `receptionist nurse doctor radiologist pharmacist coordinator admin card
 
 ## 7. Open items needing the owner
 Strong model key (W0.2) · clinician to sign referral criteria/tiers (W0.4) · demo date · decide first presentation target (M3 or M4) · delete dead files · consider making the repo private and rotating the DB password · patient notifications: staff-only + honest stub first (recommended).
+
+
+## 8. Verified state after the 2026-10-08 evening repair (read this before trusting section 2)
+Section 2 above says W4–W11 are done. A real test found that W6–W9 were **not** working. What was wrong and what was done:
+- Migration missing for 7 tables (`agent_actions`, `consultation_requests`, `notifications`, `patient_notices`, `follow_up_plans`, `lab_orders`, `specialist_assessments`) → added `AgentWorkflowTables` (+ `SpecialistFollowUpFields`). The agent's "referred" claim came from a refused tool call plus a model that wrote prose.
+- Referral/lab-order/complete DTOs had no validators → every POST returned 400. Fixed. Referral endpoints now have role + ownership checks (a specialist only sees/completes their own referrals and only referred patients).
+- Chat propose tools now **persist** proposals (`agent_actions`) and return `proposals`; "done" claims without a successful write are replaced (`reconcileActionClaims`); "refer…/follow-up plan…" requests now route to the tool agent (were grounded text-only); "is a specialist required?" is answered by the rules engine without the model.
+- Executor really creates lab orders, notifications and every follow-up plan item and reads each back; only the proposer or an admin can approve.
+- Follow-up plan is built from the specialist's assessment (new `followUpTests`, `followUpDays`) instead of fixed text.
+- Specialist: `GET /hospital/appointments` (own, with patient names), `GET /hospital/referrals/mine`, patient summary only via referral; visit moves to FOLLOW_UP when the referral completes.
+- UI added for notifications bell, approval cards + pending panel, referrals panel, specialist inbox/detail/complete, lab entry form, follow-up panel (type-checked and built; **not browser-tested**).
+Gates at this point: unit 198, `test:eval` 135/135, `test:workflow` all 3 scripts pass, `retrieval-check` **23/24** (case "urgent consultation request who handles it" now returns the new cardiology/neurology guideline chunks above `appointment-policy.md`; needs retrieval tuning, e.g. metadata filters/boosting policy docs for policy questions), live-model eval not re-run.
+Known gaps: streaming chat path does not reconcile false claims; nurses on the visit are not notified; patient notices are a stub; approver shows as an id; `prettier --write src` was run repo-wide once, so the diff contains formatting-only changes in files unrelated to the feature work.

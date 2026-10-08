@@ -22,10 +22,12 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
         {
           source: 'cardiology-referral-guidelines.md',
           heading: 'Section 1: Chest Pain Protocol',
-          content: 'Chest pain protocol requires elevated Troponin T (>0.04 ng/mL) or NEWS2 score >= 5.',
+          content:
+            'Chest pain protocol requires elevated Troponin T (>0.04 ng/mL) or NEWS2 score >= 5.',
           patientId: null,
           score: 0.88,
-          citationSpan: '[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]',
+          citationSpan:
+            '[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]',
           quote: 'Chest pain protocol requires elevated Troponin T...',
         },
       ]),
@@ -33,10 +35,12 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
         {
           source: 'cardiology-referral-guidelines.md',
           heading: 'Section 1: Chest Pain Protocol',
-          content: 'Chest pain protocol requires elevated Troponin T (>0.04 ng/mL) or NEWS2 score >= 5.',
+          content:
+            'Chest pain protocol requires elevated Troponin T (>0.04 ng/mL) or NEWS2 score >= 5.',
           patientId: null,
           score: 0.95,
-          citationSpan: '[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]',
+          citationSpan:
+            '[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]',
           quote: 'Chest pain protocol requires elevated Troponin T...',
         },
       ]),
@@ -53,7 +57,9 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
 
       const rewritten = ragService.rewriteQuery(original, summary);
 
-      expect(rewritten).toContain('Patient P1001 Eleanor Vance taking Aspirin 81mg');
+      expect(rewritten).toContain(
+        'Patient P1001 Eleanor Vance taking Aspirin 81mg',
+      );
       expect(rewritten).toContain('what is his current dosage?');
     });
 
@@ -75,12 +81,13 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
           heading: 'General Protocol',
           content: 'General guidelines for hospital admission.',
           patientId: null,
-          score: 0.90,
+          score: 0.9,
         },
         {
           source: 'doc2.md',
           heading: 'Troponin and NEWS2 Criteria',
-          content: 'Troponin T levels above 0.04 ng/mL indicate myocardial infarction.',
+          content:
+            'Troponin T levels above 0.04 ng/mL indicate myocardial infarction.',
           patientId: null,
           score: 0.85,
         },
@@ -121,11 +128,16 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
 
   describe('Hybrid Search with Citations', () => {
     it('executes hybrid search and returns structured citation spans', async () => {
-      const hits = await ragService.searchPoliciesHybrid('cardiology chest pain', 4);
+      const hits = await ragService.searchPoliciesHybrid(
+        'cardiology chest pain',
+        4,
+      );
 
       expect(hits.length).toBe(1);
       expect(hits[0].score).toBe(0.95);
-      expect(hits[0].citationSpan).toBe('[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]');
+      expect(hits[0].citationSpan).toBe(
+        '[cardiology-referral-guidelines.md # Section 1: Chest Pain Protocol]',
+      );
       expect(hits[0].quote).toBeDefined();
     });
   });

@@ -39,7 +39,12 @@ export abstract class VectorStore {
   abstract searchHybrid(
     queryText: string,
     embedding: number[],
-    opts: { topK: number; kind: DocKind; patientId?: string; metadata?: Record<string, any> },
+    opts: {
+      topK: number;
+      kind: DocKind;
+      patientId?: string;
+      metadata?: Record<string, any>;
+    },
   ): Promise<SearchHit[]>;
   abstract count(): Promise<number>;
   abstract deleteByPatient(patientId: string): Promise<number>;
@@ -189,7 +194,12 @@ export class PgVectorStore extends VectorStore {
   async searchHybrid(
     queryText: string,
     embedding: number[],
-    opts: { topK: number; kind: DocKind; patientId?: string; metadata?: Record<string, any> },
+    opts: {
+      topK: number;
+      kind: DocKind;
+      patientId?: string;
+      metadata?: Record<string, any>;
+    },
   ): Promise<SearchHit[]> {
     const vectorHits = await this.search(embedding, opts);
 
@@ -226,7 +236,8 @@ export class PgVectorStore extends VectorStore {
           metadata: r.metadata ?? {},
           score: Number(Number(r.fts_score).toFixed(4)),
           citationSpan: `[${r.source} # ${r.heading}]`,
-          quote: r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
+          quote:
+            r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
         }));
       }
     } catch (err: any) {
@@ -262,7 +273,8 @@ export class PgVectorStore extends VectorStore {
         ...hit,
         score: Number(rrfScore.toFixed(4)),
         citationSpan: `[${hit.source} # ${hit.heading}]`,
-        quote: hit.content.slice(0, 150) + (hit.content.length > 150 ? '...' : ''),
+        quote:
+          hit.content.slice(0, 150) + (hit.content.length > 150 ? '...' : ''),
       }));
   }
 

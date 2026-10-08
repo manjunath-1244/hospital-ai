@@ -54,12 +54,25 @@ export class PatientSummaryService {
     ) {
       out.conditions = p.conditions;
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST'))
+    if (
+      can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST')
+    )
       out.allergies = p.allergies;
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR', 'SPECIALIST'))
+    if (
+      can(
+        'DOCTOR',
+        'NURSE',
+        'ADMIN',
+        'PHARMACIST',
+        'CARE_COORDINATOR',
+        'SPECIALIST',
+      )
+    )
       out.currentMedications = p.currentMedications;
 
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST')) {
+    if (
+      can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST')
+    ) {
       const labs = await this.hospital.getPatientLabs(p.id);
       out.labs = labs.slice(0, 10).map((l) => ({
         test: l.testName,
@@ -104,7 +117,16 @@ export class PatientSummaryService {
         risk: v.riskLevel,
       }));
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR', 'SPECIALIST')) {
+    if (
+      can(
+        'DOCTOR',
+        'NURSE',
+        'ADMIN',
+        'PHARMACIST',
+        'CARE_COORDINATOR',
+        'SPECIALIST',
+      )
+    ) {
       out.recentConsultations = (
         await this.records.listConsultations(p.id, 3)
       ).map((c) => ({

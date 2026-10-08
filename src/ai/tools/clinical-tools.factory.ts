@@ -24,7 +24,9 @@ import { buildClinicalReadTools } from './clinical/clinical-read.tools';
 import { buildClinicalAssessTools } from './clinical/clinical-assess.tools';
 import { buildSpecialistTools } from './specialist/specialist.tools';
 import { buildSchedulingTools } from './scheduling/scheduling.tools';
-import { buildProposeTools } from './actions/propose.tools';
+import { ReferralRecommendationService } from '../../hospital/referrals/referral-recommendation.service';
+import { ActionProposalService } from '../actions/action-proposal.service';
+import { buildProposeTools, type ProposalSaver } from './actions/propose.tools';
 import { buildInteropTools } from './interop/interop.tools';
 import { withTimeout } from '../reliability/resilience';
 
@@ -35,6 +37,7 @@ import { withTimeout } from '../reliability/resilience';
 @Injectable()
 export class ClinicalToolsFactory {
   private readonly definitions: ClinicalTool[];
+  private readonly hospital: HospitalService;
 
   constructor(
     hospital: HospitalService,
@@ -50,7 +53,26 @@ export class ClinicalToolsFactory {
     orthanc: OrthancClient,
     visits: VisitsService,
     records: ClinicalRecordsService,
+    proposals: ActionProposalService,
+    referralRecommendations: ReferralRecommendationService,
   ) {
+    this.hospital = hospital;
+    // Proposals are saved for human approval, linked to the patient's open visit, conversation and trace.
+    const saveProposal: ProposalSaver = async ({ type, payload }, run) => {
+      const pid = payload.patientId as string | undefined;
+      const visit = pid ? await visits.getActive(pid) : null;
+      return proposals.propose(
+        {
+          type,
+          payload: { ...payload, ...(visit ? { visitId: visit.id } : {}) },
+          patientId: pid ?? undefined,
+          visitId: visit?.id,
+          threadId: run.threadId ?? undefined,
+          traceId: run.traceId,
+        },
+        run.user,
+      );
+    };
     this.definitions = [
       ...buildPatientTools({ directory, summaries }),
       ...buildClinicalReadTools({
@@ -61,9 +83,12 @@ export class ClinicalToolsFactory {
         rag,
       }),
       ...buildClinicalAssessTools({ rag, lifecycle, news2 }),
-      ...buildSpecialistTools({ specialists }),
+      ...buildSpecialistTools({
+        specialists,
+        referrals: referralRecommendations,
+      }),
       ...buildSchedulingTools({ hospital, lifecycle, overview }),
-      ...buildProposeTools(),
+      ...buildProposeTools(saveProposal),
       ...buildInteropTools(fhir, orthanc, rag),
     ];
   }
@@ -127,6 +152,24 @@ export class ClinicalToolsFactory {
       .map((t) => t.name);
   }
 
+  /**
+   * Small models sometimes put the patient's NAME where an id belongs. Resolve it to the id when it names exactly one
+   * patient; otherwise leave it, and the context binding refuses it.
+   */
+  private async resolvePatientArg<T>(args: T): Promise<T> {
+    const raw = (args as { patientId?: unknown } | null)?.patientId;
+    if (typeof raw !== 'string' || !raw.trim()) return args;
+    try {
+      return {
+        ...args,
+        patientId: (await this.hospital.getPatientById(raw)).id,
+      };
+    } catch {
+      const named = await this.hospital.findMentioned(raw);
+      return named.length === 1 ? { ...args, patientId: named[0].id } : args;
+    }
+  }
+
   /** Adds the permissions (tools visible for this role in this visit state) to a freshly built context. */
   applyPolicy(base: Omit<AgentContext, 'permissions'>): AgentContext {
     return applyToolPolicy(base, this.definitions);
@@ -137,6 +180,7 @@ export class ClinicalToolsFactory {
     phi: PhiSession;
     trace: ToolTrace;
     context: AgentContext;
+    traceId?: string;
   }) {
     const tools: Record<string, ReturnType<typeof createTool>> = {};
     for (const def of this.definitions.filter((t) =>
@@ -147,7 +191,7 @@ export class ClinicalToolsFactory {
         description: def.description,
         inputSchema: def.inputSchema,
         execute: async (input: any) => {
-          const args = ctx.phi.unmaskDeep(input);
+          const args = await this.resolvePatientArg(ctx.phi.unmaskDeep(input));
           const startedAtMs = Date.now();
           const timeoutMs = Number(process.env.AI_TOOL_TIMEOUT_MS ?? 10_000);
           const violation = bindingViolation(def, args, ctx.context);
@@ -168,7 +212,12 @@ export class ClinicalToolsFactory {
           }
           try {
             const output = await withTimeout(
-              () => def.run(args, { user: ctx.user }),
+              () =>
+                def.run(args, {
+                  user: ctx.user,
+                  threadId: ctx.context.conversation.threadId,
+                  traceId: ctx.traceId,
+                }),
               timeoutMs,
               `tool ${def.name}`,
             );

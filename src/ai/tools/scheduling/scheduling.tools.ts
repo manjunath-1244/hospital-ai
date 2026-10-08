@@ -3,7 +3,10 @@ import { HospitalService } from '../../../hospital/hospital.service';
 import { HospitalLifecycleService } from '../../../hospital/hospital-lifecycle.service';
 import { OverviewService } from '../../../hospital/overview.service';
 import { validateDto } from '../validate-dto';
-import { ConsultationDto, RegistrationDto } from '../../../hospital/dto/hospital.dto';
+import {
+  ConsultationDto,
+  RegistrationDto,
+} from '../../../hospital/dto/hospital.dto';
 import { ClinicalTool } from '../tool-registry';
 
 const patientId = z.string().describe('Patient ID, e.g. P1001');

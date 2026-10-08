@@ -27,7 +27,7 @@ export class AgentRunEntity {
   @CreateDateColumn({ type: 'timestamptz' })
   at: Date;
 
-  @Column({ type: 'varchar' }) kind: 'chat' | 'document';
+  @Column({ type: 'varchar' }) kind: 'chat' | 'chat-stream' | 'document';
   @Column({ type: 'varchar' }) userId: string;
   @Column({ type: 'varchar' }) userRole: string;
   @Column({ type: 'varchar', nullable: true }) threadId: string | null;
@@ -64,4 +64,3 @@ export class AgentRunEntity {
   /** IDs of action proposals generated or executed during this run. */
   @Column({ type: 'jsonb', default: () => `'[]'` }) actionIds: string[];
 }
-

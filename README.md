@@ -74,7 +74,7 @@ Admins upload policies (`.md`, `.txt`, `.pdf`) in the app; they are searchable b
 npm test                      # ~120 unit tests (NEWS2, drug safety, lab rules, routing, guardrails, resilience, ...)
 npm run test:eval             # 100+ checks on the real app: tools, RBAC, memory, retries/timeouts/breaker, tracing, routing
 npx ts-node tests/evaluation/retrieval-check.ts   # new data searchable at once; policy/patient retrieval; delete cleanup
-npm run test:workflow          # patient journey end to end against the RUNNING API (creates and deletes its own patients)
+npm run test:workflow          # (visit, specialists and the full referral/approval/follow-up loop) # patient journey end to end against the RUNNING API (creates and deletes its own patients)
 npm run test:eval:live        # also asks the REAL configured model 10 questions (tool/data choice + grounded answers)
 npm run test:eval:baseline    # accept current results as the regression baseline (compared on every run)
 ```

@@ -8,11 +8,7 @@ import {
 } from 'typeorm';
 
 export type ReferralStatus =
-  | 'REQUESTED'
-  | 'ACCEPTED'
-  | 'IN_PROGRESS'
-  | 'COMPLETED'
-  | 'CANCELLED';
+  'REQUESTED' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export type ReferralUrgency = 'ROUTINE' | 'URGENT' | 'EMERGENCY';
 

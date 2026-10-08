@@ -132,7 +132,11 @@ export class VectorRagService implements OnModuleInit {
   ): Promise<SearchHit[]> {
     const vec = await this.embedQueryCached(query);
     if (typeof this.store.searchHybrid === 'function') {
-      return this.store.searchHybrid(query, vec, { topK, kind: 'policy', metadata });
+      return this.store.searchHybrid(query, vec, {
+        topK,
+        kind: 'policy',
+        metadata,
+      });
     }
     return this.store.search(vec, { topK, kind: 'policy' });
   }
@@ -168,9 +172,10 @@ export class VectorRagService implements OnModuleInit {
   rewriteQuery(query: string, conversationSummary?: string): string {
     const trimmed = query.trim();
     if (!conversationSummary) return trimmed;
-    const hasPronouns = /\b(he|him|his|she|her|hers|it|its|they|them|their|those|these|that|this)\b/i.test(
-      trimmed,
-    );
+    const hasPronouns =
+      /\b(he|him|his|she|her|hers|it|its|they|them|their|those|these|that|this)\b/i.test(
+        trimmed,
+      );
     if (hasPronouns) {
       return `${conversationSummary.slice(0, 150)} ${trimmed}`.trim();
     }

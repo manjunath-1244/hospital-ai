@@ -43,7 +43,9 @@ export class NotificationService {
     private readonly eventsGateway: HospitalEventsGateway,
   ) {}
 
-  async sendNotification(dto: CreateNotificationDto): Promise<NotificationEntity> {
+  async sendNotification(
+    dto: CreateNotificationDto,
+  ): Promise<NotificationEntity> {
     const notif = this.notifRepo.create({
       id: newId('N', 8),
       recipientUserId: dto.recipientUserId || null,
@@ -73,7 +75,9 @@ export class NotificationService {
     return saved;
   }
 
-  async createPatientNotice(dto: CreatePatientNoticeDto): Promise<PatientNoticeEntity> {
+  async createPatientNotice(
+    dto: CreatePatientNoticeDto,
+  ): Promise<PatientNoticeEntity> {
     const notice = this.noticeRepo.create({
       id: newId('PN', 8),
       patientId: dto.patientId,

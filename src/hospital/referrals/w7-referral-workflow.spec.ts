@@ -23,6 +23,8 @@ describe('W7 Referral Workflow & Notifications', () => {
   let mockEventsGateway: any;
   let mockLifecycle: any;
   let mockHospital: any;
+  let mockPatientRepo: any;
+  let mockVisits: any;
 
   const doctorUser: AuthUser = {
     userId: 'U-DOCTOR-1',
@@ -108,10 +110,17 @@ describe('W7 Referral Workflow & Notifications', () => {
       mockEventsGateway,
     );
 
+    mockPatientRepo = {
+      findOne: jest.fn().mockResolvedValue({ id: 'P1001', name: 'Eleanor Vance' }),
+    };
+    mockVisits = { transition: jest.fn() };
+
     referralService = new ReferralService(
       mockReferralRepo,
       mockVisitRepo,
       mockUserRepo,
+      mockPatientRepo,
+      mockVisits,
       notificationService,
       mockEventsGateway,
     );
@@ -124,6 +133,10 @@ describe('W7 Referral Workflow & Notifications', () => {
       {} as any,
       mockEventsGateway,
       referralService,
+      {} as any, // lab orders
+      {} as any, // notifications
+      {} as any, // specialists
+      {} as any, // follow-up plans
     );
   });
 
@@ -132,6 +145,7 @@ describe('W7 Referral Workflow & Notifications', () => {
       mockVisitRepo.findOne.mockResolvedValue({
         id: 'V1001001',
         patientId: 'P1001',
+        status: 'IN_CONSULTATION',
         primaryDoctorId: 'U-DOCTOR-1',
       });
       mockUserRepo.findOne.mockResolvedValue(specialistUser);
@@ -238,7 +252,11 @@ describe('W7 Referral Workflow & Notifications', () => {
       mockReferralRepo.findOne.mockResolvedValue({ ...existingReferral });
 
       await expect(
-        referralService.transitionStatus('CR123456', 'COMPLETED', specialistUser),
+        referralService.transitionStatus(
+          'CR123456',
+          'COMPLETED',
+          specialistUser,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -282,7 +300,10 @@ describe('W7 Referral Workflow & Notifications', () => {
         readAt: null,
       });
 
-      const readNotif = await notificationService.markAsRead('N1001001', 'U-CARDIO-1');
+      const readNotif = await notificationService.markAsRead(
+        'N1001001',
+        'U-CARDIO-1',
+      );
       expect(readNotif.readAt).toBeDefined();
     });
 
@@ -306,6 +327,7 @@ describe('W7 Referral Workflow & Notifications', () => {
         type: 'REFERRAL',
         tier: 'ASK',
         status: 'PENDING',
+        proposedByUserId: 'U-DOCTOR-1',
         patientId: 'P1001',
         visitId: 'V1001001',
         summary: 'Referral to Cardiology',
@@ -323,10 +345,20 @@ describe('W7 Referral Workflow & Notifications', () => {
         updatedAt: new Date(),
       };
 
+      // A real store: the executor's read-back must find what it just created.
+      let stored: any = null;
+      mockReferralRepo.save = jest.fn((e: any) => {
+        stored = { ...e };
+        return Promise.resolve(stored);
+      });
+      mockReferralRepo.findOne = jest.fn(({ where }: any) =>
+        Promise.resolve(where.visitId ? null : stored),
+      );
       mockActionRepo.findOne.mockResolvedValue({ ...action });
       mockVisitRepo.findOne.mockResolvedValue({
         id: 'V1001001',
         patientId: 'P1001',
+        status: 'IN_CONSULTATION',
       });
       mockUserRepo.findOne.mockResolvedValue(specialistUser);
 

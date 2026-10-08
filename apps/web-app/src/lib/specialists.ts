@@ -31,6 +31,10 @@ export interface AppointmentRow {
   dateTime: string;
   status: string;
   reason?: string | null;
+  patientAge?: number;
+  patientGender?: string;
+  visitStatus?: string | null;
+  chiefComplaint?: string | null;
 }
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

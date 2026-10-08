@@ -65,7 +65,14 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
       const res = rulesService.evaluate({
         patientId: 'P1003',
         chiefComplaint: 'Mild skin rash on left arm',
-        vitals: [{ heartRate: 72, bpSystolic: 118, news2Score: 0, consciousness: 'ALERT' }],
+        vitals: [
+          {
+            heartRate: 72,
+            bpSystolic: 118,
+            news2Score: 0,
+            consciousness: 'ALERT',
+          },
+        ],
         labs: [],
       });
 
@@ -77,13 +84,27 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
       const res = rulesService.evaluate({
         patientId: 'P1004',
         chiefComplaint: 'Left knee sprain after playing soccer',
-        vitals: [{ heartRate: 75, bpSystolic: 122, news2Score: 0, consciousness: 'ALERT' }],
-        conditions: ['Past Coronary Artery Disease (CAD) with stent in 2021', 'Essential Hypertension'],
+        vitals: [
+          {
+            heartRate: 75,
+            bpSystolic: 122,
+            news2Score: 0,
+            consciousness: 'ALERT',
+          },
+        ],
+        conditions: [
+          'Past Coronary Artery Disease (CAD) with stent in 2021',
+          'Essential Hypertension',
+        ],
       });
 
       expect(res.triggered).toBe(false);
       expect(res.matches).toHaveLength(0);
-      expect(res.historicalOnlyCandidates.some((c) => c.includes('Past cardiac history'))).toBe(true);
+      expect(
+        res.historicalOnlyCandidates.some((c) =>
+          c.includes('Past cardiac history'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -92,7 +113,14 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
       const ctx = {
         patientId: 'P1001',
         chiefComplaint: 'Acute chest pain',
-        vitals: [{ heartRate: 115, bpSystolic: 135, news2Score: 6, consciousness: 'ALERT' }],
+        vitals: [
+          {
+            heartRate: 115,
+            bpSystolic: 135,
+            news2Score: 6,
+            consciousness: 'ALERT',
+          },
+        ],
         labs: [{ testName: 'Troponin I', value: '0.50', unit: 'ng/mL' }],
       };
 
@@ -103,7 +131,11 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
           urgency: 'EMERGENCY',
           rationale: ['Troponin elevated', 'Chest pain reported'],
           evidence: [
-            { field: 'Chief Complaint', value: 'Acute chest pain', source: 'Current Visit Presentation' },
+            {
+              field: 'Chief Complaint',
+              value: 'Acute chest pain',
+              source: 'Current Visit Presentation',
+            },
             { field: 'NEWS2', value: '6', source: 'Current Vitals' },
           ],
         },
@@ -120,7 +152,14 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
       const ctx = {
         patientId: 'P1001',
         chiefComplaint: 'Mild sore throat',
-        vitals: [{ heartRate: 70, bpSystolic: 120, news2Score: 0, consciousness: 'ALERT' }],
+        vitals: [
+          {
+            heartRate: 70,
+            bpSystolic: 120,
+            news2Score: 0,
+            consciousness: 'ALERT',
+          },
+        ],
         labs: [],
       };
 
@@ -130,7 +169,13 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
           specialty: 'Cardiology',
           urgency: 'EMERGENCY',
           rationale: ['Fake troponin alert'],
-          evidence: [{ field: 'Troponin', value: '5.2 ng/mL', source: 'Non-existent lab' }],
+          evidence: [
+            {
+              field: 'Troponin',
+              value: '5.2 ng/mL',
+              source: 'Non-existent lab',
+            },
+          ],
         },
         ctx,
       );
@@ -146,8 +191,22 @@ describe('W5 Referral Recommendation & Evidence Check', () => {
       const ctx = {
         patientId: 'P1001',
         chiefComplaint: 'Substernal chest tightness',
-        vitals: [{ heartRate: 105, bpSystolic: 140, news2Score: 6, consciousness: 'ALERT' }],
-        labs: [{ testName: 'Serum Cardiac Troponin I', value: '0.48', unit: 'ng/mL', status: 'CRITICAL' }],
+        vitals: [
+          {
+            heartRate: 105,
+            bpSystolic: 140,
+            news2Score: 6,
+            consciousness: 'ALERT',
+          },
+        ],
+        labs: [
+          {
+            testName: 'Serum Cardiac Troponin I',
+            value: '0.48',
+            unit: 'ng/mL',
+            status: 'CRITICAL',
+          },
+        ],
       };
 
       const ruleRes = rulesService.evaluate(ctx);

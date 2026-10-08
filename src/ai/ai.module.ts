@@ -6,6 +6,9 @@ import { InteropModule } from './fhir/interop.module';
 import { ActionsModule } from './actions/actions.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
+import { AiRouterService } from './services/ai-router.service';
+import { AiContextService } from './services/ai-context.service';
+import { AiAnswerService } from './services/ai-answer.service';
 import { PhiAnonymizerService } from './security/phi-anonymizer.service';
 import { ClinicalToolsFactory } from './tools/clinical-tools.factory';
 import { LlmProvider } from './llm/llm-provider';
@@ -27,6 +30,9 @@ import { AgentRunsService } from './observability/agent-runs.service';
   controllers: [AiController],
   providers: [
     AiService,
+    AiRouterService,
+    AiContextService,
+    AiAnswerService,
     PhiAnonymizerService,
     ClinicalToolsFactory,
     LlmProvider,
@@ -39,6 +45,9 @@ import { AgentRunsService } from './observability/agent-runs.service';
   ],
   exports: [
     AiService,
+    AiRouterService,
+    AiContextService,
+    AiAnswerService,
     LlmProvider,
     LlmRunner,
     AgentRunsService,

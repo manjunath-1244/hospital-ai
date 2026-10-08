@@ -5,6 +5,8 @@ import { Activity, FileText, Mic } from 'lucide-react';
 import { useRealtime } from '../../context/RoleContext';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { DocumentResponse, WardEntry } from '../../lib/types';
+import { LabResultForm } from '../ui/LabResultForm';
+import { PendingActionsPanel } from './PendingActionsPanel';
 import { AiDraftBanner, Empty, ErrorBox, Loading, fmtTime } from '../ui/common';
 
 const riskCls = (r: string) =>
@@ -97,6 +99,16 @@ export const NurseWardPortal: React.FC = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      <PendingActionsPanel />
+
+      <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
+        <h3 className="text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4">Lab results</h3>
+        <p className="text-base text-slate-300">
+          {selected ? `Recording for ${ward?.find((w) => w.patientId === selected)?.name ?? selected} (${selected}).` : 'Select a patient card above to add a lab result.'}
+        </p>
+        <LabResultForm patientId={selected} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

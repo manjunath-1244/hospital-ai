@@ -9,7 +9,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { SpecialistService } from './specialist.service';
-import { SpecialistPortalService, CompleteConsultationDto } from './specialist-portal.service';
+import {
+  SpecialistPortalService,
+  CompleteConsultationDto,
+} from './specialist-portal.service';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
 import { Roles } from '../../security/roles.decorator';
 
@@ -63,17 +66,20 @@ export class SpecialistController {
     @Param('id') id: string,
     @Body('isAvailable') isAvailable: boolean,
   ) {
-    const updated = await this.specialistService.setAvailable(id, Boolean(isAvailable));
+    const updated = await this.specialistService.setAvailable(
+      id,
+      Boolean(isAvailable),
+    );
     return { success: true, specialist: updated };
   }
 
   @Put(':id/hours')
   @Roles('ADMIN')
-  async setHours(
-    @Param('id') id: string,
-    @Body('windows') windows: any[],
-  ) {
-    const updated = await this.specialistService.setWeeklyHours(id, windows || []);
+  async setHours(@Param('id') id: string, @Body('windows') windows: any[]) {
+    const updated = await this.specialistService.setWeeklyHours(
+      id,
+      windows || [],
+    );
     return { success: true, hours: updated };
   }
 }

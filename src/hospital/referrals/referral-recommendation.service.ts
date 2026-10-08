@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HospitalService } from '../hospital.service';
 import { ClinicalRecordsService } from '../clinical-records.service';
 import { VisitsService } from '../visits/visits.service';
-import { ReferralRulesService, ClinicalContextInput } from './referral-rules.service';
+import {
+  ReferralRulesService,
+  ClinicalContextInput,
+} from './referral-rules.service';
 import { ReferralVerifierService } from './referral-verifier.service';
 import { VectorRagService } from '../../ai/rag/vector-rag.service';
 import { ReferralRecommendation } from './referral.types';
@@ -111,7 +114,9 @@ export class ReferralRecommendationService {
         (h) => `Guideline (${h.source}): ${h.heading}`,
       );
     } catch (err: any) {
-      this.logger.warn(`Failed to retrieve guideline citations: ${err.message}`);
+      this.logger.warn(
+        `Failed to retrieve guideline citations: ${err.message}`,
+      );
     }
 
     const unverifiedRec = {

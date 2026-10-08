@@ -27,7 +27,29 @@ export interface AlertNotification {
   read: boolean;
 }
 
-export type RealtimeEvent = 'patient.registered' | 'visit.updated' | 'patient.deleted' | 'doctor.consulted' | 'dicom.uploaded' | 'alert.critical_lab' | 'alert.news2_deterioration';
+/** Every backend socket event the UI forwards to components via `useRealtime`. */
+export const REALTIME_EVENTS = [
+  'patient.registered',
+  'visit.updated',
+  'patient.deleted',
+  'doctor.consulted',
+  'dicom.uploaded',
+  'alert.critical_lab',
+  'alert.news2_deterioration',
+  'notification.new',
+  'referral.created',
+  'referral.updated',
+  'agent.action.proposed',
+  'agent.action.decided',
+  'agent.action.executed',
+] as const;
+export type RealtimeEvent = (typeof REALTIME_EVENTS)[number];
+
+/** Where a notification click should land; consumed (then cleared) by the portal that handles it. */
+export interface NavTarget {
+  referralId?: string;
+  patientId?: string;
+}
 
 interface RoleContextType {
   /** Portal currently displayed (own role, or the admin's "view as" selection). */
@@ -41,6 +63,9 @@ interface RoleContextType {
   dismissAlert: (id: string) => void;
   unconsultedCount: number;
   news2AlertCount: number;
+  navTarget: NavTarget | null;
+  navigateTo: (t: NavTarget) => void;
+  clearNav: () => void;
   subscribe: (event: RealtimeEvent, cb: (payload: unknown) => void) => () => void;
 }
 
@@ -53,6 +78,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [viewAsState, setViewAsState] = useState<UserRole | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
+  const [navTarget, setNavTarget] = useState<NavTarget | null>(null);
   const listeners = useRef(new Map<RealtimeEvent, Set<(p: unknown) => void>>());
 
   const role: UserRole = ownRole === 'ADMIN' ? (viewAsState ?? 'ADMIN') : (ownRole ?? 'DOCTOR');
@@ -105,6 +131,12 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       push('NEWS2', 'NEWS2 Deterioration', `${d.patientName ?? d.patientId}: NEWS2 ${d.news2Score} (${d.riskLevel})`);
       emitLocal('alert.news2_deterioration', d);
     });
+    // Pure refresh triggers: components re-fetch from the API rather than trusting the payload.
+    for (const ev of REALTIME_EVENTS) {
+      if (['notification.new', 'referral.created', 'referral.updated', 'agent.action.proposed', 'agent.action.decided', 'agent.action.executed'].includes(ev)) {
+        socket.on(ev, (d: any) => emitLocal(ev, d));
+      }
+    }
     socket.on('dicom.uploaded', (d: any) => {
       push('DICOM', 'Imaging Study Uploaded', `${d.modality ?? 'Study'} for patient ${d.patientId}${d.description ? `: ${d.description}` : ''}`);
       emitLocal('dicom.uploaded', d);
@@ -115,6 +147,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSocketConnected(false);
       setAlerts([]);
       setViewAsState(null);
+      setNavTarget(null);
     };
   }, [token]);
 
@@ -131,9 +164,12 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dismissAlert,
       unconsultedCount: alerts.filter((a) => a.type === 'UNCONSULTED').length,
       news2AlertCount: alerts.filter((a) => a.type === 'NEWS2' || a.type === 'CRITICAL_LAB').length,
+      navTarget,
+      navigateTo: setNavTarget,
+      clearNav: () => setNavTarget(null),
       subscribe,
     }),
-    [role, ownRole, viewAsState, socketConnected, alerts, subscribe],
+    [role, ownRole, viewAsState, socketConnected, alerts, subscribe, navTarget],
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;

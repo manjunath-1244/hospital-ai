@@ -41,6 +41,93 @@ export function checkGuardrails(
   return { status: notes.length ? 'WARNING' : 'VERIFIED_SAFE', notes };
 }
 
+/** Tools that change data immediately when called (the others only read, or only create a proposal). */
+export const DIRECT_WRITE_TOOLS: ReadonlySet<string> = new Set([
+  'registerOpPatient',
+  'recordDoctorConsultation',
+  'bookAppointment',
+  'createStaffTask',
+]);
+
+/** Past-tense or "done" wording: the answer says something has already happened. */
+const DONE_CLAIM =
+  /\b(i|we)(?:'ve| have)?\s+(?:just\s+|already\s+|successfully\s+)?(referred|booked|scheduled|created|registered|recorded|ordered|sent|notified|assigned|saved|submitted|completed|closed|reopened|escalated|forwarded)\b|\b(has|have|was|were) (?:been |successfully )+(referred|booked|scheduled|created|registered|recorded|ordered|sent|notified|assigned|saved|submitted|completed|closed|reopened)\b|\b(referral|appointment|order|notification|task) (?:is |was |has been )?(?:created|sent|booked|placed|done)\b/i;
+
+export interface ProposalView {
+  id: string;
+  type: string;
+  tier: string;
+  summary: string;
+  status: string;
+  patientId?: string;
+  expiresAt?: string;
+}
+
+/** Proposals the agent saved this turn (they exist, but nothing has been executed until a human approves). */
+export function proposalsFromTrace(trace: ToolTrace): ProposalView[] {
+  return trace.outputs
+    .filter((o) => o.output?.success && typeof o.output?.actionId === 'string')
+    .map((o) => ({
+      id: o.output.actionId,
+      type: o.output.proposalType,
+      tier: o.output.tier,
+      summary: o.output.summary,
+      status: 'PENDING',
+      patientId: o.output.proposedAction?.patientId ?? undefined,
+      expiresAt: o.output.expiresAt
+        ? new Date(o.output.expiresAt).toISOString()
+        : undefined,
+    }));
+}
+
+/**
+ * "Done" may only be said when something was really done. If the answer claims completion but no write tool succeeded
+ * this turn, the model's text is replaced by what actually happened: proposals waiting for approval, or nothing.
+ */
+export function reconcileActionClaims(
+  response: string,
+  trace: ToolTrace,
+): { text: string; notes: string[] } {
+  const proposals = proposalsFromTrace(trace);
+  const wrote = trace.calls.some(
+    (c) => c.success && DIRECT_WRITE_TOOLS.has(c.name),
+  );
+  const claims = DONE_CLAIM.test(response);
+  const failedActionTool = trace.calls.find(
+    (c) =>
+      !c.success &&
+      (DIRECT_WRITE_TOOLS.has(c.name) || c.name.startsWith('propose')),
+  );
+
+  if (claims && !wrote) {
+    const lines = proposals.length
+      ? [
+          `I have prepared ${proposals.length === 1 ? 'a proposal' : `${proposals.length} proposals`}, but nothing has been done yet. ${proposals.length === 1 ? 'It needs' : 'They need'} your approval:`,
+          ...proposals.map((p) => `• ${p.summary} (${p.id})`),
+          'Use Approve on the card below to carry it out, or Decline.',
+        ]
+      : [
+          'No action was taken: nothing was created, booked, sent or changed.',
+          failedActionTool
+            ? `The attempt failed: ${failedActionTool.error ?? 'the system refused it'}.`
+            : 'The assistant did not run any action.',
+          'Name the patient and tell me what to do, and I will prepare a proposal for your approval.',
+        ];
+    return {
+      text: lines.join('\n'),
+      notes: [
+        'The answer claimed an action was completed, but none was executed; the text was replaced with what actually happened.',
+      ],
+    };
+  }
+  if (proposals.length && !claims)
+    return {
+      text: `${response}\n\n${proposals.length === 1 ? 'Proposal' : 'Proposals'} waiting for your approval (nothing is done until you approve):\n${proposals.map((p) => `• ${p.summary} (${p.id})`).join('\n')}`,
+      notes: [],
+    };
+  return { text: response, notes: [] };
+}
+
 /** llama-family models sometimes print the tool call as the answer: {"name":"searchPatients","parameters":{...}} */
 export function looksLikeRawToolCall(text: string): boolean {
   const t = text.trim();

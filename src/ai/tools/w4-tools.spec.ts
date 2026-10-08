@@ -74,7 +74,8 @@ describe('W4 Tools Suite', () => {
           {
             source: 'cardiology-guidelines.md',
             heading: 'Chest Pain Protocol',
-            content: 'Troponin and 12-lead ECG are required for acute chest pain.',
+            content:
+              'Troponin and 12-lead ECG are required for acute chest pain.',
             score: 0.92,
           },
         ]),
@@ -92,7 +93,10 @@ describe('W4 Tools Suite', () => {
     it('getCurrentVisit returns current open visit summary', async () => {
       const tool = readTools.find((t) => t.name === 'getCurrentVisit')!;
       expect(tool).toBeDefined();
-      const res: any = await tool.run({ patientId: 'P1001' }, { user: { role: 'DOCTOR' } as any });
+      const res: any = await tool.run(
+        { patientId: 'P1001' },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.currentVisit.id).toBe('V100');
       expect(res.currentVisit.status).toBe('IN_CONSULTATION');
@@ -100,7 +104,10 @@ describe('W4 Tools Suite', () => {
 
     it('getVitalsHistory returns list of vitals', async () => {
       const tool = readTools.find((t) => t.name === 'getVitalsHistory')!;
-      const res: any = await tool.run({ patientId: 'P1001', limit: 5 }, { user: { role: 'DOCTOR' } as any });
+      const res: any = await tool.run(
+        { patientId: 'P1001', limit: 5 },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.vitals.length).toBe(1);
       expect(res.vitals[0].heartRate).toBe(80);
@@ -108,14 +115,20 @@ describe('W4 Tools Suite', () => {
 
     it('getLabs returns patient lab test results', async () => {
       const tool = readTools.find((t) => t.name === 'getLabs')!;
-      const res: any = await tool.run({ patientId: 'P1001', limit: 10 }, { user: { role: 'DOCTOR' } as any });
+      const res: any = await tool.run(
+        { patientId: 'P1001', limit: 10 },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.labs[0].testName).toBe('Serum Creatinine');
     });
 
     it('getMedications returns medications and allergies', async () => {
       const tool = readTools.find((t) => t.name === 'getMedications')!;
-      const res: any = await tool.run({ patientId: 'P1001' }, { user: { role: 'DOCTOR' } as any });
+      const res: any = await tool.run(
+        { patientId: 'P1001' },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.currentMedications).toEqual(['Lisinopril 10mg']);
       expect(res.allergies).toEqual(['Penicillin']);
@@ -123,19 +136,29 @@ describe('W4 Tools Suite', () => {
 
     it('getAllergies returns allergies and conditions', async () => {
       const tool = readTools.find((t) => t.name === 'getAllergies')!;
-      const res: any = await tool.run({ patientId: 'P1001' }, { user: { role: 'DOCTOR' } as any });
+      const res: any = await tool.run(
+        { patientId: 'P1001' },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.allergies).toEqual(['Penicillin']);
       expect(res.conditions).toEqual(['Hypertension']);
     });
 
     it('searchClinicalGuidelines searches vector RAG and returns citations', async () => {
-      const tool = readTools.find((t) => t.name === 'searchClinicalGuidelines')!;
-      const res: any = await tool.run({ query: 'chest pain', topK: 3 }, { user: { role: 'DOCTOR' } as any });
+      const tool = readTools.find(
+        (t) => t.name === 'searchClinicalGuidelines',
+      )!;
+      const res: any = await tool.run(
+        { query: 'chest pain', topK: 3 },
+        { user: { role: 'DOCTOR' } as any },
+      );
       expect(res.success).toBe(true);
       expect(res.guidelines[0].heading).toBe('Chest Pain Protocol');
       const citations = tool.citations?.(res);
-      expect(citations).toEqual([{ file: 'cardiology-guidelines.md', heading: 'Chest Pain Protocol' }]);
+      expect(citations).toEqual([
+        { file: 'cardiology-guidelines.md', heading: 'Chest Pain Protocol' },
+      ]);
     });
   });
 

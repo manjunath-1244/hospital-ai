@@ -7,7 +7,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export type FollowUpPlanStatus = 'DRAFT' | 'PROPOSED' | 'APPROVED' | 'COMPLETED';
+export type FollowUpPlanStatus =
+  'DRAFT' | 'PROPOSED' | 'APPROVED' | 'COMPLETED';
 
 export interface FollowUpPlanItem {
   type: 'APPOINTMENT' | 'LAB_ORDER' | 'TASK' | 'PATIENT_NOTICE';

@@ -1,12 +1,28 @@
 import { z } from 'zod';
+import { ReferralRecommendationService } from '../../../hospital/referrals/referral-recommendation.service';
 import { SpecialistService } from '../../../hospital/specialists/specialist.service';
 import { looseInt } from '../loose-schema';
 import { ClinicalTool } from '../tool-registry';
 
 export function buildSpecialistTools(d: {
   specialists: SpecialistService;
+  referrals: ReferralRecommendationService;
 }): ClinicalTool[] {
   return [
+    {
+      name: 'reviewReferralNeed',
+      description:
+        'Rules-based review of ONE patient: is a specialist referral indicated (Cardiology/Neurology) from the CURRENT visit data, with the evidence, missing information and a verification flag. Read-only decision support; creates nothing. Use for "is a specialist required?" and before proposing a referral.',
+      inputSchema: z.object({ patientId: z.string() }),
+      roles: ['DOCTOR', 'NURSE', 'ADMIN'],
+      requires: { patientBound: true },
+      async run({ patientId }) {
+        return {
+          success: true,
+          ...(await d.referrals.evaluatePatient(patientId)),
+        };
+      },
+    },
     {
       name: 'findSpecialists',
       description:

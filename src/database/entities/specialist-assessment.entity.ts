@@ -44,6 +44,14 @@ export class SpecialistAssessmentEntity {
   @Column({ type: 'text' })
   followUp!: string;
 
+  /** Tests the specialist wants repeated or added (each becomes a lab order in the follow-up plan). */
+  @Column({ type: 'jsonb', default: () => `'[]'` })
+  followUpTests!: string[];
+
+  /** When the specialist wants the patient seen again, in days (null = use the hospital default). */
+  @Column({ type: 'int', nullable: true })
+  followUpDays?: number | null;
+
   @CreateDateColumn()
   completedAt!: Date;
 }

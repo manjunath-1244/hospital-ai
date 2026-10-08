@@ -1,9 +1,7 @@
 export type ReferralSpecialty = 'Cardiology' | 'Neurology';
 export type ReferralUrgency = 'EMERGENCY' | 'URGENT' | 'ROUTINE';
 export type ReferralRecommendationType =
-  | 'SPECIALIST'
-  | 'NONE'
-  | 'NEEDS_DOCTOR_REVIEW';
+  'SPECIALIST' | 'NONE' | 'NEEDS_DOCTOR_REVIEW';
 
 export interface EvidenceItem {
   field: string;

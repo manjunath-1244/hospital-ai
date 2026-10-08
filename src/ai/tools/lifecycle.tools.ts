@@ -33,9 +33,7 @@ export function buildLifecycleTools(d: {
     rag: d.rag as any,
     lifecycle: d.lifecycle,
     news2: d.news2,
-  }).filter((t) =>
-    ['verifyMedicationSafety', 'assessTriage'].includes(t.name),
-  );
+  }).filter((t) => ['verifyMedicationSafety', 'assessTriage'].includes(t.name));
 
   return [...sched, ...assess];
 }

@@ -1,4 +1,5 @@
 import type { VisitSummary } from './visits';
+import type { AgentAction } from './actions';
 
 export type BackendRole =
   | 'DOCTOR'
@@ -342,6 +343,8 @@ export interface ChatResponse {
   guardrailNotes?: string[];
   hipaaShieldActive?: boolean;
   memory?: ChatMemoryInfo;
+  /** Action proposals the agent made this turn (absent on older backends). */
+  proposals?: AgentAction[];
   error?: string;
 }
 

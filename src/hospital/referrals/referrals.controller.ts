@@ -7,12 +7,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  CreateReferralDto,
-  ReferralService,
-} from './referral.service';
-import { ReferralStatus } from '../../database/entities/consultation-request.entity';
+import { CreateReferralDto, ReferralService } from './referral.service';
+import type { ReferralStatus } from '../../database/entities/consultation-request.entity';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
+import { Roles } from '../../security/roles.decorator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ForbiddenException } from '@nestjs/common';
 
 import {
   SpecialistPortalService,
@@ -20,8 +20,9 @@ import {
 } from '../specialists/specialist-portal.service';
 
 export class UpdateReferralStatusDto {
+  @IsIn(['REQUESTED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
   toStatus!: ReferralStatus;
-  cancellationReason?: string;
+  @IsOptional() @IsString() @MaxLength(500) cancellationReason?: string;
 }
 
 @Controller('hospital/referrals')
@@ -31,7 +32,16 @@ export class ReferralsController {
     private readonly portalService: SpecialistPortalService,
   ) {}
 
+  /** The signed-in specialist's inbox: assigned to them, or unassigned in their specialty; most urgent first. */
+  @Get('mine')
+  @Roles('SPECIALIST')
+  async mine(@CurrentUser() user: AuthUser) {
+    const items = await this.referralService.listForSpecialist(user.userId);
+    return { success: true, count: items.length, referrals: items };
+  }
+
   @Post()
+  @Roles('DOCTOR', 'NURSE', 'ADMIN')
   async createReferral(
     @Body() dto: CreateReferralDto,
     @CurrentUser() user: AuthUser,
@@ -41,6 +51,7 @@ export class ReferralsController {
   }
 
   @Get()
+  @Roles('DOCTOR', 'NURSE', 'ADMIN')
   async listReferrals(
     @Query('patientId') patientId?: string,
     @Query('visitId') visitId?: string,
@@ -59,18 +70,25 @@ export class ReferralsController {
   }
 
   @Get(':id')
-  async getReferral(@Param('id') id: string) {
+  @Roles('DOCTOR', 'NURSE', 'ADMIN', 'SPECIALIST')
+  async getReferral(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    if (user.role === 'SPECIALIST')
+      await this.referralService.assertSpecialistOwns(user.userId, id);
     const referral = await this.referralService.getReferral(id);
     return { success: true, referral };
   }
 
   @Get(':id/ai-summary')
-  async getAiSummary(@Param('id') id: string) {
+  @Roles('DOCTOR', 'ADMIN', 'SPECIALIST')
+  async getAiSummary(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    if (user.role === 'SPECIALIST')
+      await this.referralService.assertSpecialistOwns(user.userId, id);
     const summary = await this.portalService.getAiSummary(id);
     return { success: true, summary };
   }
 
   @Post(':id/complete')
+  @Roles('SPECIALIST', 'ADMIN')
   async completeReferral(
     @Param('id') id: string,
     @Body() dto: CompleteConsultationDto,
@@ -81,11 +99,18 @@ export class ReferralsController {
   }
 
   @Patch(':id/status')
+  @Roles('DOCTOR', 'NURSE', 'ADMIN', 'SPECIALIST')
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateReferralStatusDto,
     @CurrentUser() user: AuthUser,
   ) {
+    if (user.role === 'SPECIALIST')
+      await this.referralService.assertSpecialistOwns(user.userId, id);
+    else if (dto.toStatus !== 'CANCELLED')
+      throw new ForbiddenException(
+        'Only the specialist can progress a referral; staff can cancel it.',
+      );
     const referral = await this.referralService.transitionStatus(
       id,
       dto.toStatus,

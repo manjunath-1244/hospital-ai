@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { VectorRagService } from '../../rag/vector-rag.service';
 import { HospitalLifecycleService } from '../../../hospital/hospital-lifecycle.service';
 import { News2Service } from '../../../hospital/news2.service';
-import { looseBool, looseEnum, looseInt, looseNumber, looseStringList } from '../loose-schema';
+import {
+  looseBool,
+  looseEnum,
+  looseInt,
+  looseNumber,
+  looseStringList,
+} from '../loose-schema';
 import { ClinicalTool } from '../tool-registry';
 
 export function buildClinicalAssessTools(d: {
@@ -22,7 +28,11 @@ export function buildClinicalAssessTools(d: {
       }),
       roles: ['DOCTOR', 'NURSE', 'PHARMACIST', 'ADMIN'],
       async run({ patientId, query, topK }) {
-        const matches = await d.rag.searchPatientRecords(query, patientId, topK);
+        const matches = await d.rag.searchPatientRecords(
+          query,
+          patientId,
+          topK,
+        );
         return {
           success: true,
           count: matches.length,

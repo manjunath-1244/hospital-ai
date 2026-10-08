@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, MoreThan, Repository } from 'typeorm';
 import { AgentRunEntity } from '../../database/entities/agent-run.entity';
@@ -120,7 +125,7 @@ export class AgentRunsService {
           status: a.status,
           summary: a.summary,
         })),
-        result: r.status === 'OK' ? 'SUCCESS' : r.error ?? 'FAILED',
+        result: r.status === 'OK' ? 'SUCCESS' : (r.error ?? 'FAILED'),
       },
     };
   }
@@ -214,4 +219,3 @@ export class AgentRunsService {
     };
   }
 }
-

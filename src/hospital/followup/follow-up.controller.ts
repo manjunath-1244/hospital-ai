@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { FollowUpService } from './follow-up.service';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
 

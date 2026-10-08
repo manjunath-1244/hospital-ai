@@ -13,12 +13,14 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { CircuitBreaker } from '../reliability/resilience';
 
 /** HL7 FHIR R4 REST client (HAPI). Failures throw: callers decide how to degrade; nothing fabricates data. */
 @Injectable()
 export class FhirHapiClient {
   private readonly logger = new Logger(FhirHapiClient.name);
   private readonly http: AxiosInstance;
+  private readonly breaker = new CircuitBreaker(3, 15_000);
 
   constructor() {
     this.http = axios.create({
@@ -33,19 +35,23 @@ export class FhirHapiClient {
 
   /** Idempotent create-or-update with a client-assigned id (PUT), so retries never duplicate patients. */
   async upsertPatient(resource: { resourceType: 'Patient'; id: string }) {
-    const { data } = await this.http.put(`/Patient/${resource.id}`, resource);
-    return data;
+    return this.breaker.exec(async () => {
+      const { data } = await this.http.put(`/Patient/${resource.id}`, resource);
+      return data;
+    });
   }
 
   async upsertObservation(resource: {
     resourceType: 'Observation';
     id: string;
   }) {
-    const { data } = await this.http.put(
-      `/Observation/${resource.id}`,
-      resource,
-    );
-    return data;
+    return this.breaker.exec(async () => {
+      const { data } = await this.http.put(
+        `/Observation/${resource.id}`,
+        resource,
+      );
+      return data;
+    });
   }
 
   async upsertImagingStudy(resource: {

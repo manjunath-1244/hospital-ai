@@ -31,9 +31,13 @@ describe('W10 Agent Observability & Metrics', () => {
         threadId: 'TH-123',
       });
 
-      expect(built.goal).toBe('Check cardiology referral needs for patient P1001');
+      expect(built.goal).toBe(
+        'Check cardiology referral needs for patient P1001',
+      );
       expect(built.decisions.length).toBe(1);
-      expect(built.decisions[0].what).toBe('Recommend Cardiology Specialist Referral');
+      expect(built.decisions[0].what).toBe(
+        'Recommend Cardiology Specialist Referral',
+      );
       expect(built.actionIds).toEqual(['ACT-1001']);
     });
   });
@@ -71,12 +75,27 @@ describe('W10 Agent Observability & Metrics', () => {
         contextHash: 'hash-123',
         context: { patientId: 'P1001', role: 'DOCTOR' },
         steps: [
-          { type: 'memory', name: 'load-thread', startOffsetMs: 0, durationMs: 10, success: true },
-          { type: 'tool', name: 'getPatientSummary', startOffsetMs: 10, durationMs: 50, success: true },
+          {
+            type: 'memory',
+            name: 'load-thread',
+            startOffsetMs: 0,
+            durationMs: 10,
+            success: true,
+          },
+          {
+            type: 'tool',
+            name: 'getPatientSummary',
+            startOffsetMs: 10,
+            durationMs: 50,
+            success: true,
+          },
         ],
         toolCallCount: 1,
         decisions: [
-          { what: 'Propose Cardiology Referral', why: 'NEWS2 = 6, Troponin = 0.8' },
+          {
+            what: 'Propose Cardiology Referral',
+            why: 'NEWS2 = 6, Troponin = 0.8',
+          },
         ],
         actionIds: ['ACT-001'],
       };

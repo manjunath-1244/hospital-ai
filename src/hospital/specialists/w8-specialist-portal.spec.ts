@@ -41,6 +41,15 @@ describe('W8 Specialist Portal & AI Referral Summary', () => {
     };
 
     mockReferralService = {
+      assertSpecialistOwns: jest.fn((_userId: string, id: string) =>
+        Promise.resolve({
+          id,
+          visitId: 'V1001001',
+          patientId: 'P1001',
+          specialty: 'Cardiology',
+          status: 'ACCEPTED',
+        }),
+      ),
       transitionStatus: jest.fn((id, status) =>
         Promise.resolve({ id, status }),
       ),
@@ -56,7 +65,12 @@ describe('W8 Specialist Portal & AI Referral Summary', () => {
         conditions: ['Hypertension'],
       }),
       getPatientLabs: jest.fn().mockResolvedValue([
-        { testName: 'Troponin T', value: '0.8', unit: 'ng/mL', status: 'CRITICAL' },
+        {
+          testName: 'Troponin T',
+          value: '0.8',
+          unit: 'ng/mL',
+          status: 'CRITICAL',
+        },
         { testName: 'HbA1c', value: '7.2', unit: '%', status: 'ABNORMAL' },
       ]),
     };
@@ -156,7 +170,9 @@ describe('W8 Specialist Portal & AI Referral Summary', () => {
       expect(summary.keyClinicalFindings.abnormalLabs?.length).toBe(2);
       expect(summary.keyClinicalFindings.recentVitals.news2Score).toBe(6);
       expect(summary.guidelinesCited.length).toBe(1);
-      expect(summary.guidelinesCited[0].filename).toBe('cardiology-referral-guidelines.md');
+      expect(summary.guidelinesCited[0].filename).toBe(
+        'cardiology-referral-guidelines.md',
+      );
     });
   });
 

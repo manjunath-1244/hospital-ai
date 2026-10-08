@@ -18,7 +18,7 @@ export interface Intent {
 const rx = (s: RegExp) => (t: string) => s.test(t);
 
 const WRITE = rx(
-  /\b(book|schedule|register|admit|prescribe|record|create|add|assign|cancel|close|delete|remove|update|order|discharge)\b/i,
+  /\b(book|schedule|register|admit|prescribe|record|create|add|assign|cancel|close|delete|remove|update|order|discharge|refer|referral|notify|propose|arrange|escalate|transfer|follow[- ]?up plan)\b/i,
 );
 const LIST = rx(
   /\b(all|every|each)\b[^.?!]*\bpatients?\b|\blist\b[^.?!]*\bpatients?\b|\bpatients?\b[^.?!]*\b(list|registered|in the (hospital|system|database))\b|\bpatient details\b/i,
@@ -49,7 +49,7 @@ const CROSS = rx(
   /\b(which|who)\b[^.?!]*\b(patients?|has|have|had|are|is|on|taking|allergic|diagnosed|suffering|complain)/i,
 );
 const REVIEW = rx(
-  /\b(review|refer|referral|specialist|recommend|recommendation|should i refer|needs a specialist|requires a specialist)\b/i,
+  /\b(review|recommend\w*|should (i|we) refer|(is|are) (a )?specialists? (required|needed|necessary)|needs? (a )?specialist|requires? (a )?specialist|specialist (required|needed|necessary))\b/i,
 );
 
 /** Cheap, deterministic, explainable routing of a message to the data it needs. */

@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
 
@@ -34,10 +28,7 @@ export class NotificationsController {
   }
 
   @Post(':id/read')
-  async markRead(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async markRead(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     const userId = user.userId || (user as any).id;
     const notif = await this.notificationService.markAsRead(id, userId);
     return { success: true, notification: notif };

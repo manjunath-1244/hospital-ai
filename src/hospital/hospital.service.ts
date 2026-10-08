@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, ILike, Repository } from 'typeorm';
+import { DataSource, EntityManager, ILike, In, Repository } from 'typeorm';
 import { PatientEntity } from '../database/entities/patient.entity';
 import { LabResultEntity } from '../database/entities/lab-result.entity';
 import { AppointmentEntity } from '../database/entities/appointment.entity';
@@ -13,6 +13,13 @@ import { ImagingStudyEntity } from '../database/entities/imaging-study.entity';
 import { VitalsEntity } from '../database/entities/vitals.entity';
 import { ConsultationEntity } from '../database/entities/consultation.entity';
 import { ChatThreadEntity } from '../database/entities/chat-thread.entity';
+import { ChatMessageEntity } from '../database/entities/chat-message.entity';
+import { AgentRunEntity } from '../database/entities/agent-run.entity';
+import { AgentActionEntity } from '../database/entities/agent-action.entity';
+import { ConsultationRequestEntity } from '../database/entities/consultation-request.entity';
+import { FollowUpPlanEntity } from '../database/entities/follow-up-plan.entity';
+import { LabOrderEntity } from '../database/entities/lab-order.entity';
+import { PatientNoticeEntity } from '../database/entities/patient-notice.entity';
 import { newId } from '../common/ids';
 import { TaskPriority } from './hospital.types';
 import { findMentionedPatients } from './mention-matching';
@@ -146,7 +153,7 @@ export class HospitalService {
     return this.patients.update({ id }, { fhirSynced: true });
   }
 
-  /** Permanently removes the patient and every record that belongs to them (all visits included), atomically. */
+  /** Permanently removes the patient and every record that belongs to them (all visits and AI traces included), atomically. */
   async deletePatientCascade(id: string) {
     const pid = (await this.getPatientById(id)).id;
     const orthancInstanceIds: string[] = [];
@@ -160,6 +167,34 @@ export class HospitalService {
       );
       const count = async (entity: any) =>
         (await m.delete(entity, { patientId: pid })).affected ?? 0;
+
+      // Purge AI entities & notifications
+      await count(AgentActionEntity);
+      await count(ConsultationRequestEntity);
+      await count(FollowUpPlanEntity);
+      await count(LabOrderEntity);
+      await count(PatientNoticeEntity);
+
+      // Purge chat threads and messages belonging to this patient
+      const threads = await m.find(ChatThreadEntity, {
+        where: { activePatientId: pid },
+      });
+      if (threads.length) {
+        const tIds = threads.map((t) => t.id);
+        await m.delete(ChatMessageEntity, { threadId: In(tIds) });
+        await m.delete(ChatThreadEntity, { id: In(tIds) });
+      }
+
+      // Scrub agent runs referencing this patient ID in context snapshot or goal
+      await m
+        .createQueryBuilder()
+        .delete()
+        .from(AgentRunEntity)
+        .where(`"goal" LIKE :pidPattern OR "context"::text LIKE :pidPattern`, {
+          pidPattern: `%${pid}%`,
+        })
+        .execute();
+
       const result = {
         labs: await count(LabResultEntity),
         vitals: await count(VitalsEntity),
@@ -168,6 +203,7 @@ export class HospitalService {
         appointments: await count(AppointmentEntity),
         tasks: await count(StaffTaskEntity),
         visits: await this.visits.deleteForPatient(pid, m),
+        aiThreads: threads.length,
       };
       // Identical DICOM files are stored once in the PACS and shared: only remove an image when no other study uses it.
       const stillUsed = new Set<string>();
@@ -219,8 +255,19 @@ export class HospitalService {
   }
 
   // --- Appointments (ACID: unique partial index + row lock) ---
-  getAppointments() {
-    return this.appointments.find({ order: { dateTime: 'ASC' } });
+  /** Appointments with the patient's name and the visit they belong to, so screens never show a bare id. */
+  async getAppointments(filter: { doctorId?: string } = {}) {
+    const rows: any[] = await this.dataSource.query(
+      `SELECT a.*, p."name" AS "patientName", p."age" AS "patientAge", p."gender" AS "patientGender",
+              v."status" AS "visitStatus", v."chiefComplaint" AS "chiefComplaint"
+         FROM appointments a
+         LEFT JOIN patients p ON p."id" = a."patientId"
+         LEFT JOIN visits v ON v."id" = a."visitId"
+        ${filter.doctorId ? `WHERE a."doctorId" = $1` : ''}
+        ORDER BY a."dateTime" ASC`,
+      filter.doctorId ? [filter.doctorId] : [],
+    );
+    return rows;
   }
 
   getAppointmentsForPatient(patientId: string) {
