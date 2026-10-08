@@ -13,13 +13,19 @@ import type { AuthUser } from '../../security/auth-user';
 import { ClinicalTool, ToolTrace } from './tool-registry';
 import type { AgentContext } from '../context/agent-context';
 import { applyToolPolicy, bindingViolation } from '../context/tool-policy';
-import { buildHospitalTools } from './hospital.tools';
 import { PatientDirectoryService } from '../../hospital/patient-directory.service';
 import { SpecialistService } from '../../hospital/specialists/specialist.service';
 import { OverviewService } from '../../hospital/overview.service';
-import { buildRagTools } from './rag.tools';
-import { buildInteropTools } from './fhir-hapi.tools';
-import { buildLifecycleTools } from './lifecycle.tools';
+import { VisitsService } from '../../hospital/visits/visits.service';
+import { ClinicalRecordsService } from '../../hospital/clinical-records.service';
+
+import { buildPatientTools } from './patient/patient.tools';
+import { buildClinicalReadTools } from './clinical/clinical-read.tools';
+import { buildClinicalAssessTools } from './clinical/clinical-assess.tools';
+import { buildSpecialistTools } from './specialist/specialist.tools';
+import { buildSchedulingTools } from './scheduling/scheduling.tools';
+import { buildProposeTools } from './actions/propose.tools';
+import { buildInteropTools } from './interop/interop.tools';
 import { withTimeout } from '../reliability/resilience';
 
 /**
@@ -42,19 +48,23 @@ export class ClinicalToolsFactory {
     rag: VectorRagService,
     fhir: FhirHapiClient,
     orthanc: OrthancClient,
+    visits: VisitsService,
+    records: ClinicalRecordsService,
   ) {
     this.definitions = [
-      ...buildHospitalTools({
+      ...buildPatientTools({ directory, summaries }),
+      ...buildClinicalReadTools({
         hospital,
-        summaries,
-        directory,
-        specialists,
-        overview,
-        lifecycle,
+        records,
+        visits,
+        medSafety,
+        rag,
       }),
-      ...buildRagTools(rag),
-      ...buildInteropTools(fhir, orthanc),
-      ...buildLifecycleTools({ lifecycle, hospital, news2, medSafety }),
+      ...buildClinicalAssessTools({ rag, lifecycle, news2 }),
+      ...buildSpecialistTools({ specialists }),
+      ...buildSchedulingTools({ hospital, lifecycle, overview }),
+      ...buildProposeTools(),
+      ...buildInteropTools(fhir, orthanc, rag),
     ];
   }
 

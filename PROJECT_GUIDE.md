@@ -818,8 +818,15 @@ Line counts are approximate. **Status** uses the legend at the top. "Spec" = uni
 | `tools/tool-registry.ts` | `ClinicalTool` type, `ToolTrace`, role sets | ✅ |
 | `context/agent-context.ts`, `agent-context.builder.ts`, `tool-policy.ts` | per-request AgentContext, state-aware tool visibility, patient binding for writes ✅ |
 | `tools/clinical-tools.factory.ts` | per-request, role-filtered, masked, traced Mastra tools; `runDirect` | ✅ |
-| `tools/hospital.tools.ts`, `rag.tools.ts`, `lifecycle.tools.ts` | the 13 core tools | ✅ |
-| `tools/fhir-hapi.tools.ts` | 2 admin/radiology report tools | 🟡 marginal |
+| `tools/patient/patient.tools.ts` | patient lookup tools (`searchPatients`, `getPatientSummary`) | ✅ |
+| `tools/clinical/clinical-read.tools.ts` | new clinical read tools (`getCurrentVisit`, `getVitalsHistory`, `getLabs`, `getMedications`, `getAllergies`, `searchClinicalGuidelines`) | ✅ |
+| `tools/clinical/clinical-assess.tools.ts` | assessment tools (`searchClinicalRecords`, `verifyMedicationSafety`, `assessTriage`) | ✅ |
+| `tools/specialist/specialist.tools.ts` | specialist tools (`findSpecialists`, `getSpecialistAvailability`) | ✅ |
+| `tools/scheduling/scheduling.tools.ts` | scheduling/workflow tools (`getAppointmentsAndTasks`, `bookAppointment`, `createStaffTask`, `registerOpPatient`, `recordDoctorConsultation`, `checkUnconsultedAlerts`, `getHospitalOverview`) | ✅ |
+| `tools/actions/propose.tools.ts` | proposal tools (`proposeReferral`, `proposeFollowUp`, `proposeTask`, `proposeNotification`, `proposeLabOrder`) - return proposals only, zero DB writes | ✅ |
+| `tools/notifications/notification.tools.ts` | notification domain tools (`proposeNotification`) | ✅ |
+| `tools/interop/interop.tools.ts` | interop tools (`queryLiveHapiFhirPatients`, `queryLiveOrthancStudies`, `searchHospitalPolicies`) | ✅ |
+| `tools/hospital.tools.ts`, `rag.tools.ts`, `lifecycle.tools.ts`, `fhir-hapi.tools.ts` | backwards-compatible adapters delegating to domain folders | ✅ |
 | `tools/loose-schema.ts`, `validate-dto.ts` | lenient argument parsing; REST-equivalent validation for tool writes | ✅ |
 | `tools/dicom-fhir.tools.ts` | superseded by `getPatientSummary` | 🗑 |
 | `memory/conversation-memory.service.ts`, `summarizer.service.ts`, `context-window.ts` (+spec) | threads, summary, window selection | ✅ |
