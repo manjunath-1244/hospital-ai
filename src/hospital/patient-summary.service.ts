@@ -49,16 +49,17 @@ export class PatientSummaryService {
         'PHARMACIST',
         'RADIOLOGIST',
         'CARE_COORDINATOR',
+        'SPECIALIST',
       )
     ) {
       out.conditions = p.conditions;
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST'))
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST'))
       out.allergies = p.allergies;
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR'))
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR', 'SPECIALIST'))
       out.currentMedications = p.currentMedications;
 
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST')) {
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST')) {
       const labs = await this.hospital.getPatientLabs(p.id);
       out.labs = labs.slice(0, 10).map((l) => ({
         test: l.testName,
@@ -69,7 +70,7 @@ export class PatientSummaryService {
         date: l.date,
       }));
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST')) {
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'SPECIALIST')) {
       // Computed, not inferred: current medications screened against allergies, renal function and each other.
       const labs = await this.hospital.getPatientLabs(p.id);
       const cr = labs.find((l) => /creatinine/i.test(l.testName));
@@ -90,7 +91,7 @@ export class PatientSummaryService {
         (f) => f.severity !== 'INFO',
       );
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN')) {
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'SPECIALIST')) {
       out.recentVitals = (await this.records.listVitals(p.id, 3)).map((v) => ({
         at: v.recordedAt,
         heartRate: v.heartRate,
@@ -103,7 +104,7 @@ export class PatientSummaryService {
         risk: v.riskLevel,
       }));
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR')) {
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'CARE_COORDINATOR', 'SPECIALIST')) {
       out.recentConsultations = (
         await this.records.listConsultations(p.id, 3)
       ).map((c) => ({
@@ -114,7 +115,7 @@ export class PatientSummaryService {
         notes: c.notes,
       }));
     }
-    if (can('DOCTOR', 'NURSE', 'ADMIN', 'RADIOLOGIST')) {
+    if (can('DOCTOR', 'NURSE', 'ADMIN', 'RADIOLOGIST', 'SPECIALIST')) {
       out.imaging = (await this.records.listImagingStudies(p.id)).map((s) => ({
         modality: s.modality,
         description: s.description,

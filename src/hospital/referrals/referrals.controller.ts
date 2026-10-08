@@ -14,6 +14,11 @@ import {
 import { ReferralStatus } from '../../database/entities/consultation-request.entity';
 import { AuthUser, CurrentUser } from '../../security/auth-user';
 
+import {
+  SpecialistPortalService,
+  CompleteConsultationDto,
+} from '../specialists/specialist-portal.service';
+
 export class UpdateReferralStatusDto {
   toStatus!: ReferralStatus;
   cancellationReason?: string;
@@ -21,7 +26,10 @@ export class UpdateReferralStatusDto {
 
 @Controller('hospital/referrals')
 export class ReferralsController {
-  constructor(private readonly referralService: ReferralService) {}
+  constructor(
+    private readonly referralService: ReferralService,
+    private readonly portalService: SpecialistPortalService,
+  ) {}
 
   @Post()
   async createReferral(
@@ -54,6 +62,22 @@ export class ReferralsController {
   async getReferral(@Param('id') id: string) {
     const referral = await this.referralService.getReferral(id);
     return { success: true, referral };
+  }
+
+  @Get(':id/ai-summary')
+  async getAiSummary(@Param('id') id: string) {
+    const summary = await this.portalService.getAiSummary(id);
+    return { success: true, summary };
+  }
+
+  @Post(':id/complete')
+  async completeReferral(
+    @Param('id') id: string,
+    @Body() dto: CompleteConsultationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const res = await this.portalService.completeConsultation(id, dto, user);
+    return { success: true, ...res };
   }
 
   @Patch(':id/status')

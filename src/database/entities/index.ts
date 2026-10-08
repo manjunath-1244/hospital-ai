@@ -19,6 +19,7 @@ import { AgentActionEntity } from './agent-action.entity';
 import { ConsultationRequestEntity } from './consultation-request.entity';
 import { NotificationEntity } from './notification.entity';
 import { PatientNoticeEntity } from './patient-notice.entity';
+import { SpecialistAssessmentEntity } from './specialist-assessment.entity';
 
 export const ALL_ENTITIES = [
   PatientEntity,
@@ -42,6 +43,7 @@ export const ALL_ENTITIES = [
   ConsultationRequestEntity,
   NotificationEntity,
   PatientNoticeEntity,
+  SpecialistAssessmentEntity,
 ];
 
 export {
@@ -50,6 +52,7 @@ export {
   ConsultationRequestEntity,
   NotificationEntity,
   PatientNoticeEntity,
+  SpecialistAssessmentEntity,
   VisitEntity,
   VisitEventEntity,
   KnowledgeDocumentEntity,
