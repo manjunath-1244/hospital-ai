@@ -15,6 +15,7 @@ import { DocumentEmbeddingEntity } from './document-embedding.entity';
 import { VisitEntity } from './visit.entity';
 import { VisitEventEntity } from './visit-event.entity';
 import { DoctorAvailabilityEntity } from './doctor-availability.entity';
+import { AgentActionEntity } from './agent-action.entity';
 
 export const ALL_ENTITIES = [
   PatientEntity,
@@ -34,10 +35,12 @@ export const ALL_ENTITIES = [
   VisitEntity,
   VisitEventEntity,
   DoctorAvailabilityEntity,
+  AgentActionEntity,
 ];
 
 export {
   DoctorAvailabilityEntity,
+  AgentActionEntity,
   VisitEntity,
   VisitEventEntity,
   KnowledgeDocumentEntity,

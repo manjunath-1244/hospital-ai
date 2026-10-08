@@ -3,6 +3,7 @@ import { DataModule } from '../database/data.module';
 import { HospitalModule } from '../hospital/hospital.module';
 import { KnowledgeModule } from './rag/knowledge.module';
 import { InteropModule } from './fhir/interop.module';
+import { ActionsModule } from './actions/actions.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { PhiAnonymizerService } from './security/phi-anonymizer.service';
@@ -16,7 +17,13 @@ import { AgentContextBuilder } from './context/agent-context.builder';
 import { AgentRunsService } from './observability/agent-runs.service';
 
 @Module({
-  imports: [DataModule, HospitalModule, KnowledgeModule, InteropModule],
+  imports: [
+    DataModule,
+    HospitalModule,
+    KnowledgeModule,
+    InteropModule,
+    ActionsModule,
+  ],
   controllers: [AiController],
   providers: [
     AiService,
@@ -37,6 +44,7 @@ import { AgentRunsService } from './observability/agent-runs.service';
     AgentRunsService,
     ClinicalToolsFactory,
     ConversationMemoryService,
+    ActionsModule,
   ],
 })
 export class AiModule {}

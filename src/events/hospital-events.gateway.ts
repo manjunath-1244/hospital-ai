@@ -96,15 +96,18 @@ export class HospitalEventsGateway
     this.emitTo('visit.updated', p, ALL_ROLES);
   }
   emitPatientDeleted(p: unknown) {
-    this.emitTo('patient.deleted', p, [
-      'DOCTOR',
-      'NURSE',
-      'RECEPTIONIST',
-      'ADMIN',
-      'PHARMACIST',
-      'CARE_COORDINATOR',
-      'RADIOLOGIST',
-    ]);
+    this.emitTo('patient.deleted', p, ALL_ROLES);
+  }
+
+  // Agent action lifecycle events
+  emitActionProposed(p: unknown) {
+    this.emitTo('agent.action.proposed', p, ALL_ROLES);
+  }
+  emitActionDecided(p: unknown) {
+    this.emitTo('agent.action.decided', p, ALL_ROLES);
+  }
+  emitActionExecuted(p: unknown) {
+    this.emitTo('agent.action.executed', p, ALL_ROLES);
   }
 
   @SubscribeMessage('ping')

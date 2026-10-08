@@ -8,23 +8,36 @@ export interface GuardrailResult {
 // Matches seeded ids (P1001) and generated ids (P + 6 unambiguous chars).
 const PATIENT_ID = /\bP(?:\d{4}|[A-HJ-NP-Z2-9]{6})\b/g;
 
-/** Post-generation checks: failed tools and patient identifiers that never appeared in any tool or user input. */
+/** Post-generation checks: failed tools, unretrieved IDs, and unverified completion claims. */
 export function checkGuardrails(
   response: string,
   trace: ToolTrace,
   userMessage: string,
+  executedActionsCount = 0,
 ): GuardrailResult {
   const notes: string[] = [];
+
   for (const c of trace.calls.filter((c) => !c.success))
     notes.push(
       `Tool "${c.name}" failed; related statements may be incomplete.`,
     );
+
   for (const id of new Set(response.match(PATIENT_ID) ?? [])) {
     if (!trace.saw(id) && !userMessage.includes(id))
       notes.push(
         `Patient ID ${id} in the answer was not retrieved from any record.`,
       );
   }
+
+  // W6 Guardrail: False Completion Claim check
+  const claimRegex =
+    /\b(has been (registered|booked|created|assigned|saved|completed|closed|reopened)|action (done|completed))\b/i;
+  if (claimRegex.test(response) && executedActionsCount === 0) {
+    notes.push(
+      'Completion claim detected in answer text, but no approved action was executed this turn.',
+    );
+  }
+
   return { status: notes.length ? 'WARNING' : 'VERIFIED_SAFE', notes };
 }
 
