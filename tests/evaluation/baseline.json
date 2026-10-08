@@ -1,0 +1,971 @@
+{
+  "meta": {
+    "date": "2026-10-07T13:07:26.672Z",
+    "mode": "live+scripted",
+    "model": "ollama:llama3.2-hospital"
+  },
+  "summary": {
+    "passed": 136,
+    "total": 136
+  },
+  "live": {
+    "total": 10,
+    "toolOk": 10,
+    "answerOk": 10,
+    "model": "ollama:llama3.2-hospital"
+  },
+  "checks": [
+    {
+      "id": "tools EVAL-01: getPatientSummary::tool returns success",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 23
+    },
+    {
+      "id": "tools EVAL-01: getPatientSummary::output contains \"HbA1c\"",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "output contains \"HbA1c\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-01: getPatientSummary::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-01: getPatientSummary::agent loop executed the tool",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 237
+    },
+    {
+      "id": "tools EVAL-01: getPatientSummary::agent returned final text",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-01: getPatientSummary::model never saw the raw patient name",
+      "phase": "tools EVAL-01: getPatientSummary",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::tool returns success",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 27
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::output contains \"Penicillin\"",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "output contains \"Penicillin\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::agent loop executed the tool",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 41
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::agent returned final text",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-02: getPatientSummary::model never saw the raw patient name",
+      "phase": "tools EVAL-02: getPatientSummary",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::tool returns success",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 99
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::output contains \"discharge\"",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "output contains \"discharge\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::agent loop executed the tool",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 30
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::agent returned final text",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-03: searchHospitalPolicies::model never saw the raw patient name",
+      "phase": "tools EVAL-03: searchHospitalPolicies",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::tool returns success",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 13
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::output contains \"CRITICAL_BLOCK\"",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "output contains \"CRITICAL_BLOCK\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::agent loop executed the tool",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 24
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::agent returned final text",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-04: verifyMedicationSafety::model never saw the raw patient name",
+      "phase": "tools EVAL-04: verifyMedicationSafety",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::tool returns success",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::output contains \"suggestedEsiLevel\"",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "output contains \"suggestedEsiLevel\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::agent loop executed the tool",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 19
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::agent returned final text",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-05: assessTriage::model never saw the raw patient name",
+      "phase": "tools EVAL-05: assessTriage",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::tool returns success",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 12
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::output contains \"imaging\"",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "output contains \"imaging\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::agent loop executed the tool",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 29
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::agent returned final text",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-06: getPatientSummary::model never saw the raw patient name",
+      "phase": "tools EVAL-06: getPatientSummary",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::tool returns success",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 3
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::output contains \"P1002\"",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "output contains \"P1002\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::agent loop executed the tool",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 22
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::agent returned final text",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-07: searchPatients::model never saw the raw patient name",
+      "phase": "tools EVAL-07: searchPatients",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::tool returns success",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 9
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::output contains \"waitingForDoctor\"",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "output contains \"waitingForDoctor\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::agent loop executed the tool",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 21
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::agent returned final text",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-08: getHospitalOverview::model never saw the raw patient name",
+      "phase": "tools EVAL-08: getHospitalOverview",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::tool returns success",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 113
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::output contains \"P1001\"",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "output contains \"P1001\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::agent loop executed the tool",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 24
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::agent returned final text",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-09: searchClinicalRecords::model never saw the raw patient name",
+      "phase": "tools EVAL-09: searchClinicalRecords",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::tool returns success",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "tool returns success",
+      "pass": true,
+      "ms": 116
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::output contains \"BLUE HERON\"",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "output contains \"BLUE HERON\"",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::no raw patient name/phone leaves the tool layer",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "no raw patient name/phone leaves the tool layer",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::agent loop executed the tool",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "agent loop executed the tool",
+      "pass": true,
+      "ms": 21
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::agent returned final text",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "agent returned final text",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "tools EVAL-10: searchHospitalPolicies::model never saw the raw patient name",
+      "phase": "tools EVAL-10: searchHospitalPolicies",
+      "name": "model never saw the raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "rbac::receptionist cannot search clinical records",
+      "phase": "rbac",
+      "name": "receptionist cannot search clinical records",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "rbac::receptionist cannot use recordDoctorConsultation",
+      "phase": "rbac",
+      "name": "receptionist cannot use recordDoctorConsultation",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "rbac::receptionist can register patients",
+      "phase": "rbac",
+      "name": "receptionist can register patients",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "rbac::doctor cannot register patients",
+      "phase": "rbac",
+      "name": "doctor cannot register patients",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "rbac::model cannot execute a tool its role does not have",
+      "phase": "rbac",
+      "name": "model cannot execute a tool its role does not have",
+      "pass": true,
+      "ms": 51
+    },
+    {
+      "id": "rbac::receptionist summary has demographics only (no allergies/labs/medications)",
+      "phase": "rbac",
+      "name": "receptionist summary has demographics only (no allergies/labs/medications)",
+      "pass": true,
+      "ms": 4
+    },
+    {
+      "id": "retrieval::penicillin query surfaces the discharge policy",
+      "phase": "retrieval",
+      "name": "penicillin query surfaces the discharge policy",
+      "pass": true,
+      "ms": 123
+    },
+    {
+      "id": "retrieval::patient-record search is scoped to that patient",
+      "phase": "retrieval",
+      "name": "patient-record search is scoped to that patient",
+      "pass": true,
+      "ms": 156
+    },
+    {
+      "id": "memory::first turn succeeds and creates a thread",
+      "phase": "memory",
+      "name": "first turn succeeds and creates a thread",
+      "pass": true,
+      "ms": 80
+    },
+    {
+      "id": "memory::second turn reuses the thread",
+      "phase": "memory",
+      "name": "second turn reuses the thread",
+      "pass": true,
+      "ms": 173
+    },
+    {
+      "id": "memory::model receives the earlier turns from server-side memory",
+      "phase": "memory",
+      "name": "model receives the earlier turns from server-side memory",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "memory::patient in focus carried into the agent instructions",
+      "phase": "memory",
+      "name": "patient in focus carried into the agent instructions",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "memory::4 messages persisted (2 turns)",
+      "phase": "memory",
+      "name": "4 messages persisted (2 turns)",
+      "pass": true,
+      "ms": 4
+    },
+    {
+      "id": "memory::another user cannot read this user's thread",
+      "phase": "memory",
+      "name": "another user cannot read this user's thread",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "memory::another user cannot continue this user's thread",
+      "phase": "memory",
+      "name": "another user cannot continue this user's thread",
+      "pass": true,
+      "ms": 7
+    },
+    {
+      "id": "memory: summarisation::older turns were summarised once the budget was exceeded",
+      "phase": "memory: summarisation",
+      "name": "older turns were summarised once the budget was exceeded",
+      "pass": true,
+      "ms": 1648
+    },
+    {
+      "id": "memory: summarisation::summary is injected into later prompts",
+      "phase": "memory: summarisation",
+      "name": "summary is injected into later prompts",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "memory: summarisation::context stays bounded (not all turns resent)",
+      "phase": "memory: summarisation",
+      "name": "context stays bounded (not all turns resent)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "reliability::transient 503s are retried and the request succeeds",
+      "phase": "reliability",
+      "name": "transient 503s are retried and the request succeeds",
+      "pass": true,
+      "ms": 189
+    },
+    {
+      "id": "reliability::retries are recorded on the trace",
+      "phase": "reliability",
+      "name": "retries are recorded on the trace",
+      "pass": true,
+      "ms": 2
+    },
+    {
+      "id": "reliability::non-transient errors are NOT retried",
+      "phase": "reliability",
+      "name": "non-transient errors are NOT retried",
+      "pass": true,
+      "ms": 167
+    },
+    {
+      "id": "reliability::user gets a clean error plus trace id (no stack/internal detail)",
+      "phase": "reliability",
+      "name": "user gets a clean error plus trace id (no stack/internal detail)",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "reliability::failed runs are recorded as ERROR",
+      "phase": "reliability",
+      "name": "failed runs are recorded as ERROR",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "reliability::a hung model call is cut off by the timeout",
+      "phase": "reliability",
+      "name": "a hung model call is cut off by the timeout",
+      "pass": true,
+      "ms": 275
+    },
+    {
+      "id": "reliability::circuit breaker opens after repeated provider failures",
+      "phase": "reliability",
+      "name": "circuit breaker opens after repeated provider failures",
+      "pass": true,
+      "ms": 764
+    },
+    {
+      "id": "reliability::open breaker fails fast without calling the model",
+      "phase": "reliability",
+      "name": "open breaker fails fast without calling the model",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "reliability: failure handling in answers::a failing tool is reported, not hidden",
+      "phase": "reliability: failure handling in answers",
+      "name": "a failing tool is reported, not hidden",
+      "pass": true,
+      "ms": 65
+    },
+    {
+      "id": "reliability: failure handling in answers::a non-existent patient id is answered \"not found\" directly, without calling the model",
+      "phase": "reliability: failure handling in answers",
+      "name": "a non-existent patient id is answered \"not found\" directly, without calling the model",
+      "pass": true,
+      "ms": 35
+    },
+    {
+      "id": "reliability: failure handling in answers::guardrail flags a patient id the agent never retrieved",
+      "phase": "reliability: failure handling in answers",
+      "name": "guardrail flags a patient id the agent never retrieved",
+      "pass": true,
+      "ms": 140
+    },
+    {
+      "id": "reliability: failure handling in answers::a grounded answer passes the guardrail",
+      "phase": "reliability: failure handling in answers",
+      "name": "a grounded answer passes the guardrail",
+      "pass": true,
+      "ms": 48
+    },
+    {
+      "id": "reliability: failure handling in answers::a patient id in the question triggers a server-side chart fetch",
+      "phase": "reliability: failure handling in answers",
+      "name": "a patient id in the question triggers a server-side chart fetch",
+      "pass": true,
+      "ms": 44
+    },
+    {
+      "id": "reliability: failure handling in answers::an allergy question is answered directly from the chart (no model needed)",
+      "phase": "reliability: failure handling in answers",
+      "name": "an allergy question is answered directly from the chart (no model needed)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "reliability: failure handling in answers::for reasoning questions the model is handed the chart (allergies present) with no raw patient name or phone",
+      "phase": "reliability: failure handling in answers",
+      "name": "for reasoning questions the model is handed the chart (allergies present) with no raw patient name or phone",
+      "pass": true,
+      "ms": 42
+    },
+    {
+      "id": "reliability: failure handling in answers::a first name that matches exactly one patient resolves to that chart",
+      "phase": "reliability: failure handling in answers",
+      "name": "a first name that matches exactly one patient resolves to that chart",
+      "pass": true,
+      "ms": 37
+    },
+    {
+      "id": "reliability: failure handling in answers::preloaded charts respect the role (receptionist gets no allergies)",
+      "phase": "reliability: failure handling in answers",
+      "name": "preloaded charts respect the role (receptionist gets no allergies)",
+      "pass": true,
+      "ms": 24
+    },
+    {
+      "id": "reliability: failure handling in answers::no patient mentioned means no chart is fetched",
+      "phase": "reliability: failure handling in answers",
+      "name": "no patient mentioned means no chart is fetched",
+      "pass": true,
+      "ms": 57
+    },
+    {
+      "id": "reliability: failure handling in answers::a counting question fetches the hospital overview server-side (grounded mode)",
+      "phase": "reliability: failure handling in answers",
+      "name": "a counting question fetches the hospital overview server-side (grounded mode)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "reliability: failure handling in answers::the word \"patient\" never resolves to a patient called \"Test Patient\"",
+      "phase": "reliability: failure handling in answers",
+      "name": "the word \"patient\" never resolves to a patient called \"Test Patient\"",
+      "pass": true,
+      "ms": 187
+    },
+    {
+      "id": "reliability: failure handling in answers::a plain-language policy question retrieves the right policy server-side",
+      "phase": "reliability: failure handling in answers",
+      "name": "a plain-language policy question retrieves the right policy server-side",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "reliability: failure handling in answers::small talk gets no irrelevant data attached",
+      "phase": "reliability: failure handling in answers",
+      "name": "small talk gets no irrelevant data attached",
+      "pass": true,
+      "ms": 150
+    },
+    {
+      "id": "reliability: failure handling in answers::a list question is answered directly from system data (model not needed), cleanly formatted",
+      "phase": "reliability: failure handling in answers",
+      "name": "a list question is answered directly from system data (model not needed), cleanly formatted",
+      "pass": true,
+      "ms": 23
+    },
+    {
+      "id": "reliability: failure handling in answers::full-details request is answered from the database, completely, without the model",
+      "phase": "reliability: failure handling in answers",
+      "name": "full-details request is answered from the database, completely, without the model",
+      "pass": true,
+      "ms": 40
+    },
+    {
+      "id": "reliability: failure handling in answers::a follow-up with only a pronoun resolves to the patient in focus and lists their medications",
+      "phase": "reliability: failure handling in answers",
+      "name": "a follow-up with only a pronoun resolves to the patient in focus and lists their medications",
+      "pass": true,
+      "ms": 34
+    },
+    {
+      "id": "reliability: failure handling in answers::a pronoun with no patient in focus asks which patient instead of guessing",
+      "phase": "reliability: failure handling in answers",
+      "name": "a pronoun with no patient in focus asks which patient instead of guessing",
+      "pass": true,
+      "ms": 23
+    },
+    {
+      "id": "reliability: failure handling in answers::a reasoning question about the patient in focus goes to the model, with the chart as context",
+      "phase": "reliability: failure handling in answers",
+      "name": "a reasoning question about the patient in focus goes to the model, with the chart as context",
+      "pass": true,
+      "ms": 44
+    },
+    {
+      "id": "reliability: failure handling in answers::vital-sign numbers in a message are scored by the NEWS2 calculator (exact, no model, no policy text)",
+      "phase": "reliability: failure handling in answers",
+      "name": "vital-sign numbers in a message are scored by the NEWS2 calculator (exact, no model, no policy text)",
+      "pass": true,
+      "ms": 24
+    },
+    {
+      "id": "reliability: failure handling in answers::with vitals missing, no score is invented (falls back to the model/tool agent)",
+      "phase": "reliability: failure handling in answers",
+      "name": "with vitals missing, no score is invented (falls back to the model/tool agent)",
+      "pass": true,
+      "ms": 30
+    },
+    {
+      "id": "reliability: failure handling in answers::a counting question is answered from the database without the model, with the exact number",
+      "phase": "reliability: failure handling in answers",
+      "name": "a counting question is answered from the database without the model, with the exact number",
+      "pass": true,
+      "ms": 30
+    },
+    {
+      "id": "reliability: failure handling in answers::a list answer that omits patients is completed from system data",
+      "phase": "reliability: failure handling in answers",
+      "name": "a list answer that omits patients is completed from system data",
+      "pass": true,
+      "ms": 24
+    },
+    {
+      "id": "reliability: failure handling in answers::a raw tool-call answer is retried and recovers",
+      "phase": "reliability: failure handling in answers",
+      "name": "a raw tool-call answer is retried and recovers",
+      "pass": true,
+      "ms": 156
+    },
+    {
+      "id": "reliability: failure handling in answers::persistent raw tool-call output is replaced by a safe message",
+      "phase": "reliability: failure handling in answers",
+      "name": "persistent raw tool-call output is replaced by a safe message",
+      "pass": true,
+      "ms": 139
+    },
+    {
+      "id": "observability::trace has memory, llm and tool spans",
+      "phase": "observability",
+      "name": "trace has memory, llm and tool spans",
+      "pass": true,
+      "ms": 2
+    },
+    {
+      "id": "observability::tool span has name, duration and success",
+      "phase": "observability",
+      "name": "tool span has name, duration and success",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "observability::trace stores token usage",
+      "phase": "observability",
+      "name": "trace stores token usage",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "observability::persisted trace contains no raw patient name",
+      "phase": "observability",
+      "name": "persisted trace contains no raw patient name",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "observability::metrics aggregate recorded runs",
+      "phase": "observability",
+      "name": "metrics aggregate recorded runs",
+      "pass": true,
+      "ms": 6
+    },
+    {
+      "id": "live LLM::[EVAL-01] chose getPatientSummary",
+      "phase": "live LLM",
+      "name": "[EVAL-01] chose getPatientSummary",
+      "pass": true,
+      "ms": 44
+    },
+    {
+      "id": "live LLM::[EVAL-01] answer is grounded (/7\\.8/)",
+      "phase": "live LLM",
+      "name": "[EVAL-01] answer is grounded (/7\\.8/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-02] chose getPatientSummary",
+      "phase": "live LLM",
+      "name": "[EVAL-02] chose getPatientSummary",
+      "pass": true,
+      "ms": 36
+    },
+    {
+      "id": "live LLM::[EVAL-02] answer is grounded (/penicillin/)",
+      "phase": "live LLM",
+      "name": "[EVAL-02] answer is grounded (/penicillin/)",
+      "pass": true,
+      "ms": 1
+    },
+    {
+      "id": "live LLM::[EVAL-03] chose searchHospitalPolicies",
+      "phase": "live LLM",
+      "name": "[EVAL-03] chose searchHospitalPolicies",
+      "pass": true,
+      "ms": 120140
+    },
+    {
+      "id": "live LLM::[EVAL-03] answer is grounded (/discharge/)",
+      "phase": "live LLM",
+      "name": "[EVAL-03] answer is grounded (/discharge/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-04] chose verifyMedicationSafety",
+      "phase": "live LLM",
+      "name": "[EVAL-04] chose verifyMedicationSafety",
+      "pass": true,
+      "ms": 102785
+    },
+    {
+      "id": "live LLM::[EVAL-04] answer is grounded (/allerg|not safe|unsafe|contraindicat|should not|avoid|block/)",
+      "phase": "live LLM",
+      "name": "[EVAL-04] answer is grounded (/allerg|not safe|unsafe|contraindicat|should not|avoid|block/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-05] chose assessTriage",
+      "phase": "live LLM",
+      "name": "[EVAL-05] chose assessTriage",
+      "pass": true,
+      "ms": 37
+    },
+    {
+      "id": "live LLM::[EVAL-05] answer is grounded (/NEWS2|ESI|high/)",
+      "phase": "live LLM",
+      "name": "[EVAL-05] answer is grounded (/NEWS2|ESI|high/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-06] chose getPatientSummary",
+      "phase": "live LLM",
+      "name": "[EVAL-06] chose getPatientSummary",
+      "pass": true,
+      "ms": 48
+    },
+    {
+      "id": "live LLM::[EVAL-06] answer is grounded (/imaging|stud|no |not/)",
+      "phase": "live LLM",
+      "name": "[EVAL-06] answer is grounded (/imaging|stud|no |not/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-07] chose searchPatients",
+      "phase": "live LLM",
+      "name": "[EVAL-07] chose searchPatients",
+      "pass": true,
+      "ms": 32
+    },
+    {
+      "id": "live LLM::[EVAL-07] answer is grounded (/(?=[\\s\\S]*Eleanor)(?=[\\s\\S]*Marcus)(?=[\\s\\S]*Sophia)/)",
+      "phase": "live LLM",
+      "name": "[EVAL-07] answer is grounded (/(?=[\\s\\S]*Eleanor)(?=[\\s\\S]*Marcus)(?=[\\s\\S]*Sophia)/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-08] chose getHospitalOverview",
+      "phase": "live LLM",
+      "name": "[EVAL-08] chose getHospitalOverview",
+      "pass": true,
+      "ms": 79040
+    },
+    {
+      "id": "live LLM::[EVAL-08] answer is grounded (/waiting/)",
+      "phase": "live LLM",
+      "name": "[EVAL-08] answer is grounded (/waiting/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-09] chose searchClinicalRecords",
+      "phase": "live LLM",
+      "name": "[EVAL-09] chose searchClinicalRecords",
+      "pass": true,
+      "ms": 29063
+    },
+    {
+      "id": "live LLM::[EVAL-09] answer is grounded (/Eleanor|P1001/)",
+      "phase": "live LLM",
+      "name": "[EVAL-09] answer is grounded (/Eleanor|P1001/)",
+      "pass": true,
+      "ms": 0
+    },
+    {
+      "id": "live LLM::[EVAL-10] chose searchHospitalPolicies",
+      "phase": "live LLM",
+      "name": "[EVAL-10] chose searchHospitalPolicies",
+      "pass": true,
+      "ms": 17560
+    },
+    {
+      "id": "live LLM::[EVAL-10] answer is grounded (/BLUE HERON/)",
+      "phase": "live LLM",
+      "name": "[EVAL-10] answer is grounded (/BLUE HERON/)",
+      "pass": true,
+      "ms": 0
+    }
+  ]
+}

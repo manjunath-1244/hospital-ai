@@ -1,0 +1,7 @@
+# Local model tuned for the hospital agent: larger context (17 tool schemas + chart data do not fit in the 4096 default)
+# and low temperature (clinical answers should be deterministic). Create with:
+#   ollama create llama3.2-hospital -f ops/Modelfile.hospital
+FROM llama3.2:3b
+PARAMETER num_ctx 8192
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9

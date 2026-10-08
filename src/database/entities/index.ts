@@ -1,0 +1,45 @@
+import { PatientEntity } from './patient.entity';
+import { LabResultEntity } from './lab-result.entity';
+import { AppointmentEntity } from './appointment.entity';
+import { StaffTaskEntity } from './staff-task.entity';
+import { UserEntity } from './user.entity';
+import { ConsultationEntity } from './consultation.entity';
+import { VitalsEntity } from './vitals.entity';
+import { ImagingStudyEntity } from './imaging-study.entity';
+import { AuditLogEntity } from './audit-log.entity';
+import { ChatThreadEntity } from './chat-thread.entity';
+import { ChatMessageEntity } from './chat-message.entity';
+import { AgentRunEntity } from './agent-run.entity';
+import { KnowledgeDocumentEntity } from './knowledge-document.entity';
+
+export const ALL_ENTITIES = [
+  PatientEntity,
+  LabResultEntity,
+  AppointmentEntity,
+  StaffTaskEntity,
+  UserEntity,
+  ConsultationEntity,
+  VitalsEntity,
+  ImagingStudyEntity,
+  AuditLogEntity,
+  ChatThreadEntity,
+  ChatMessageEntity,
+  AgentRunEntity,
+  KnowledgeDocumentEntity,
+];
+
+export {
+  KnowledgeDocumentEntity,
+  ChatThreadEntity,
+  ChatMessageEntity,
+  AgentRunEntity,
+  PatientEntity,
+  LabResultEntity,
+  AppointmentEntity,
+  StaffTaskEntity,
+  UserEntity,
+  ConsultationEntity,
+  VitalsEntity,
+  ImagingStudyEntity,
+  AuditLogEntity,
+};

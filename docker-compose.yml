@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: hospital_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-hospital_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hospital_password}
+      POSTGRES_DB: ${DB_NAME:-hospital_db}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hospital_user} -d ${DB_NAME:-hospital_db}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+
