@@ -125,6 +125,18 @@ export class VectorRagService implements OnModuleInit {
     return this.store.search(vec, { topK, kind: 'policy' });
   }
 
+  async searchPoliciesHybrid(
+    query: string,
+    topK = 4,
+    metadata?: Record<string, any>,
+  ): Promise<SearchHit[]> {
+    const vec = await this.embedQueryCached(query);
+    if (typeof this.store.searchHybrid === 'function') {
+      return this.store.searchHybrid(query, vec, { topK, kind: 'policy', metadata });
+    }
+    return this.store.search(vec, { topK, kind: 'policy' });
+  }
+
   async searchPatientRecords(
     query: string,
     patientId: string | undefined,
@@ -132,6 +144,79 @@ export class VectorRagService implements OnModuleInit {
   ): Promise<SearchHit[]> {
     const vec = await this.embedQueryCached(query);
     return this.store.search(vec, { topK, kind: 'patient_record', patientId });
+  }
+
+  async searchPatientRecordsHybrid(
+    query: string,
+    patientId: string | undefined,
+    topK = 4,
+    metadata?: Record<string, any>,
+  ): Promise<SearchHit[]> {
+    const vec = await this.embedQueryCached(query);
+    if (typeof this.store.searchHybrid === 'function') {
+      return this.store.searchHybrid(query, vec, {
+        topK,
+        kind: 'patient_record',
+        patientId,
+        metadata,
+      });
+    }
+    return this.store.search(vec, { topK, kind: 'patient_record', patientId });
+  }
+
+  /** Reformulates conversational follow-up queries using context summary. */
+  rewriteQuery(query: string, conversationSummary?: string): string {
+    const trimmed = query.trim();
+    if (!conversationSummary) return trimmed;
+    const hasPronouns = /\b(he|him|his|she|her|hers|it|its|they|them|their|those|these|that|this)\b/i.test(
+      trimmed,
+    );
+    if (hasPronouns) {
+      return `${conversationSummary.slice(0, 150)} ${trimmed}`.trim();
+    }
+    return trimmed;
+  }
+
+  /** Reranks search hits using keyword matching and score weighting. */
+  rerank(query: string, hits: SearchHit[]): SearchHit[] {
+    const terms = query
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((t) => t.length > 2);
+    if (!terms.length) return hits;
+
+    return [...hits].sort((a, b) => {
+      const aText = `${a.heading} ${a.content}`.toLowerCase();
+      const bText = `${b.heading} ${b.content}`.toLowerCase();
+      const aExactMatches = terms.filter((t) => aText.includes(t)).length;
+      const bExactMatches = terms.filter((t) => bText.includes(t)).length;
+
+      const aScore = a.score + aExactMatches * 0.1;
+      const bScore = b.score + bExactMatches * 0.1;
+      return bScore - aScore;
+    });
+  }
+
+  /** Truncates context chunks to stay within character budgets while preserving citations. */
+  compressContext(hits: SearchHit[], maxChars = 3000): SearchHit[] {
+    const result: SearchHit[] = [];
+    let totalLen = 0;
+    for (const hit of hits) {
+      if (totalLen >= maxChars) break;
+      const remaining = maxChars - totalLen;
+      if (hit.content.length <= remaining) {
+        result.push(hit);
+        totalLen += hit.content.length;
+      } else {
+        result.push({
+          ...hit,
+          content: hit.content.slice(0, remaining) + '...',
+        });
+        totalLen += remaining;
+        break;
+      }
+    }
+    return result;
   }
 
   /** Split on markdown headings, then on paragraphs with a size cap, keeping the section heading on each chunk. */

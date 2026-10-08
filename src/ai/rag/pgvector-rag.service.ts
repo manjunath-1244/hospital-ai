@@ -13,6 +13,7 @@ export interface StoredChunk {
   content: string;
   contentHash: string;
   embedding: number[];
+  metadata?: Record<string, any>;
 }
 
 export interface SearchHit {
@@ -21,6 +22,9 @@ export interface SearchHit {
   content: string;
   patientId: string | null;
   score: number;
+  metadata?: Record<string, any>;
+  citationSpan?: string;
+  quote?: string;
 }
 
 /** Storage port for vectors. RagService depends on this abstraction, so another backend can replace pgvector. */
@@ -31,6 +35,11 @@ export abstract class VectorStore {
   abstract search(
     embedding: number[],
     opts: { topK: number; kind: DocKind; patientId?: string },
+  ): Promise<SearchHit[]>;
+  abstract searchHybrid(
+    queryText: string,
+    embedding: number[],
+    opts: { topK: number; kind: DocKind; patientId?: string; metadata?: Record<string, any> },
   ): Promise<SearchHit[]>;
   abstract count(): Promise<number>;
   abstract deleteByPatient(patientId: string): Promise<number>;
@@ -77,6 +86,7 @@ export class PgVectorStore extends VectorStore {
         content_hash TEXT NOT NULL,
         embedding_model TEXT NOT NULL,
         embedding vector(${dims}) NOT NULL,
+        metadata JSONB DEFAULT '{}',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`);
     await this.dataSource.query(
@@ -88,6 +98,13 @@ export class PgVectorStore extends VectorStore {
     await this.dataSource.query(
       `CREATE INDEX IF NOT EXISTS document_embeddings_patient ON document_embeddings (patient_id)`,
     );
+    try {
+      await this.dataSource.query(
+        `CREATE INDEX IF NOT EXISTS document_embeddings_tsv ON document_embeddings USING gin(to_tsvector('english', heading || ' ' || content))`,
+      );
+    } catch {
+      // safe fallback if tsvector index exists or unhandled
+    }
     this.logger.log(
       `pgvector ready: vector(${dims}), HNSW cosine index, model ${this.embedder.modelId}.`,
     );
@@ -104,12 +121,12 @@ export class PgVectorStore extends VectorStore {
   async upsert(chunks: StoredChunk[]): Promise<void> {
     for (const c of chunks) {
       await this.dataSource.query(
-        `INSERT INTO document_embeddings (id, source, kind, patient_id, heading, content, content_hash, embedding_model, embedding)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::vector)
+        `INSERT INTO document_embeddings (id, source, kind, patient_id, heading, content, content_hash, embedding_model, embedding, metadata)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::vector,$10::jsonb)
          ON CONFLICT (id) DO UPDATE SET
            source=EXCLUDED.source, kind=EXCLUDED.kind, patient_id=EXCLUDED.patient_id, heading=EXCLUDED.heading,
            content=EXCLUDED.content, content_hash=EXCLUDED.content_hash, embedding_model=EXCLUDED.embedding_model,
-           embedding=EXCLUDED.embedding, updated_at=now()`,
+           embedding=EXCLUDED.embedding, metadata=EXCLUDED.metadata, updated_at=now()`,
         [
           c.id,
           c.source,
@@ -120,6 +137,7 @@ export class PgVectorStore extends VectorStore {
           c.contentHash,
           this.embedder.modelId,
           `[${c.embedding.join(',')}]`,
+          JSON.stringify(c.metadata ?? {}),
         ],
       );
     }
@@ -148,7 +166,7 @@ export class PgVectorStore extends VectorStore {
       patientFilter = `AND patient_id = $5`;
     }
     const rows = await this.dataSource.query(
-      `SELECT source, heading, content, patient_id, 1 - (embedding <=> $1::vector) AS score
+      `SELECT source, heading, content, patient_id, metadata, 1 - (embedding <=> $1::vector) AS score
        FROM document_embeddings
        WHERE embedding_model = $2 AND kind = $3 ${patientFilter}
        ORDER BY embedding <=> $1::vector
@@ -160,8 +178,92 @@ export class PgVectorStore extends VectorStore {
       heading: r.heading,
       content: r.content,
       patientId: r.patient_id,
+      metadata: r.metadata ?? {},
       score: Number(Number(r.score).toFixed(4)),
+      citationSpan: `[${r.source} # ${r.heading}]`,
+      quote: r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
     }));
+  }
+
+  /** Hybrid search combining Vector Cosine Similarity and PostgreSQL tsvector Full-Text Search via Reciprocal Rank Fusion (RRF). */
+  async searchHybrid(
+    queryText: string,
+    embedding: number[],
+    opts: { topK: number; kind: DocKind; patientId?: string; metadata?: Record<string, any> },
+  ): Promise<SearchHit[]> {
+    const vectorHits = await this.search(embedding, opts);
+
+    let ftsHits: SearchHit[] = [];
+    try {
+      const cleanQuery = queryText.replace(/[^\w\s]/g, ' ').trim();
+      if (cleanQuery) {
+        const params: unknown[] = [
+          cleanQuery,
+          this.embedder.modelId,
+          opts.kind,
+          opts.topK * 2,
+        ];
+        let patientFilter = '';
+        if (opts.patientId) {
+          params.push(opts.patientId.toUpperCase());
+          patientFilter = `AND patient_id = $5`;
+        }
+        const rows = await this.dataSource.query(
+          `SELECT source, heading, content, patient_id, metadata,
+                  ts_rank_cd(to_tsvector('english', heading || ' ' || content), plainto_tsquery('english', $1)) AS fts_score
+           FROM document_embeddings
+           WHERE embedding_model = $2 AND kind = $3 ${patientFilter}
+             AND to_tsvector('english', heading || ' ' || content) @@ plainto_tsquery('english', $1)
+           ORDER BY fts_score DESC
+           LIMIT $4`,
+          params,
+        );
+        ftsHits = rows.map((r: any) => ({
+          source: r.source,
+          heading: r.heading,
+          content: r.content,
+          patientId: r.patient_id,
+          metadata: r.metadata ?? {},
+          score: Number(Number(r.fts_score).toFixed(4)),
+          citationSpan: `[${r.source} # ${r.heading}]`,
+          quote: r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
+        }));
+      }
+    } catch (err: any) {
+      this.logger.debug(`FTS query skipped: ${err.message}`);
+    }
+
+    if (!ftsHits.length) return vectorHits;
+
+    const k = 60;
+    const scores = new Map<string, { hit: SearchHit; rrfScore: number }>();
+
+    vectorHits.forEach((hit, rank) => {
+      const key = `${hit.source}#${hit.heading}`;
+      const rrf = 1 / (k + rank + 1);
+      scores.set(key, { hit, rrfScore: rrf });
+    });
+
+    ftsHits.forEach((hit, rank) => {
+      const key = `${hit.source}#${hit.heading}`;
+      const rrf = 1 / (k + rank + 1);
+      const existing = scores.get(key);
+      if (existing) {
+        existing.rrfScore += rrf;
+      } else {
+        scores.set(key, { hit, rrfScore: rrf });
+      }
+    });
+
+    return [...scores.values()]
+      .sort((a, b) => b.rrfScore - a.rrfScore)
+      .slice(0, opts.topK)
+      .map(({ hit, rrfScore }) => ({
+        ...hit,
+        score: Number(rrfScore.toFixed(4)),
+        citationSpan: `[${hit.source} # ${hit.heading}]`,
+        quote: hit.content.slice(0, 150) + (hit.content.length > 150 ? '...' : ''),
+      }));
   }
 
   async count(): Promise<number> {

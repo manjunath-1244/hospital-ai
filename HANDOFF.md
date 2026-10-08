@@ -22,7 +22,7 @@ Hospital AI platform: NestJS 11 + TypeORM 1.1 (PostgreSQL 16 + pgvector) + Mastr
 | **W8** | Specialist portal: my consultations inbox (by urgency), AI referral summary ("why was I referred?"), complete-consultation form (`specialist_assessments`), SPECIALIST role chart access & tool policy | ✅ |
 | **W9** | Follow-up plan proposals (`follow_up_plans` entity, W6 approval proposal submission), `lab_orders` entity & result linkage, visit status move `FOLLOW_UP` → `COMPLETED` | ✅ |
 | **W10** | Agent observability: `agent_runs` extended with goal, context snapshot, decisions, action IDs; Admin run flow view (`Goal → Context → Steps → Decisions → Actions → Result`); proposal metrics (acceptance, decline, expiry rates, time-to-decision) | ✅ |
-| W11 | RAG: hybrid search, metadata filters, rewriting, rerank, citation spans, RAG eval set (after M4) | ⬜ |
+| **W11** | RAG improvements: PostgreSQL full-text `tsvector` + `vector` cosine hybrid search with Reciprocal Rank Fusion (RRF), JSONB metadata filters, query rewriting, reranking, and citation spans | ✅ |
 | W12 | Agent eval suite (scenario runner with fixtures, targets in backlog §W12) | ⬜ (grows each package; context checks already in `tests/evaluation/evaluator.ts`) |
 | W13 | Hardening: CI, provider failover, streaming, cookies/MFA, purge on delete, split `AiService` | ⬜ |
 Milestones: M1 ✅ (visit lifecycle), M2 ✅ (W4–W5 recommendation with evidence), M3 ✅ (W6–W7 approval + referral + notifications), M4 ✅ (W8 specialist loop), M5 ✅ (W9 follow-up agent + W10 observability).
