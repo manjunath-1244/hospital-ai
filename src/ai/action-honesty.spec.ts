@@ -124,3 +124,26 @@ describe('"give details" is a lookup, not a medication question', () => {
     );
   });
 });
+
+describe('questions about specialists are not hospital-overview questions', () => {
+  it('routes them to the staff data', () => {
+    for (const q of [
+      'how many specialists are there',
+      'who are the cardiologists',
+      'list the specialists',
+    ]) {
+      const i = classifyIntent(q);
+      expect([q, i.specialists, i.overview]).toEqual([q, true, false]);
+    }
+  });
+  it('leaves patient counts and referral requests alone', () => {
+    expect(classifyIntent('how many patients are waiting').overview).toBe(true);
+    expect(classifyIntent('how many patients are waiting').specialists).toBe(
+      false,
+    );
+    expect(classifyIntent('refer him to a specialist').specialists).toBe(false);
+    expect(
+      classifyIntent('is a specialist required for P1002').specialists,
+    ).toBe(false);
+  });
+});

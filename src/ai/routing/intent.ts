@@ -13,6 +13,8 @@ export interface Intent {
   crossSearch: boolean;
   /** Asks for patient referral review or specialist recommendation. */
   review: boolean;
+  /** Asks about the specialists themselves (how many, who, which specialty): answered from the staff data. */
+  specialists: boolean;
 }
 
 const rx = (s: RegExp) => (t: string) => s.test(t);
@@ -52,11 +54,22 @@ const REVIEW = rx(
   /\b(review|recommend\w*|should (i|we) refer|(is|are) (a )?specialists? (required|needed|necessary)|needs? (a )?specialist|requires? (a )?specialist|specialist (required|needed|necessary))\b/i,
 );
 
+const SPECIALISTS = rx(
+  /\b(specialists?|cardiologists?|neurologists?|consultants?)\b/i,
+);
+
 /** Cheap, deterministic, explainable routing of a message to the data it needs. */
 export function classifyIntent(message: string): Intent {
   const list = LIST(message);
   const waiting = WAITING(message);
-  const overview = OVERVIEW(message);
+  const review = REVIEW(message);
+  // "how many specialists" is about staff, not about the patient overview
+  const specialists =
+    SPECIALISTS(message) &&
+    !review &&
+    !WRITE(message) &&
+    !/\bpatients?\b/i.test(message);
+  const overview = OVERVIEW(message) && !specialists;
   const policy = POLICY(message);
   return {
     write: WRITE(message),
@@ -67,7 +80,8 @@ export function classifyIntent(message: string): Intent {
     overview,
     policy,
     crossSearch: CROSS(message) && !list && !waiting && !overview && !policy,
-    review: REVIEW(message),
+    review,
+    specialists,
   };
 }
 

@@ -10,6 +10,7 @@ import {
   wantsFullDetails,
 } from '../routing/chart-view';
 import { renderReferralReview } from '../routing/referral-view';
+import { renderSpecialists } from '../routing/specialists-view';
 import { renderOverview } from '../routing/overview-view';
 import { renderPatientList } from '../guardrails';
 import { RunRecorder } from '../observability/run-recorder';
@@ -41,6 +42,7 @@ export class AiRouterService {
       corrected?: { typed: string; patientId: string; name: string } | null;
       didYouMean?: Array<{ typed: string; patientId: string; name: string }>;
       unknownName?: string | null;
+      specialists?: any | null;
     },
     rec: RunRecorder,
   ): DirectResponseResult {
@@ -146,6 +148,11 @@ export class AiRouterService {
                   ? renderPatientList(rec.trace)
                   : null;
 
+    const specialistText =
+      intent.specialists && !intent.write && context.specialists
+        ? renderSpecialists(context.specialists)
+        : null;
+
     const unknown = context.unknownName
       ? `I could not find a patient named "${context.unknownName}", not even a close spelling. Check the name, or ask me to list the patients.`
       : null;
@@ -153,6 +160,7 @@ export class AiRouterService {
     const directText =
       clarify ??
       unknown ??
+      specialistText ??
       (directText0 && context.corrected
         ? `Showing ${context.corrected.name} (${context.corrected.patientId}); you typed "${context.corrected.typed}".\n${directText0}`
         : directText0);

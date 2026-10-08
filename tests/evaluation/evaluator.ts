@@ -1110,6 +1110,35 @@ async function main() {
         /could not find a patient named "Jon Smith"/.test(gone.response),
       gone.response?.slice(0, 200),
     );
+    const dbSpecialists = Number(
+      (
+        await ds.query(
+          `select count(*)::int n from users where role='SPECIALIST'`,
+        )
+      )[0].n,
+    );
+    const sp: any = await ai.chat(doctor, {
+      message: 'how many specialists are there',
+    });
+    check(
+      'a question about specialists is answered from the staff data (exact count, no model, not the patient overview)',
+      none.calls() === 0 &&
+        new RegExp(`There (is|are) ${dbSpecialists} specialists?`).test(
+          sp.response,
+        ) &&
+        !/Hospital overview/.test(sp.response),
+      sp.response?.slice(0, 200),
+    );
+    const cardio: any = await ai.chat(doctor, {
+      message: 'who are the cardiologists',
+    });
+    check(
+      'a named specialty narrows the list',
+      none.calls() === 0 &&
+        /Cardiology specialist/.test(cardio.response) &&
+        !/Neurolog/.test(cardio.response),
+      cardio.response?.slice(0, 200),
+    );
     const give: any = await ai.chat(doctor, {
       message: 'give details about Marcus Brody',
     });

@@ -28,6 +28,8 @@ export interface GatheredContext {
   didYouMean?: Array<{ typed: string; patientId: string; name: string }>;
   /** A lookup named someone who is not in the system (answered directly, no model). */
   unknownName?: string | null;
+  /** Output of findSpecialists when the question is about the specialists themselves. */
+  specialists?: any | null;
 }
 
 @Injectable()
@@ -189,6 +191,30 @@ export class AiContextService {
       }
     }
 
+    let specialists: any = null;
+    if (intent.specialists) {
+      const all = await this.tools.runDirect('findSpecialists', {}, ctx);
+      if (all) {
+        // a named specialty ("cardiologists", "neurology") narrows the list; the specialty names come from the data
+        const words: string[] = message.toLowerCase().match(/[a-z]{5,}/g) ?? [];
+        const wanted = (all.specialties as string[]).find((sp) =>
+          words.some(
+            (w) => w.length >= 5 && sp.toLowerCase().startsWith(w.slice(0, 5)),
+          ),
+        );
+        specialists = wanted
+          ? {
+              ...all,
+              specialists: all.specialists.filter(
+                (s: any) => s.specialty === wanted,
+              ),
+              specialty: wanted,
+            }
+          : all;
+        parts.push({ source: 'specialists', data: specialists });
+      }
+    }
+
     if (intent.list) {
       const r = await this.tools.runDirect(
         'searchPatients',
@@ -287,6 +313,7 @@ export class AiContextService {
       subjectIds,
       referral,
       corrected,
+      specialists,
     };
   }
 }
