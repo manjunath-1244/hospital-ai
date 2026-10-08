@@ -800,6 +800,7 @@ Line counts are approximate. **Status** uses the legend at the top. "Spec" = uni
 | `hospital/medication-safety.service.ts` (+spec) | allergy / duplicate / interaction / renal screening ✅ |
 | `hospital/lab-rules.ts` (+spec) | unit-aware critical limits and range classification ✅ |
 | `hospital/queue-monitor.service.ts` | 60 s job → one wait alert per patient ✅ |
+| `hospital/referrals/*` (`referral-rules.service.ts`, `referral-verifier.service.ts`, `referral-recommendation.service.ts`, `referral.types.ts`) | deterministic referral rule evaluation, evidence verifier against current visit facts, structured recommendation with proposal ✅ |
 | `hospital/dto/hospital.dto.ts` | validated request shapes ✅ |
 | `hospital/hospital.types.ts` | shared types ✅ |
 | `hospital/hospital.module.ts` | module wiring ✅ |

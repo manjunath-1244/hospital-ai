@@ -11,6 +11,8 @@ export interface Intent {
   medication: boolean;
   /** "which patients ..." style question across the whole hospital. */
   crossSearch: boolean;
+  /** Asks for patient referral review or specialist recommendation. */
+  review: boolean;
 }
 
 const rx = (s: RegExp) => (t: string) => s.test(t);
@@ -46,6 +48,9 @@ const MEDICATION = rx(
 const CROSS = rx(
   /\b(which|who)\b[^.?!]*\b(patients?|has|have|had|are|is|on|taking|allergic|diagnosed|suffering|complain)/i,
 );
+const REVIEW = rx(
+  /\b(review|refer|referral|specialist|recommend|recommendation|should i refer|needs a specialist|requires a specialist)\b/i,
+);
 
 /** Cheap, deterministic, explainable routing of a message to the data it needs. */
 export function classifyIntent(message: string): Intent {
@@ -62,6 +67,7 @@ export function classifyIntent(message: string): Intent {
     overview,
     policy,
     crossSearch: CROSS(message) && !list && !waiting && !overview && !policy,
+    review: REVIEW(message),
   };
 }
 

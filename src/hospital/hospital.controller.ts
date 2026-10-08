@@ -46,6 +46,8 @@ import { Roles } from '../security/roles.decorator';
 import { AuthUser, CurrentUser } from '../security/auth-user';
 import { PatientEntity } from '../database/entities/patient.entity';
 
+import { ReferralRecommendationService } from './referrals/referral-recommendation.service';
+
 /** Receptionists see demographics and queue status only: no clinical history (minimum necessary). */
 function viewFor<T extends PatientEntity>(user: AuthUser, p: T): T {
   if (user.role === 'RECEPTIONIST')
@@ -65,6 +67,7 @@ export class HospitalController {
     private readonly overview: OverviewService,
     private readonly visits: VisitsService,
     private readonly specialists: SpecialistService,
+    private readonly referralRecService: ReferralRecommendationService,
   ) {}
 
   // --- Patients ---
@@ -84,6 +87,12 @@ export class HospitalController {
   @Get('patients/:id/summary')
   summary(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.summaries.summary(id, user.role);
+  }
+
+  @Get('patients/:id/referral-recommendation')
+  @Roles('DOCTOR', 'NURSE', 'ADMIN')
+  referralRecommendation(@Param('id') id: string) {
+    return this.referralRecService.evaluatePatient(id);
   }
 
   // --- Visits (one episode of care; the status lives here, not on the patient) ---

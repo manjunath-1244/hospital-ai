@@ -10,6 +10,9 @@ import { MedicationSafetyService } from './medication-safety.service';
 import { PatientSummaryService } from './patient-summary.service';
 import { PostCommitService } from './post-commit.service';
 import { QueueMonitorService } from './queue-monitor.service';
+import { ReferralRulesService } from './referrals/referral-rules.service';
+import { ReferralVerifierService } from './referrals/referral-verifier.service';
+import { ReferralRecommendationService } from './referrals/referral-recommendation.service';
 
 /** Clinical workflows. Depends on data, knowledge, interop and events, but NOT on the AI module (no cycles). */
 @Module({
@@ -22,12 +25,18 @@ import { QueueMonitorService } from './queue-monitor.service';
     QueueMonitorService,
     PatientSummaryService,
     PostCommitService,
+    ReferralRulesService,
+    ReferralVerifierService,
+    ReferralRecommendationService,
   ],
   exports: [
     HospitalLifecycleService,
     News2Service,
     MedicationSafetyService,
     PatientSummaryService,
+    ReferralRulesService,
+    ReferralVerifierService,
+    ReferralRecommendationService,
   ],
 })
 export class HospitalModule {}
