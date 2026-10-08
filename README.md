@@ -32,6 +32,21 @@ Local setup used for development: `ollama pull llama3.2:3b nomic-embed-text` and
 **A 3B model on CPU is a development convenience, not a clinical-grade model.** Use a stronger model for real use; the
 design below keeps answers correct even with a weak one, but a stronger model reasons better.
 
+## Patient journey = visits
+A **patient** is a person (demographics, allergies, conditions). A **visit** is one episode of care and carries the
+status: `WAITING_TRIAGE → TRIAGED → IN_CONSULTATION → (UNDER_REVIEW / TREATMENT / FOLLOW_UP) → COMPLETED`, or
+`CANCELLED` / `LEFT_WITHOUT_SEEN`. Rules (who may move a visit where, when a reason is required) live in one table,
+`src/hospital/visits/visit-transitions.ts`, and only `VisitsService.transition()` changes a status. A patient has at most
+one open visit; every clinical record (vitals, labs, imaging, consultation, appointment, task) belongs to a visit.
+Reception searches first, warns about possible duplicates, and starts a new visit for a returning patient. Triage moves
+the visit to *Triaged* and sets its priority; the first consultation moves it to *In consultation*. "Close/reopen
+session" is now *complete/reopen visit*. Full detail: PROJECT_GUIDE sections 1.4, 2.3, 3.4, 3.10, 3.11.
+
+## Database schema
+Schema changes are **migrations** (`src/database/migrations`, applied automatically at start unless
+`DB_MIGRATIONS_RUN=false`). `synchronize` is off. Commands: `npm run migration:generate -- src/database/migrations/Name`,
+`migration:run`, `migration:revert`, `migration:show`.
+
 ## How data flows
 ```
 UI ─REST+JWT─► role check + validation ─► workflow ─► 1. commit to PostgreSQL (authoritative)
@@ -56,9 +71,10 @@ Admins upload policies (`.md`, `.txt`, `.pdf`) in the app; they are searchable b
 
 ## Quality gates
 ```bash
-npm test                      # 80 unit tests (NEWS2, drug safety, lab rules, routing, guardrails, resilience, ...)
+npm test                      # ~120 unit tests (NEWS2, drug safety, lab rules, routing, guardrails, resilience, ...)
 npm run test:eval             # 100+ checks on the real app: tools, RBAC, memory, retries/timeouts/breaker, tracing, routing
 npx ts-node tests/evaluation/retrieval-check.ts   # new data searchable at once; policy/patient retrieval; delete cleanup
+npm run test:workflow          # patient journey end to end against the RUNNING API (creates and deletes its own patients)
 npm run test:eval:live        # also asks the REAL configured model 10 questions (tool/data choice + grounded answers)
 npm run test:eval:baseline    # accept current results as the regression baseline (compared on every run)
 ```
@@ -67,7 +83,7 @@ npm run test:eval:baseline    # accept current results as the regression baselin
 - Agent write actions rely on role limits, audit logging and a "confirm first" instruction, not a hard approval step.
 - Name masking is dictionary-based: a never-seen name typed for the first time is not recognised. Embedding with OpenAI
   sends record text (including names) to OpenAI; keep embeddings local unless covered by a privacy agreement.
-- Schema auto-sync is for development; production needs migrations. Data is not encrypted at rest. Tokens live in
+- Data is not encrypted at rest. Tokens live in
   `sessionStorage` (use httpOnly cookies for production).
 - Drug-safety and lab rules cover a small curated set, not a drug database.
 - Not built: billing/insurance submission, pharmacy dispensing, bed management, lab ordering, SMS follow-up, an

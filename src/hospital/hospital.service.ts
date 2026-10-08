@@ -1,15 +1,11 @@
 import {
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, ILike, Repository } from 'typeorm';
-import {
-  ConsultationStatus,
-  PatientEntity,
-} from '../database/entities/patient.entity';
+import { DataSource, EntityManager, ILike, Repository } from 'typeorm';
+import { PatientEntity } from '../database/entities/patient.entity';
 import { LabResultEntity } from '../database/entities/lab-result.entity';
 import { AppointmentEntity } from '../database/entities/appointment.entity';
 import { StaffTaskEntity } from '../database/entities/staff-task.entity';
@@ -19,21 +15,26 @@ import { ConsultationEntity } from '../database/entities/consultation.entity';
 import { ChatThreadEntity } from '../database/entities/chat-thread.entity';
 import { newId } from '../common/ids';
 import { TaskPriority } from './hospital.types';
+import { findMentionedPatients } from './mention-matching';
+import { resolveBirth } from './patient-identity';
+import { VisitsService } from './visits/visits.service';
 
 export interface NewPatient {
   name: string;
-  age: number;
   gender: string;
   phone: string;
   bloodType: string;
-  chiefComplaint?: string;
+  /** Provide an age OR a real date of birth (a real one wins). */
+  age?: number;
+  dob?: string | null;
 }
 
-/** Data access for patients, labs, appointments and staff tasks. No integration or messaging concerns live here. */
+/**
+ * Data access for the PERSON (patients) and the records not tied to a workflow step (labs, appointments, tasks).
+ * Where a patient is in their care is the business of `VisitsService`, not of this class.
+ */
 @Injectable()
 export class HospitalService {
-  private readonly logger = new Logger(HospitalService.name);
-
   constructor(
     @InjectRepository(PatientEntity)
     private readonly patients: Repository<PatientEntity>,
@@ -44,104 +45,52 @@ export class HospitalService {
     @InjectRepository(StaffTaskEntity)
     private readonly tasks: Repository<StaffTaskEntity>,
     private readonly dataSource: DataSource,
+    private readonly visits: VisitsService,
   ) {}
 
-  // --- Patients ---
+  // --- Patients (the person) ---
   async listPatients(
-    opts: {
-      q?: string;
-      limit?: number;
-      offset?: number;
-      status?: ConsultationStatus;
-    } = {},
+    opts: { q?: string; limit?: number; offset?: number } = {},
   ) {
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
-    const offset = Math.max(opts.offset ?? 0, 0);
     const q = opts.q?.trim();
-    const status = opts.status ? { consultationStatus: opts.status } : {};
     const where = q
-      ? [
-          { name: ILike(`%${q}%`), ...status },
-          { id: ILike(`%${q}%`), ...status },
-        ]
-      : opts.status
-        ? status
-        : undefined;
+      ? [{ name: ILike(`%${q}%`) }, { id: ILike(`%${q}%`) }]
+      : undefined;
     const [items, total] = await this.patients.findAndCount({
       where,
       order: { registeredAt: 'DESC' },
       take: limit,
-      skip: offset,
+      skip: Math.max(opts.offset ?? 0, 0),
     });
     return { items, total };
   }
 
-  /**
-   * Patients a free-text message refers to, by id (P1001) or by name (full name, or a distinctive first/last name
-   * that matches exactly one patient). Ambiguous first names are skipped rather than guessed.
-   */
+  /** Patients a message refers to by id or name (see `mention-matching.ts`). */
   async findMentioned(message: string, max = 3): Promise<PatientEntity[]> {
-    const text = message.toLowerCase();
-    const all = await this.patients.find();
-    const hits = new Map<string, PatientEntity>();
-    for (const p of all) {
-      if (
-        new RegExp(`(^|[^a-z0-9])${p.id.toLowerCase()}([^a-z0-9]|$)`).test(text)
-      )
-        hits.set(p.id, p);
-    }
-    const named = all.filter((p) => text.includes(p.name.toLowerCase()));
-    named.forEach((p) => hits.set(p.id, p));
-    if (!named.length) {
-      const wordHit = (token: string) =>
-        new RegExp(`(^|[^a-z])${token}([^a-z]|$)`).test(text);
-      // Words that are also ordinary vocabulary must never be treated as a patient's name (e.g. a patient called "Test Patient").
-      const COMMON = new Set([
-        'patient',
-        'patients',
-        'test',
-        'check',
-        'persist',
-        'journey',
-        'sample',
-        'demo',
-        'user',
-        'name',
-        'doctor',
-        'nurse',
-        'what',
-        'when',
-        'with',
-        'from',
-        'that',
-        'this',
-        'have',
-        'been',
-        'does',
-        'show',
-        'list',
-        'give',
-      ]);
-      const tokenOwners = new Map<string, PatientEntity[]>();
-      for (const p of all) {
-        for (const t of p.name
-          .toLowerCase()
-          .split(/\s+/)
-          .filter((t) => t.length >= 4 && !COMMON.has(t))) {
-          tokenOwners.set(t, [...(tokenOwners.get(t) ?? []), p]);
-        }
-      }
-      for (const [token, owners] of tokenOwners) {
-        if (owners.length === 1 && wordHit(token))
-          hits.set(owners[0].id, owners[0]);
-      }
-    }
-    return [...hits.values()].slice(0, max);
+    return findMentionedPatients(message, await this.patients.find(), max);
   }
 
   async getAllPatientNames(): Promise<string[]> {
-    const rows = await this.patients.find({ select: { name: true } });
-    return rows.map((r) => r.name);
+    return (await this.patients.find({ select: { name: true } })).map(
+      (r) => r.name,
+    );
+  }
+
+  /** Candidates for duplicate detection: same name or same phone digits. */
+  findDuplicateCandidates(
+    name: string,
+    phoneDigits: string,
+  ): Promise<PatientEntity[]> {
+    const qb = this.patients
+      .createQueryBuilder('p')
+      .where('lower(p."name") = lower(:name)', { name: name.trim() });
+    if (phoneDigits.length >= 7) {
+      qb.orWhere(`regexp_replace(p."phone", '\\D', '', 'g') LIKE :suffix`, {
+        suffix: `%${phoneDigits.slice(-7)}`,
+      });
+    }
+    return qb.limit(10).getMany();
   }
 
   async getPatientById(id: string): Promise<PatientEntity> {
@@ -154,35 +103,34 @@ export class HospitalService {
   }
 
   /** Creates a patient with a collision-resistant id. The primary key guarantees we never overwrite someone else. */
-  async createPatient(input: NewPatient): Promise<PatientEntity> {
-    const dob = `${new Date().getUTCFullYear() - input.age}-01-01`;
+  async createPatient(
+    input: NewPatient,
+    manager?: EntityManager,
+  ): Promise<PatientEntity> {
+    const birth = resolveBirth({ age: input.age, dob: input.dob });
+    const repo = manager ? manager.getRepository(PatientEntity) : this.patients;
     for (let attempt = 0; attempt < 5; attempt++) {
-      const entity = this.patients.create({
+      const entity = repo.create({
         id: newId('P', 6),
         name: input.name,
-        age: input.age,
+        age: birth.age,
         gender: input.gender,
-        dob,
+        dob: birth.dob,
+        dobApproximate: birth.dobApproximate,
         phone: input.phone,
         bloodType: input.bloodType,
         allergies: [],
         currentMedications: [],
         conditions: [],
-        chiefComplaint: input.chiefComplaint ?? null,
-        consultationStatus: 'WAITING',
-        consultedAt: null,
-        waitAlertedAt: null,
         fhirSynced: false,
-        closedAt: null,
-        closedBy: null,
-        closeReason: null,
       });
       try {
         // insert (not save): a duplicate id must fail rather than silently update an existing patient
-        await this.patients.insert(entity);
-        return this.getPatientById(entity.id);
+        await repo.insert(entity);
+        return await repo.findOneOrFail({ where: { id: entity.id } });
       } catch (err: any) {
         if (err?.code !== '23505') throw err; // unique_violation -> retry with a new id
+        if (manager) throw err; // a failed statement poisons the surrounding transaction; let the caller retry it
       }
     }
     throw new ConflictException(
@@ -198,57 +146,7 @@ export class HospitalService {
     return this.patients.update({ id }, { fhirSynced: true });
   }
 
-  findWaitingLongerThan(minutes: number, onlyUnalerted = false) {
-    const cutoff = new Date(Date.now() - minutes * 60_000);
-    const qb = this.patients
-      .createQueryBuilder('p')
-      .where(`p."consultationStatus" = 'WAITING'`)
-      .andWhere('p."registeredAt" < :cutoff', { cutoff })
-      .orderBy('p."registeredAt"', 'ASC');
-    if (onlyUnalerted) qb.andWhere('p."waitAlertedAt" IS NULL');
-    return qb.getMany();
-  }
-
-  findWaiting() {
-    return this.patients.find({
-      where: { consultationStatus: 'WAITING' },
-      order: { registeredAt: 'ASC' },
-    });
-  }
-
-  markWaitAlerted(ids: string[]) {
-    if (!ids.length) return Promise.resolve();
-    return this.patients
-      .createQueryBuilder()
-      .update()
-      .set({ waitAlertedAt: () => 'now()' })
-      .whereInIds(ids)
-      .execute();
-  }
-
-  /** Closes the patient's session: no new clinical writes until reopened. */
-  async closePatient(id: string, by: string, reason?: string) {
-    const p = await this.getPatientById(id);
-    if (p.consultationStatus === 'CLOSED') return p;
-    p.consultationStatus = 'CLOSED';
-    p.closedAt = new Date();
-    p.closedBy = by;
-    p.closeReason = reason?.trim() || null;
-    return this.patients.save(p);
-  }
-
-  async reopenPatient(id: string) {
-    const p = await this.getPatientById(id);
-    if (p.consultationStatus !== 'CLOSED') return p;
-    p.consultationStatus = p.consultedAt ? 'SEEN' : 'WAITING';
-    p.closedAt = null;
-    p.closedBy = null;
-    p.closeReason = null;
-    p.waitAlertedAt = null;
-    return this.patients.save(p);
-  }
-
-  /** Permanently removes the patient and every record that belongs to them, atomically. */
+  /** Permanently removes the patient and every record that belongs to them (all visits included), atomically. */
   async deletePatientCascade(id: string) {
     const pid = (await this.getPatientById(id)).id;
     const orthancInstanceIds: string[] = [];
@@ -269,22 +167,22 @@ export class HospitalService {
         imaging: await count(ImagingStudyEntity),
         appointments: await count(AppointmentEntity),
         tasks: await count(StaffTaskEntity),
+        visits: await this.visits.deleteForPatient(pid, m),
       };
-      // Identical DICOM files are stored once in the PACS and shared. Only remove an image from the PACS when no other
-      // study still points at it.
+      // Identical DICOM files are stored once in the PACS and shared: only remove an image when no other study uses it.
       const stillUsed = new Set<string>();
-      for (const id of orthancInstanceIds) {
+      for (const instanceId of orthancInstanceIds) {
         if (
           await m.count(ImagingStudyEntity, {
-            where: { orthancInstanceId: id },
+            where: { orthancInstanceId: instanceId },
           })
         )
-          stillUsed.add(id);
+          stillUsed.add(instanceId);
       }
       orthancInstanceIds.splice(
         0,
         orthancInstanceIds.length,
-        ...orthancInstanceIds.filter((id) => !stillUsed.has(id)),
+        ...orthancInstanceIds.filter((i) => !stillUsed.has(i)),
       );
       await m.update(
         ChatThreadEntity,
@@ -295,53 +193,6 @@ export class HospitalService {
       return result;
     });
     return { patientId: pid, deleted, orthancInstanceIds };
-  }
-
-  /** Headline numbers for the agent and dashboards. */
-  async overview() {
-    const byStatus: { status: string; n: string }[] = await this.patients
-      .createQueryBuilder('p')
-      .select('p."consultationStatus"', 'status')
-      .addSelect('count(*)', 'n')
-      .groupBy('p."consultationStatus"')
-      .getRawMany();
-    const count = (s: string) =>
-      Number(byStatus.find((r) => r.status === s)?.n ?? 0);
-    const oldest = await this.patients.findOne({
-      where: { consultationStatus: 'WAITING' },
-      order: { registeredAt: 'ASC' },
-    });
-    const dayAgo = new Date(Date.now() - 24 * 3_600_000);
-    const criticalLabs24h = await this.labs
-      .createQueryBuilder('l')
-      .where('l.status = :s', { s: 'CRITICAL' })
-      .andWhere('l."createdAt" > :d', { d: dayAgo })
-      .getCount();
-    const pendingTasks = await this.tasks.count({
-      where: { status: 'PENDING' },
-    });
-    const scheduled = await this.appointments.count({
-      where: { status: 'SCHEDULED' },
-    });
-    return {
-      totalPatients: byStatus.reduce((a, r) => a + Number(r.n), 0),
-      waitingForDoctor: count('WAITING'),
-      seen: count('SEEN'),
-      closed: count('CLOSED'),
-      longestWaitMinutes: oldest
-        ? Math.floor((Date.now() - oldest.registeredAt.getTime()) / 60_000)
-        : 0,
-      criticalLabsLast24h: criticalLabs24h,
-      pendingStaffTasks: pendingTasks,
-      scheduledAppointments: scheduled,
-    };
-  }
-
-  getAppointmentsForPatient(patientId: string) {
-    return this.appointments.find({
-      where: { patientId: patientId.toUpperCase() },
-      order: { dateTime: 'ASC' },
-    });
   }
 
   // --- Labs ---
@@ -372,38 +223,48 @@ export class HospitalService {
     return this.appointments.find({ order: { dateTime: 'ASC' } });
   }
 
-  async bookAppointment(
-    patientId: string,
-    doctorName: string,
-    department: string,
-    dateTime: string,
-    reason: string,
-  ) {
-    const patient = await this.getPatientById(patientId);
-    if (patient.consultationStatus === 'CLOSED') {
-      throw new ConflictException(
-        `Patient ${patient.id} session is closed. Reopen it before booking.`,
-      );
-    }
+  getAppointmentsForPatient(patientId: string) {
+    return this.appointments.find({
+      where: { patientId: patientId.toUpperCase() },
+      order: { dateTime: 'ASC' },
+    });
+  }
+
+  /** The caller supplies the visit (the workflow layer resolves/validates it). */
+  async bookAppointment(input: {
+    patientId: string;
+    visitId: string | null;
+    doctorName: string;
+    department: string;
+    dateTime: string;
+    reason: string;
+  }) {
+    await this.getPatientById(input.patientId);
     return this.dataSource.transaction(async (m) => {
       const existing = await m.findOne(AppointmentEntity, {
-        where: { doctorName, dateTime, status: 'SCHEDULED' },
+        where: {
+          doctorName: input.doctorName,
+          dateTime: input.dateTime,
+          status: 'SCHEDULED',
+        },
         lock: { mode: 'pessimistic_write' },
       });
       if (existing)
         throw new ConflictException(
-          `Time slot ${dateTime} is already booked for ${doctorName}`,
+          `Time slot ${input.dateTime} is already booked for ${input.doctorName}`,
         );
-      const apt = m.create(AppointmentEntity, {
-        id: newId('APT-'),
-        patientId: patientId.toUpperCase(),
-        doctorName,
-        department,
-        dateTime,
-        status: 'SCHEDULED',
-        reason,
-      });
-      return m.save(apt);
+      return m.save(
+        m.create(AppointmentEntity, {
+          id: newId('APT-'),
+          patientId: input.patientId.toUpperCase(),
+          visitId: input.visitId,
+          doctorName: input.doctorName,
+          department: input.department,
+          dateTime: input.dateTime,
+          status: 'SCHEDULED',
+          reason: input.reason,
+        }),
+      );
     });
   }
 
@@ -419,19 +280,21 @@ export class HospitalService {
     return this.tasks.find({ order: { createdAt: 'DESC' } });
   }
 
-  createTask(
-    title: string,
-    assignedTo: string,
-    patientId?: string,
-    priority: TaskPriority = 'MEDIUM',
-  ) {
+  createTask(input: {
+    title: string;
+    assignedTo: string;
+    patientId?: string;
+    visitId?: string | null;
+    priority?: TaskPriority;
+  }) {
     return this.tasks.save(
       this.tasks.create({
         id: newId('TSK-'),
-        title,
-        assignedTo,
-        patientId: patientId ? patientId.toUpperCase() : null,
-        priority,
+        title: input.title,
+        assignedTo: input.assignedTo,
+        patientId: input.patientId ? input.patientId.toUpperCase() : null,
+        visitId: input.visitId ?? null,
+        priority: input.priority ?? 'MEDIUM',
         status: 'PENDING',
       }),
     );

@@ -15,7 +15,10 @@ import type {
   Safety,
   Vitals,
 } from '../../lib/types';
-import { Empty, ErrorBox, Loading, SafetyPanel, SuccessBox, fmtTime, inputCls, labelCls, splitList } from '../ui/common';
+import type { VisitSummary } from '../../lib/visits';
+import { byUrgency, isActiveStatus, STAGE_TABS, type PatientStage } from '../../lib/visits';
+import { Empty, ErrorBox, Loading, PriorityBadge, SafetyPanel, StatusBadge, SuccessBox, fmtTime, fmtWait, inputCls, labelCls, splitList } from '../ui/common';
+import { VisitHistory, VisitPanel } from '../ui/VisitPanel';
 
 interface Emr {
   patient: Patient;
@@ -23,11 +26,13 @@ interface Emr {
   meds: MedicationsResponse;
   vitals: Vitals[];
   imaging: ImagingStudy[];
+  visits: VisitSummary[];
 }
 
 export const DoctorWorkbenchPortal: React.FC = () => {
   const { user } = useAuth();
   const [q, setQ] = useState('');
+  const [stage, setStage] = useState<PatientStage>('ACTIVE');
   const [list, setList] = useState<Patient[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
@@ -47,35 +52,36 @@ export const DoctorWorkbenchPortal: React.FC = () => {
 
   const loadList = useCallback(async () => {
     try {
-      const r = await apiFetch<PatientList>(`/hospital/patients?limit=50&q=${encodeURIComponent(q)}`);
-      setList(r.items);
+      const r = await apiFetch<PatientList>(`/hospital/patients?limit=50&stage=${stage}&q=${encodeURIComponent(q)}`);
+      // Patients waiting for the doctor (TRIAGED) first, then by priority and wait.
+      setList([...r.items].sort((a, b) => Number(b.visit?.status === 'TRIAGED') - Number(a.visit?.status === 'TRIAGED') || byUrgency(a.visit ?? null, b.visit ?? null)));
       setListError('');
     } catch (e) {
       setListError(errorMessage(e));
     } finally {
       setListLoading(false);
     }
-  }, [q]);
+  }, [q, stage]);
 
   useEffect(() => {
     const t = setTimeout(loadList, 250);
     return () => clearTimeout(t);
   }, [loadList]);
-  useRealtime(['patient.registered', 'doctor.consulted', 'patient.closed', 'patient.reopened', 'patient.deleted'], loadList);
 
-  const loadEmr = useCallback(async (id: string) => {
-    setEmrLoading(true);
+  const loadEmr = useCallback(async (id: string, silent = false) => {
+    if (!silent) setEmrLoading(true);
     setEmrError('');
     try {
       const base = `/hospital/patients/${encodeURIComponent(id)}`;
-      const [patient, labs, meds, vitals, imaging] = await Promise.all([
+      const [patient, labs, meds, vitals, imaging, visits] = await Promise.all([
         apiFetch<Patient>(base),
         apiFetch<LabResult[]>(`${base}/labs`),
         apiFetch<MedicationsResponse>(`${base}/medications`),
         apiFetch<Vitals[]>(`${base}/vitals`),
         apiFetch<ImagingStudy[]>(`${base}/imaging`),
+        apiFetch<VisitSummary[]>(`${base}/visits`),
       ]);
-      setEmr({ patient, labs, meds, vitals, imaging });
+      setEmr({ patient, labs, meds, vitals, imaging, visits });
     } catch (e) {
       setEmr(null);
       setEmrError(errorMessage(e));
@@ -84,29 +90,10 @@ export const DoctorWorkbenchPortal: React.FC = () => {
     }
   }, []);
 
-  const [sessionBusy, setSessionBusy] = useState(false);
-  const [sessionError, setSessionError] = useState('');
-
-  const changeSession = async (action: 'close' | 'reopen') => {
-    if (!selectedId) return;
-    let body: { reason?: string } | undefined;
-    if (action === 'close') {
-      const reason = window.prompt('Close this patient session? Optional reason:');
-      if (reason === null) return;
-      body = reason.trim() ? { reason: reason.trim() } : {};
-    }
-    setSessionBusy(true);
-    setSessionError('');
-    try {
-      await apiFetch<Patient>(`/hospital/patients/${encodeURIComponent(selectedId)}/${action}`, { method: 'POST', body: body ?? {} });
-      await loadEmr(selectedId);
-      loadList();
-    } catch (e) {
-      setSessionError(errorMessage(e));
-    } finally {
-      setSessionBusy(false);
-    }
-  };
+  useRealtime(['patient.registered', 'doctor.consulted', 'visit.updated', 'patient.deleted'], () => {
+    loadList();
+    if (selectedId) loadEmr(selectedId, true);
+  });
 
   const select = (id: string) => {
     setSelectedId(id);
@@ -114,7 +101,6 @@ export const DoctorWorkbenchPortal: React.FC = () => {
     setBlockSafety(null);
     setOverrideReason('');
     setSubmitError('');
-    setSessionError('');
     loadEmr(id);
   };
 
@@ -142,7 +128,7 @@ export const DoctorWorkbenchPortal: React.FC = () => {
       setDiagnosis('');
       setPrescriptions('');
       setNotes('');
-      loadEmr(selectedId);
+      loadEmr(selectedId, true);
       loadList();
     } catch (err) {
       if (err instanceof ApiError && err.status === 409 && (err.body as { safety?: Safety })?.safety) {
@@ -157,7 +143,8 @@ export const DoctorWorkbenchPortal: React.FC = () => {
   };
 
   const p = emr?.patient;
-  const closed = p?.consultationStatus === 'CLOSED';
+  const visit = p?.visit ?? null;
+  const closed = !isActiveStatus(visit?.status);
 
   return (
     <div className="space-y-6">
@@ -176,6 +163,13 @@ export const DoctorWorkbenchPortal: React.FC = () => {
             <Search className="h-5 w-5 text-indigo-400" /> Patients
           </h3>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or ID" className={inputCls} />
+          <div className="flex flex-wrap gap-1.5">
+            {STAGE_TABS.map((t) => (
+              <button key={t.id} type="button" onClick={() => setStage(t.id)} className={`rounded-lg px-3 py-1.5 text-sm font-bold border ${stage === t.id ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-white'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
           {listLoading && <Loading text="Loading patients..." />}
           <ErrorBox message={listError} />
           {!listLoading && !listError && list.length === 0 && <Empty text="No patients found." />}
@@ -188,10 +182,15 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                   selectedId === pt.id ? 'bg-indigo-600/20 border-indigo-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'
                 }`}
               >
-                <p className="font-bold text-white">{pt.name}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-white">{pt.name}</p>
+                  <PriorityBadge priority={pt.visit?.priority} />
+                </div>
                 <p className="text-sm text-slate-400">
-                  {pt.id} • {pt.age}y {pt.gender} • <span className={pt.consultationStatus === 'WAITING' ? 'text-amber-400' : pt.consultationStatus === 'CLOSED' ? 'text-slate-400' : 'text-emerald-400'}>{pt.consultationStatus}</span>
+                  {pt.id} • {pt.age}y {pt.gender}{pt.visit?.waitMinutes != null ? ` • waiting ${fmtWait(pt.visit.waitMinutes)}` : ''}
                 </p>
+                <p className="text-sm text-slate-300 truncate">{pt.visit?.chiefComplaint || '—'}</p>
+                <div className="mt-1"><StatusBadge visit={pt.visit} /></div>
               </button>
             ))}
           </div>
@@ -212,27 +211,20 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                   </h3>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-sm font-bold text-indigo-400">{p.id}</span>
-                    {closed ? (
-                      <button type="button" disabled={sessionBusy} onClick={() => changeSession('reopen')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
-                        {sessionBusy ? 'Working...' : 'Reopen'}
-                      </button>
-                    ) : (
-                      <button type="button" disabled={sessionBusy} onClick={() => changeSession('close')} className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-bold text-slate-200 border border-slate-700 hover:bg-slate-700 disabled:opacity-50">
-                        {sessionBusy ? 'Working...' : 'Close session'}
-                      </button>
-                    )}
+                    <StatusBadge visit={visit} />
                   </div>
                 </div>
-                <ErrorBox message={sessionError} />
-                {closed && (
+                {visit ? (
+                  <VisitPanel visitId={visit.id} onChanged={() => { loadEmr(p.id, true); loadList(); }} />
+                ) : (
+                  <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/40 p-3 font-semibold text-rose-300">
+                    <Lock className="h-4 w-4 shrink-0 mt-0.5" /> This patient has no visit. The front desk must start a visit before clinical entries.
+                  </div>
+                )}
+                {visit && closed && (
                   <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/40 p-3 font-semibold text-rose-300">
                     <Lock className="h-4 w-4 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold tracking-wider">SESSION CLOSED</p>
-                      <p className="text-sm font-normal">
-                        Closed{p.closedBy ? ` by ${p.closedBy}` : ''}{p.closedAt ? ` on ${fmtTime(p.closedAt)}` : ''}{p.closeReason ? ` — ${p.closeReason}` : ''}. Reopen to record new clinical entries.
-                      </p>
-                    </div>
+                    <p className="text-sm font-normal">This visit is {visit.statusLabel.toLowerCase()}{visit.closeReason ? ` — ${visit.closeReason}` : ''}. Reopen it (if allowed) to record new clinical entries.</p>
                   </div>
                 )}
                 <div className="rounded-xl bg-slate-950 p-3 border border-slate-700">
@@ -240,8 +232,10 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                   <p className="text-slate-400 text-sm">
                     {p.age} yrs • {p.gender} • Blood type {p.bloodType} • DOB {p.dob} • {p.phone}
                   </p>
-                  <p className="text-slate-300 mt-1">Chief complaint: {p.chiefComplaint || '—'}</p>
                 </div>
+                <Section title="Visit history" icon={<Activity className="h-4 w-4" />}>
+                  <VisitHistory visits={emr.visits} />
+                </Section>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <ListBox title="Allergies" items={emr.meds.allergies} tone="rose" />
                   <ListBox title="Current medications" items={emr.meds.medications} tone="indigo" icon={<Pill className="h-4 w-4" />} />

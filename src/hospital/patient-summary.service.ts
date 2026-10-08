@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HospitalService } from './hospital.service';
+import { VisitsService } from './visits/visits.service';
+import { toVisitSummary } from './visits/visit-summary';
 import { ClinicalRecordsService } from './clinical-records.service';
 import { MedicationSafetyService } from './medication-safety.service';
 import type { UserRole } from '../security/roles.decorator';
@@ -13,6 +15,7 @@ export class PatientSummaryService {
   constructor(
     private readonly hospital: HospitalService,
     private readonly records: ClinicalRecordsService,
+    private readonly visits: VisitsService,
     private readonly medSafety: MedicationSafetyService,
   ) {}
 
@@ -27,19 +30,16 @@ export class PatientSummaryService {
         age: p.age,
         gender: p.gender,
         bloodType: p.bloodType,
-        chiefComplaint: p.chiefComplaint,
-        status: p.consultationStatus,
         registeredAt: p.registeredAt,
-        consultedAt: p.consultedAt,
-        ...(p.closedAt
-          ? {
-              closedAt: p.closedAt,
-              closedBy: p.closedBy,
-              closeReason: p.closeReason,
-            }
-          : {}),
       },
     };
+
+    // Where the patient is in their care: the open (or latest) visit plus a short history.
+    const recentVisits = await this.visits.listForPatient(p.id, 5);
+    out.currentVisit = recentVisits.length
+      ? toVisitSummary(recentVisits[0])
+      : null;
+    out.visitHistory = recentVisits.map((v) => toVisitSummary(v));
 
     if (
       can(

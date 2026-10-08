@@ -50,14 +50,17 @@ async function main() {
     ).map((r: any) => r.source as string);
 
   console.log('\n▶ New data becomes searchable immediately');
-  const reg = await flow.registerOutpatient({
-    name: 'Zed Verify',
-    age: 52,
-    gender: 'male',
-    phone: '+1 555 010 2020',
-    bloodType: 'A+',
-    chiefComplaint: 'recurrent kidney stones with severe flank pain',
-  } as any);
+  const reg = await flow.registerOutpatient(
+    {
+      name: 'Zed Verify',
+      age: 52,
+      gender: 'male',
+      phone: '+1 555 010 2020',
+      bloodType: 'A+',
+      chiefComplaint: 'recurrent kidney stones with severe flank pain',
+    } as any,
+    doctor,
+  );
   const pid = reg.patientId;
   check('registration is indexed (ragIndexed flag)', reg.ragIndexed === true);
   check(
@@ -229,13 +232,17 @@ async function main() {
     const orthanc = app.get(OrthancClient);
     const mk = async (name: string) =>
       (
-        await flow.registerOutpatient({
-          name,
-          age: 30,
-          gender: 'male',
-          phone: '+1 555 010 3030',
-          bloodType: 'O+',
-        } as any)
+        await flow.registerOutpatient(
+          {
+            name,
+            age: 30,
+            gender: 'male',
+            phone: '+1 555 010 3030',
+          allowDuplicate: true,
+            bloodType: 'O+',
+          } as any,
+          doctor,
+        )
       ).patientId as string;
     const [a1, b1] = [await mk('Share Alpha'), await mk('Share Beta')];
     const buf = fs.readFileSync(dcm);

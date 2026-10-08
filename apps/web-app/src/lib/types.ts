@@ -1,3 +1,5 @@
+import type { VisitSummary } from './visits';
+
 export type BackendRole =
   | 'DOCTOR'
   | 'NURSE'
@@ -30,13 +32,10 @@ export interface Patient {
   allergies: string[];
   currentMedications: string[];
   conditions: string[];
-  chiefComplaint: string;
-  consultationStatus: 'WAITING' | 'SEEN' | 'CLOSED';
+  dobApproximate?: boolean;
   registeredAt: string;
-  consultedAt: string | null;
-  closedAt?: string | null;
-  closedBy?: string | null;
-  closeReason?: string | null;
+  /** Latest visit: the open one, or the most recent finished one; null if the patient never had a visit. */
+  visit?: VisitSummary | null;
 }
 
 export interface KnowledgeDoc {
@@ -60,7 +59,14 @@ export interface KnowledgeReindexResult {
 export interface PatientDeleteResult {
   success: boolean;
   patientId: string;
-  deleted: { labs: number; vitals: number; consultations: number; imaging: number; appointments: number; tasks: number };
+  deleted: {
+    labs: number;
+    vitals: number;
+    consultations: number;
+    imaging: number;
+    appointments: number;
+    tasks: number;
+  };
   fhirDeleted: boolean;
   ragChunksRemoved: number;
 }
@@ -86,7 +92,8 @@ export interface MedicationsResponse {
   allergies: string[];
 }
 
-export type Consciousness = 'ALERT' | 'CONFUSION' | 'VOICE' | 'PAIN' | 'UNRESPONSIVE';
+export type Consciousness =
+  'ALERT' | 'CONFUSION' | 'VOICE' | 'PAIN' | 'UNRESPONSIVE';
 export type RiskLevel = 'LOW' | 'LOW_MEDIUM' | 'MEDIUM' | 'HIGH';
 
 export interface Vitals {
@@ -123,20 +130,29 @@ export interface ImagingStudy {
 
 export interface RegisterOpPayload {
   name: string;
-  age: number;
+  age?: number;
+  dob?: string;
   gender: string;
   phone: string;
   bloodType: string;
   chiefComplaint?: string;
+  allowDuplicate?: boolean;
+}
+
+export interface PossibleMatch {
+  patientId: string;
+  name: string;
+  age: number;
+  phone: string;
+  reasons: string[];
+  strength: 'HIGH' | 'MEDIUM';
 }
 
 export interface RegisterOpResponse {
   success: boolean;
   patientId: string;
   patient: Patient;
-  registrationTime: string;
-  status: string;
-  chiefComplaint: string;
+  visit: VisitSummary;
   fhirSynced: boolean;
   ragIndexed: boolean;
 }
@@ -144,12 +160,10 @@ export interface RegisterOpResponse {
 export interface QueueItem {
   patientId: string;
   name: string;
-  age: number;
-  gender: string;
+  age: number | null;
+  gender: string | null;
   chiefComplaint: string;
-  registeredAt: string;
-  waitMinutes: number;
-  status: string;
+  visit: VisitSummary;
 }
 
 export interface QueueResponse {
@@ -189,7 +203,7 @@ export interface ConsultationResponse {
   prescriptions: string[];
   notes: string;
   consultationTime: string;
-  status: string;
+  visit: VisitSummary;
   safety: Safety;
 }
 
@@ -216,6 +230,10 @@ export interface ImagingUploadResponse {
 
 export interface TriagePayload {
   patientId: string;
+  visitId?: string;
+  symptoms?: string[];
+  glucoseMgDl?: number;
+  priority?: number;
   heartRate: number;
   bpSystolic: number;
   spO2: number;
@@ -245,6 +263,21 @@ export interface TriageResponse {
   sirs: { count: number; criteria: string[]; positive: boolean };
   suggestedEsiLevel: 1 | 2 | 3 | 4 | 5;
   rationale: string;
+  visit: VisitSummary;
+}
+
+export interface OverviewResponse {
+  totalPatients: number;
+  visitsByStatus: Record<string, number>;
+  activeVisits: number;
+  waitingForTriage: number;
+  waitingForDoctor: number;
+  withDoctor: number;
+  completedToday: number;
+  longestWaitMinutes: number;
+  criticalLabsLast24h: number;
+  pendingStaffTasks: number;
+  scheduledAppointments: number;
 }
 
 export interface WardEntry {
@@ -358,7 +391,10 @@ export interface AgentMetrics {
   window: AgentMetricWindow;
   baseline: AgentMetricWindow;
   drift: AgentDriftItem[];
-  breaker: { state: 'CLOSED' | 'OPEN' | 'HALF_OPEN'; consecutiveFailures: number };
+  breaker: {
+    state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+    consecutiveFailures: number;
+  };
 }
 
 export interface AgentRunSummary {
@@ -387,7 +423,11 @@ export interface AgentRunStep {
 export interface AgentRunDetail extends AgentRunSummary {
   guardrailNotes: string[];
   threadId: string | null;
-  usage: { inputTokens: number; outputTokens: number; totalTokens: number } | null;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  } | null;
   steps: AgentRunStep[];
 }
 
@@ -402,7 +442,12 @@ export interface DocumentResponse {
 
 export interface HealthResponse {
   checkedAt: string;
-  services: { name: string; status: 'UP' | 'DOWN'; latencyMs: number; details: string }[];
+  services: {
+    name: string;
+    status: 'UP' | 'DOWN';
+    latencyMs: number;
+    details: string;
+  }[];
 }
 
 export interface AuditLogEntry {

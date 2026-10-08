@@ -3,8 +3,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Radio, FlaskConical, Upload } from 'lucide-react';
 import { apiFetch, apiFetchBlobUrl, errorMessage } from '../../lib/api';
-import type { ImagingStudy, ImagingUploadResponse, LabResultResponse } from '../../lib/types';
+import type { Patient, ImagingStudy, ImagingUploadResponse, LabResultResponse } from '../../lib/types';
 import { Empty, ErrorBox, Loading, SuccessBox, fmtTime, inputCls, labelCls } from '../ui/common';
+import { isActiveStatus } from '../../lib/visits';
 import { PatientPicker } from '../ui/PatientPicker';
 import { useRealtime } from '../../context/RoleContext';
 
@@ -46,9 +47,9 @@ export const RadiologyPortal: React.FC = () => {
     }
   }, []);
 
-  const changePatient = (id: string, p?: { consultationStatus: string }) => {
+  const changePatient = (id: string, p?: Patient) => {
     setPatientId(id);
-    setPatientClosed(p?.consultationStatus === 'CLOSED');
+    setPatientClosed(!!id && !isActiveStatus(p?.visit?.status));
     setSelectedStudy(null);
     setStudies([]);
     loadStudies(id);
@@ -144,7 +145,7 @@ export const RadiologyPortal: React.FC = () => {
 
       <div className="glass-panel p-7 rounded-2xl border border-slate-700 max-w-2xl">
         <PatientPicker value={patientId} onChange={changePatient} />
-        {patientClosed && <p className="mt-2 text-sm font-semibold text-rose-400">Patient session is closed (closed): uploads and lab entry are disabled.</p>}
+        {patientClosed && <p className="mt-2 text-sm font-semibold text-rose-400">Patient has no open visit: uploads and lab entry are disabled.</p>}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

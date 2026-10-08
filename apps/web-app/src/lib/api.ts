@@ -1,4 +1,5 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 const TOKEN_KEY = 'curaai.token';
 const USER_KEY = 'curaai.user';
@@ -87,11 +88,17 @@ async function rawFetch(path: string, opts: ApiOptions): Promise<Response> {
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') throw e;
-    throw new ApiError(0, `Unable to reach the API at ${API_URL}. Is the backend running?`);
+    throw new ApiError(
+      0,
+      `Unable to reach the API at ${API_URL}. Is the backend running?`,
+    );
   }
 }
 
-export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  opts: ApiOptions = {},
+): Promise<T> {
   const res = await rawFetch(path, opts);
   const text = await res.text();
   let parsed: unknown = null;
@@ -104,7 +111,11 @@ export async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<
   }
   if (!res.ok) {
     if (res.status === 401 && !opts.skipAuthRedirect) unauthorizedHandler?.();
-    throw new ApiError(res.status, extractMessage(parsed, res.statusText || `HTTP ${res.status}`), parsed);
+    throw new ApiError(
+      res.status,
+      extractMessage(parsed, res.statusText || `HTTP ${res.status}`),
+      parsed,
+    );
   }
   return parsed as T;
 }

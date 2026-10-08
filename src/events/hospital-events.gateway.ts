@@ -13,6 +13,15 @@ import { JwtPayload } from '../security/jwt-auth.guard';
 import { UserRole } from '../security/roles.decorator';
 
 const STAFF: UserRole[] = ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'];
+const ALL_ROLES: UserRole[] = [
+  'DOCTOR',
+  'NURSE',
+  'RECEPTIONIST',
+  'ADMIN',
+  'PHARMACIST',
+  'CARE_COORDINATOR',
+  'RADIOLOGIST',
+];
 const CLINICAL: UserRole[] = ['DOCTOR', 'NURSE', 'ADMIN'];
 
 /**
@@ -82,19 +91,9 @@ export class HospitalEventsGateway
     this.emitTo('dicom.uploaded', p, [...CLINICAL, 'RADIOLOGIST']);
   }
 
-  emitPatientClosed(p: unknown) {
-    this.emitTo('patient.closed', p, [
-      ...STAFF,
-      'PHARMACIST',
-      'CARE_COORDINATOR',
-    ]);
-  }
-  emitPatientReopened(p: unknown) {
-    this.emitTo('patient.reopened', p, [
-      ...STAFF,
-      'PHARMACIST',
-      'CARE_COORDINATOR',
-    ]);
+  /** Every visit status change (arrival, triage, consultation, completion, cancellation, reopen). */
+  emitVisitUpdated(p: unknown) {
+    this.emitTo('visit.updated', p, ALL_ROLES);
   }
   emitPatientDeleted(p: unknown) {
     this.emitTo('patient.deleted', p, [

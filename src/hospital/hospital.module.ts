@@ -8,6 +8,7 @@ import { HospitalLifecycleService } from './hospital-lifecycle.service';
 import { News2Service } from './news2.service';
 import { MedicationSafetyService } from './medication-safety.service';
 import { PatientSummaryService } from './patient-summary.service';
+import { PostCommitService } from './post-commit.service';
 import { QueueMonitorService } from './queue-monitor.service';
 
 /** Clinical workflows. Depends on data, knowledge, interop and events, but NOT on the AI module (no cycles). */
@@ -20,6 +21,7 @@ import { QueueMonitorService } from './queue-monitor.service';
     MedicationSafetyService,
     QueueMonitorService,
     PatientSummaryService,
+    PostCommitService,
   ],
   exports: [
     HospitalLifecycleService,

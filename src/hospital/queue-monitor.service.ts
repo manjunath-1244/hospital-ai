@@ -5,9 +5,10 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { HospitalService } from './hospital.service';
+import { VisitsService } from './visits/visits.service';
 import { HospitalEventsGateway } from '../events/hospital-events.gateway';
 
-/** Periodically flags patients who have waited past the policy limit, once per patient (persisted via waitAlertedAt). */
+/** Periodically flags visits that have waited past the policy limit, once per visit (persisted via waitAlertedAt). */
 @Injectable()
 export class QueueMonitorService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(QueueMonitorService.name);
@@ -15,6 +16,7 @@ export class QueueMonitorService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly hospital: HospitalService,
+    private readonly visits: VisitsService,
     private readonly events: HospitalEventsGateway,
   ) {}
 
@@ -30,17 +32,19 @@ export class QueueMonitorService implements OnModuleInit, OnModuleDestroy {
   async tick() {
     try {
       const limit = Number(process.env.WAIT_ALERT_MINUTES ?? 30);
-      const late = await this.hospital.findWaitingLongerThan(limit, true);
-      for (const p of late) {
+      const late = await this.visits.findWaitingLongerThan(limit, true);
+      for (const v of late) {
+        const patient = await this.hospital.getPatientById(v.patientId);
         this.events.emitUnconsultedAlert({
-          patientId: p.id,
-          name: p.name,
+          patientId: patient.id,
+          visitId: v.id,
+          name: patient.name,
           waitTimeMinutes: Math.floor(
-            (Date.now() - p.registeredAt.getTime()) / 60_000,
+            (Date.now() - v.arrivedAt.getTime()) / 60_000,
           ),
         });
       }
-      await this.hospital.markWaitAlerted(late.map((p) => p.id));
+      await this.visits.markWaitAlerted(late.map((v) => v.id));
       if (late.length)
         this.logger.warn(
           `${late.length} patient(s) exceeded the ${limit} min consultation wait.`,

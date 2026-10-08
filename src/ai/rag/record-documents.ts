@@ -3,6 +3,8 @@ import type { PatientEntity } from '../../database/entities/patient.entity';
 import type { ConsultationEntity } from '../../database/entities/consultation.entity';
 import type { VitalsEntity } from '../../database/entities/vitals.entity';
 import type { ImagingStudyEntity } from '../../database/entities/imaging-study.entity';
+import type { VisitEntity } from '../../database/entities/visit.entity';
+import { STATUS_LABEL } from '../../hospital/visits/visit-status';
 import type { LabResultEntity } from '../../database/entities/lab-result.entity';
 
 /** Pure functions turning clinical rows into RAG documents. Source keys are stable so updates replace, not duplicate. */
@@ -18,11 +20,30 @@ export const RecordDocumentBuilder = {
         `Name: ${p.name}`,
         `Age/Gender: ${p.age} / ${p.gender}`,
         `Blood type: ${p.bloodType}`,
-        `Chief complaint: ${p.chiefComplaint ?? 'not recorded'}`,
         `Allergies: ${p.allergies.join(', ') || 'none recorded'}`,
         `Current medications: ${p.currentMedications.join(', ') || 'none recorded'}`,
         `Conditions: ${p.conditions.join(', ') || 'none recorded'}`,
-        `Consultation status: ${p.consultationStatus}`,
+      ].join('\n'),
+    };
+  },
+
+  /** One document per visit: where the patient is in their care and why they came. Re-indexed on every status change. */
+  visit(p: PatientEntity, v: VisitEntity): RagRecord {
+    return {
+      source: `visit-${v.id}`,
+      heading: `Visit ${v.id} for ${p.id}`,
+      kind: 'patient_record',
+      patientId: p.id,
+      text: [
+        `## Visit ${v.id} for patient ${p.id} (${p.name})`,
+        `Status: ${STATUS_LABEL[v.status]} (${v.status})`,
+        `Reason for visit: ${v.chiefComplaint ?? 'not recorded'}`,
+        `Arrived: ${v.arrivedAt.toISOString()}`,
+        `Triage priority: ${v.priority ?? 'not yet triaged'}`,
+        `Doctor: ${v.primaryDoctorName ?? 'not yet assigned'}`,
+        v.completedAt
+          ? `Finished: ${v.completedAt.toISOString()}; outcome ${v.outcome}${v.closeReason ? `; reason: ${v.closeReason}` : ''}`
+          : 'This visit is still open.',
       ].join('\n'),
     };
   },

@@ -66,12 +66,12 @@ Seeded accounts (password = `SEED_USER_PASSWORD` from `.env`):
 | `admin` | ADMIN | Admin + "View as" any portal | Service health, audit log, agent metrics/drift/traces, upload hospital documents for the agent, close/delete patients | Everything |
 
 ## 1.4 The patient journey (what happens to the data)
-1. **Receptionist registers** the patient → row in `patients` (status `WAITING`), copy to FHIR, search index entry, live event to staff. Appears in the queue.
-2. **Waiting too long** (>30 min, configurable) → the queue monitor raises *one* alert per patient.
-3. **Nurse triage** → vitals saved; server computes NEWS2 + sepsis screen + suggested urgency; a high score alerts doctors and nurses.
-4. **Doctor consultation** → safety check on prescriptions (allergies, duplicates, interactions, kidney function). Critical conflict ⇒ HTTP 409 unless the doctor gives an override reason. Saved in one transaction; patient becomes `SEEN` and leaves the queue.
+1. **Receptionist searches, then registers** — a returning patient gets a new *visit*; a new person gets a `patients` row **and** a first visit (`WAITING_TRIAGE`). If name/phone/DOB resemble an existing patient the API answers 409 with `possibleMatches` until the receptionist confirms. Copy to FHIR, search index entry, live events (`patient.registered`, `visit.updated`).
+2. **Waiting too long** (>30 min, configurable) → the queue monitor raises *one* alert per visit.
+3. **Nurse triage** → vitals (+ symptoms, glucose) saved on the visit; server computes NEWS2 + sepsis screen + suggested urgency; the visit becomes `TRIAGED` and gets a priority (ESI suggestion unless the nurse overrides); a high score alerts doctors and nurses.
+4. **Doctor consultation** → safety check on prescriptions (allergies, duplicates, interactions, kidney function). Critical conflict ⇒ HTTP 409 unless the doctor gives an override reason. Saved in one transaction together with the move to `IN_CONSULTATION` (and the primary doctor).
 5. **In parallel** — radiologist uploads scans (parsed → stored in Orthanc → FHIR ImagingStudy → searchable) and labs (classified normal/abnormal/critical → FHIR Observation → critical lab alert); pharmacist sees the prescription with its safety result.
-6. **Afterwards** — coordinator drafts paperwork (clinician must review); a doctor/admin can **close the session** (no new clinical writes until reopened); an admin can **delete** a patient permanently (database, search index, FHIR, unused images; audit log kept).
+6. **Afterwards** — coordinator drafts paperwork (clinician must review); a doctor/admin **completes the visit** (no new clinical writes until it is reopened with a reason) and the patient can come back later with a new visit; an admin can **delete** a patient permanently (database, search index, FHIR, unused images; audit log kept).
 7. **At any time** — any role asks the chat assistant; every request is audited, every AI run is traced.
 
 ## 1.5 Technology stack (as installed)
@@ -129,13 +129,15 @@ Module dependencies point **downward only** (no cycles): `DataModule` depends on
 ## 2.2 The golden rule
 > **PostgreSQL is the single source of truth.** FHIR, the PACS pixel store and the vector index are *derived copies*. If they ever disagree with Postgres, Postgres is right and the copies are rebuilt (server start, or admin "Re-index everything").
 
-## 2.3 Database tables (14)
+## 2.3 Database tables (16)
 | Table | Purpose | Key columns |
 |---|---|---|
 | `users` | Staff accounts | `username` (unique), `passwordHash` (bcrypt cost 12), `role`, `displayName` |
-| `patients` | The patient chart header | `id` (`P`+6 chars, seeds `P1001–P1003`), demographics, `allergies`/`currentMedications`/`conditions` (jsonb arrays), `chiefComplaint`, `consultationStatus` (`WAITING`/`SEEN`/`CLOSED`), `registeredAt`, `consultedAt`, `waitAlertedAt`, `fhirSynced`, `closedAt/closedBy/closeReason` |
+| `patients` | The person | `id` (`P`+6 chars, seeds `P1001–P1003`), demographics (`dob` + `dobApproximate`), `allergies`/`currentMedications`/`conditions` (jsonb arrays), `registeredAt`, `fhirSynced`. **No status** — that lives on the visit |
+| `visits` | One episode of care (the workflow state) | `id` (`V`+7), `patientId`, `status` (9 values, see 3.10), `chiefComplaint`, `priority` (1–5), `primaryDoctorId/Name`, `arrivedAt/triagedAt/consultationStartedAt/completedAt`, `waitAlertedAt`, `outcome`, `closeReason`. Partial unique index: one open visit per patient |
+| `visit_events` | Timeline of every status change | `visitId`, `fromStatus`, `toStatus`, `actorId/Name/Role`, `note`, `at` |
 | `consultations` | One doctor visit | `patientId`, `doctorId/Name`, `diagnosis`, `prescriptions` (jsonb), `notes`, `safety` (jsonb report), `overrideReason` |
-| `vitals` | One triage measurement | HR, systolic BP, SpO2, temp, RR, consciousness, on-oxygen, `news2Score`, `riskLevel`, `recordedBy` |
+| `vitals` | One triage measurement | `visitId`, HR, systolic BP, SpO2, temp, RR, symptoms, glucose, consciousness, on-oxygen, `news2Score`, `riskLevel`, `recordedBy` |
 | `lab_results` | One lab value | `testName`, `value`, `unit`, `referenceRange`, `status` (NORMAL/ABNORMAL/CRITICAL), `recordedBy` |
 | `imaging_studies` | Scan **metadata** (pixels live in Orthanc) | `studyInstanceUid`, `modality`, `description`, `impression`, `orthancInstanceId`, `fhirId`, `uploadedBy` |
 | `appointments` | Bookings | unique index on (`doctorName`,`dateTime`) where `SCHEDULED` — double-booking impossible at DB level |
@@ -146,7 +148,7 @@ Module dependencies point **downward only** (no cycles): `DataModule` depends on
 | `agent_runs` | One trace per AI request | `model`, `status`, `durationMs`, `steps` (jsonb spans), `usage`, `toolNames`, `guardrailStatus`, `retries`, `error` |
 | `document_embeddings` | **Derived** vector index | `source`, `kind` (`policy`/`patient_record`), `patient_id`, `heading`, `content`, `content_hash`, `embedding vector(768)` + HNSW cosine index |
 
-Schema creation: TypeORM `synchronize` (development only). ⬜ No migrations yet (see roadmap).
+Schema creation: **TypeORM migrations** (`src/database/migrations`; `synchronize` is off; `DB_MIGRATIONS_RUN=false` skips auto-run). `Baseline` captures the original schema (skipped if tables exist); `VisitsAndLifecycle` adds visits/visit_events, links `visitId` onto vitals, labs, imaging, consultations, appointments and tasks, and backfills one visit per existing patient (old CLOSED → COMPLETED, SEEN → IN_CONSULTATION, WAITING → TRIAGED if vitals exist else WAITING_TRIAGE). The vector table `document_embeddings` is created by its service and excluded from sync. Entities and migrations must agree: run `npm run migration:generate` after any entity change.
 
 ## 2.4 Write path (anything a user enters)
 ```
@@ -166,7 +168,7 @@ Browser → REST → ThrottlerGuard → JwtAuthGuard (verify token, check @Roles
 * **Nothing reads clinical data back from FHIR** (except two admin-only agent tools that report what FHIR holds).
 
 ## 2.6 Real-time path
-`HospitalEventsGateway` (Socket.IO). A client must present a valid JWT in the handshake (`auth.token`); invalid ⇒ disconnected. Each socket joins a room `role:<ROLE>`; events are emitted only to the roles that need them. Events: `patient.registered`, `doctor.consulted`, `alert.unconsulted_patient`, `alert.critical_lab`, `alert.news2_deterioration`, `dicom.uploaded`, `patient.closed`, `patient.reopened`, `patient.deleted`. Payloads are deliberately minimal (no phone/DOB/allergies).
+`HospitalEventsGateway` (Socket.IO). A client must present a valid JWT in the handshake (`auth.token`); invalid ⇒ disconnected. Each socket joins a room `role:<ROLE>`; events are emitted only to the roles that need them. Events: `patient.registered`, `doctor.consulted`, `alert.unconsulted_patient`, `alert.critical_lab`, `alert.news2_deterioration`, `dicom.uploaded`, `visit.updated`, `patient.deleted`. Payloads are deliberately minimal (no phone/DOB/allergies).
 
 ## 2.7 Delete path
 `DELETE /hospital/patients/:id?confirm=<id>` (ADMIN): one transaction removes labs, vitals, consultations, imaging, appointments, tasks, clears chat-thread focus, deletes the patient → then best effort: vector chunks, FHIR (`?_cascade=delete`), Orthanc instances **only if no other study still uses the same stored image** (identical DICOM files share one instance — a bug here was found and fixed). Audit log rows remain.
@@ -202,10 +204,10 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Why:** a half-configured medical system must fail loudly at start, not misbehave at 2 a.m.
 * **How:** `import 'dotenv/config'` runs first (modules read env at import time, e.g. WebSocket CORS). Then `helmet()` (security headers), `enableCors` for `CORS_ORIGINS` only, a global `ValidationPipe` (`whitelist` + `forbidNonWhitelisted` + `transform`: unknown fields ⇒ HTTP 400), shutdown hooks. `ConfigModule` runs a zod schema; `TypeOrmModule` uses `synchronize` unless `NODE_ENV=production`.
 * **Where:** `src/main.ts`, `src/config/app.config.ts`, `src/app.module.ts`.
-* **Can go wrong:** wrong `DB_PORT` ⇒ Nest retries then exits; `synchronize` can alter tables automatically (dangerous on real data); env read at import means a missing `import 'dotenv/config'` silently changes CORS/provider.
+* **Can go wrong:** wrong `DB_PORT` ⇒ Nest retries then exits; a migration that fails halts start-up (fix it; restore the backup); env read at import means a missing `import 'dotenv/config'` silently changes CORS/provider.
 * **Explain it:** "The server checks its own settings before it starts, and rejects any request body that has fields it doesn't know."
-* **Improve:** real migrations (TypeORM migrations) and disable `synchronize` outside local dev; secrets from a vault; per-environment config files.
-* **Status:** ✅ (🟡 migrations missing).
+* **Improve:** CI check that entities and migrations agree; secrets from a vault; per-environment config files.
+* **Status:** ✅ (✅ migrations).
 
 ## 3.2 Authentication and roles (RBAC)
 * **What:** login with username + password → signed JWT; every route requires it unless marked `@Public()`; `@Roles(...)` restricts further.
@@ -228,14 +230,14 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Status:** ✅ basic · 🟡 retention/tamper-evidence missing.
 
 ## 3.4 Patient registration and identifiers
-* **What:** creates a patient with a generated id and puts them in the waiting queue.
+* **What:** creates a patient with a generated id **and their first visit** (waiting for triage); for a returning patient, `POST /hospital/patients/:id/visits` opens a new visit instead.
 * **Why:** the first step of the journey; the id must never collide or overwrite someone else.
 * **How:** `newId('P',6)` draws 6 characters from a 32-symbol alphabet (no 0/O/1/I/L; unbiased random bytes). `createPatient` uses `INSERT` (not upsert) and retries on a unique-violation up to 5 times. Input rules (name length, gender, phone pattern, blood group, complaint ≤ 500) are class-validator decorators. Then FHIR push, index, event.
-* **Where:** `src/hospital/hospital-lifecycle.service.ts` (`registerOutpatient`), `hospital.service.ts` (`createPatient`), `dto/hospital.dto.ts`, `src/common/ids.ts`.
-* **Can go wrong:** no duplicate-person detection (the same person registered twice gets two ids); phone is not unique; age ⇒ DOB is approximated as Jan 1 of (year − age).
+* **Where:** `src/hospital/hospital-lifecycle.service.ts` (`registerOutpatient`, `startVisit`), `patient-matching.ts`, `patient-identity.ts`, `hospital.service.ts` (`createPatient`), `dto/hospital.dto.ts`, `src/common/ids.ts`.
+* **Can go wrong:** duplicate detection is advisory (the receptionist may confirm "different person"); matching is name/phone/real-DOB only (`patient-matching.ts`, approximate DOBs are never used); phone is not unique; when only an age is given the DOB is approximated as Jan 1 and flagged `dobApproximate`.
 * **Explain it:** "Registering creates the chart and the waiting-room ticket, and every other system hears about it."
 * **Improve:** master patient index / duplicate matching (name + DOB + phone), real date of birth field, national id, insurance data, photo/consent capture, print wristband/token (UI prints a browser page only).
-* **Status:** ✅ · 🟡 no duplicate detection / DOB approximated.
+* **Status:** ✅ · 🟡 duplicate check is name/phone/DOB only; no master patient index.
 
 ## 3.5 Consultation and the medication-safety shield
 * **What:** the doctor records diagnosis, prescriptions and notes; prescriptions are screened first.
@@ -287,20 +289,20 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Improve:** Condition/AllergyIntolerance/MedicationRequest/Encounter/Practitioner/DiagnosticReport, LOINC/ICD-10/RxNorm coding, `$validate`, outbox + retry worker, inbound sync, auth (SMART-on-FHIR), a dedicated FHIR server, remove/reset the stray bulk patients.
 * **Status:** 🟡 partial (3 of ≈ 8 useful resources).
 
-## 3.10 Session close, reopen, delete
-* **What:** admin/doctor can **close** a patient session (no new clinical writes) and **reopen** it; admin can **delete** permanently.
-* **Why:** real hospitals discharge or administratively close encounters, and must be able to erase data (error, request).
-* **How:** `closePatient` sets `consultationStatus=CLOSED` plus who/when/why; every clinical write (`consultation, lab, imaging, triage, appointment`) calls `assertOpen` ⇒ HTTP 409 for closed patients. Reopen restores `SEEN`/`WAITING`. Delete requires `?confirm=<exact id>` (HTTP 400 otherwise) and is ADMIN-only; see section 2.7. Events: `patient.closed/reopened/deleted`. Doctor portal shows a "SESSION CLOSED" banner and disables the form.
-* **Where:** `hospital.service.ts` (`closePatient/reopenPatient/deletePatientCascade`), lifecycle (`closePatientSession`, `reopenPatientSession`, `deletePatient`, `assertOpen`), controller, UI `PatientManagementPanel.tsx`, `DoctorWorkbenchPortal.tsx`.
-* **Can go wrong:** delete is irreversible and there is no soft-delete/undo window; "closed" is a single flag (no discharge summary, no discharge disposition); old chat threads still contain the deleted patient's text (only the *focus* is cleared); backups are not purged.
-* **Explain it:** "Close = the visit is over; Delete = permanent erasure with a typed confirmation."
-* **Improve:** soft-delete with a retention window, discharge workflow (summary, disposition, follow-up), purge chat history/traces for deleted patients, four-eyes approval for deletion.
+## 3.10 Visits: lifecycle, complete/reopen, delete
+* **What:** every episode of care is a **visit** with a status. Statuses: `WAITING_TRIAGE`, `TRIAGED` (shown as "Waiting for doctor"), `IN_CONSULTATION`, `UNDER_REVIEW`, `TREATMENT`, `FOLLOW_UP`, `COMPLETED`, `CANCELLED`, `LEFT_WITHOUT_SEEN`. Admin can **delete** a patient permanently.
+* **Why:** a person comes many times; the status belongs to the episode, not the person. History is kept, queues are exact, and the agent can reason about "where is this patient now".
+* **How:** `visit-transitions.ts` is a declarative table (from → to, allowed roles, `auto` for steps the system performs, `noteRequired`). `VisitsService.transition()` is the **only** writer of `visits.status`: it locks the row, checks the table (409 impossible move, 403 wrong role, 400 missing reason), stamps timestamps/doctor/outcome, and writes a `visit_events` row. Workflow steps move visits automatically (triage → `TRIAGED`; first consultation → `IN_CONSULTATION`); manual moves use `POST /hospital/visits/:id/transition {to, note?, outcome?}`; `GET /hospital/visits/:id` returns the timeline and the transitions the caller may press. Clinical writes need an open visit (`VisitsService.requireActive`, 409 otherwise); reopening a completed visit needs a reason. One open visit per patient is enforced by a partial unique index. Delete requires `?confirm=<exact id>` and is ADMIN-only (also removes the visits and timeline); see 2.7. Events: `visit.updated` (every change), `patient.registered`, `doctor.consulted`, `patient.deleted`.
+* **Where:** `src/hospital/visits/*` (`visit-status.ts`, `visit-transitions.ts`, `visits.service.ts`, `visit-summary.ts`), `patient-directory.service.ts` (list with current visit), `overview.service.ts`, lifecycle service, controller, UI `lib/visits.ts`, `VisitPanel.tsx`, `PatientManagementPanel.tsx`, `DoctorWorkbenchPortal.tsx`.
+* **Can go wrong:** delete is irreversible (no soft-delete); no discharge summary yet; old chat threads still contain the deleted patient's text; backups are not purged; the department/specialist hand-off states exist but nothing drives them until the referral work (W7).
+* **Explain it:** "The patient is the person, the visit is today's trip. Rules for moving a visit live in one table; one function applies them and records who did what."
+* **Improve:** soft-delete with retention, discharge workflow, four-eyes deletion, purge chat/traces for deleted patients.
 * **Status:** ✅ · 🟡 no discharge summary.
 
 ## 3.11 Waiting-room monitor
 * **What:** a background job that alerts once when a patient waits too long.
 * **Why:** unseen patients are a safety and satisfaction risk.
-* **How:** `QueueMonitorService` runs every 60 s; patients `WAITING` for more than `WAIT_ALERT_MINUTES` and with `waitAlertedAt IS NULL` raise `alert.unconsulted_patient` and are stamped so they are not re-alerted. `GET /hospital/lifecycle/queue` returns live wait minutes.
+* **How:** `QueueMonitorService` runs every 60 s; visits in `WAITING_TRIAGE`/`TRIAGED` for more than `WAIT_ALERT_MINUTES` and with `waitAlertedAt IS NULL` raise `alert.unconsulted_patient` and are stamped so they are not re-alerted. `GET /hospital/lifecycle/queue` returns live wait minutes.
 * **Where:** `queue-monitor.service.ts`, lifecycle `queue`, `checkUnconsultedPatientAlerts`.
 * **Can go wrong:** timer runs in each server instance (two instances = duplicate alerts); no escalation if the first alert is ignored; the threshold is global.
 * **Improve:** escalation ladder (30 → 45 → 60 min), per-department thresholds, job queue/leader election, assign-to-doctor.
@@ -404,7 +406,7 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 
   | Tool | Roles | Purpose |
   |---|---|---|
-  | `searchPatients` | all | list/find patients by name/id/status |
+  | `searchPatients` | all | list/find patients by name/id and stage (waiting, active, finished) |
   | `getPatientSummary` | all (sections trimmed by role) | full chart incl. safety alerts |
   | `getHospitalOverview` | doctor, nurse, admin, receptionist, coordinator | counts |
   | `getAppointmentsAndTasks` | doctor, nurse, receptionist, coordinator, admin | schedule/to-dos |
@@ -533,11 +535,11 @@ Next.js 16 App Router, React 19, Tailwind 4, one page (`app/page.tsx`) that show
 | **Receptionist** | Registration form with validation; live queue (wait minutes, status); stat cards; print token (browser print); "Notify doctor" (creates a task) | `register-op`, `queue`, `tasks` |
 | **ED Triage (nurse)** | Vitals form incl. consciousness, oxygen, SpO2 scale 2; shows NEWS2, breakdown, sepsis screen, suggested ESI — **nothing is computed in the browser**; closed patients disabled | `triage` |
 | **Nurse ward** | Ward board sorted by NEWS2; SBAR draft via AI (with "AI draft" banner); voice scribe button is **disabled and labelled not implemented** | `ward`, `ai/documents` |
-| **Doctor workbench** | Patient list/search; chart sections (allergies, medications, conditions, vitals, labs, imaging); consultation form; on HTTP 409 shows the safety findings and an override-reason box; close/reopen session; closed banner disables the form | `patients`, `summary`, `vitals`, `labs`, `imaging`, `record-consultation`, `close/reopen` |
+| **Doctor workbench** | Patient list/search; chart sections (allergies, medications, conditions, vitals, labs, imaging); consultation form; on HTTP 409 shows the safety findings and an override-reason box; visit panel (timeline + allowed transitions); no open visit disables the form | `patients`, `summary`, `vitals`, `labs`, `imaging`, `record-consultation`, `close/reopen` |
 | **Radiology** | DICOM upload + impression; per-patient study list; authenticated preview image; lab-result form | `imaging-study`, `patients/:id/imaging`, `imaging/:id/preview`, `lab-result` |
 | **Pharmacy** | Queue of prescriptions with safety result; ad-hoc audit form | `pharmacy/queue`, `pharmacy/audit` |
 | **Care coordinator** | Prior-authorization letter, discharge instructions with translation language; "AI draft — clinician review required" | `ai/documents` |
-| **Admin** | Service health cards, audit log, **Agent observability** (metrics, breaker, drift, runs, waterfall), **Knowledge base** (upload/paste/list/delete/re-index), **Patient management** (search, close/reopen, delete with typed ID) | `admin/*`, `patients/*` |
+| **Admin** | Service health cards, audit log, **Agent observability** (metrics, breaker, drift, runs, waterfall), **Knowledge base** (upload/paste/list/delete/re-index), **Patient management** (search, complete/reopen visit, delete with typed ID) | `admin/*`, `patients/*` |
 
 ## 5.3 Chat drawer
 Floating "Ask AI" button → 520 px panel: thread history (list, reopen, delete), "New chat", elapsed-seconds counter ("Thinking… 12s", after 30 s "Still working"), **Cancel** (aborts the request), answers in monospace pre-wrap (they are plain-text lists/charts), tool badges with durations (server-side retrievals are shown too), citations (file + heading), guardrail warnings, "older turns summarised" badge, copyable trace id. File: `components/ai/MastraChatDrawer.tsx` (330 lines).
@@ -596,7 +598,7 @@ cd apps/web-app && cp .env.local.example .env.local && npm install && npm run de
 
 # 7. Security and privacy review
 
-**In place:** signed tokens with expiry · bcrypt (cost 12) · constant-ish login timing · deny-by-default global guard · role checks on every sensitive route · minimum-necessary views per role · input validation with unknown fields rejected · login/AI/global rate limits · helmet headers · CORS allow-list · WebSocket authentication and role rooms · audit log · masked PHI for the model · PHI-free traces · typed-ID confirmation for deletion · closed-session write block · no secrets in code (`.env`, validated) · document upload never uses the client filename as a path · DB ports bound to 127.0.0.1.
+**In place:** signed tokens with expiry · bcrypt (cost 12) · constant-ish login timing · deny-by-default global guard · role checks on every sensitive route · minimum-necessary views per role · input validation with unknown fields rejected · login/AI/global rate limits · helmet headers · CORS allow-list · WebSocket authentication and role rooms · audit log · masked PHI for the model · PHI-free traces · typed-ID confirmation for deletion · open-visit requirement for clinical writes · no secrets in code (`.env`, validated) · document upload never uses the client filename as a path · DB ports bound to 127.0.0.1.
 
 **Gaps (be honest):** token in `sessionStorage` · no refresh/revocation/MFA/password reset · no encryption at rest or TLS in the dev setup · schema auto-sync · audit log not tamper-proof and unbounded · name masking is dictionary-based and does not cover embeddings sent to a cloud provider · chat history/traces retain PHI with no retention policy · agent write tools use soft confirmation · seeded accounts share one password · FHIR/PACS have no auth in dev and are shared with another project · no dependency/vulnerability scanning in CI · no penetration test · **not a certified medical device and not HIPAA/GDPR-audited**.
 
@@ -615,7 +617,7 @@ cd apps/web-app && cp .env.local.example .env.local && npm install && npm run de
 | FHIR mirror | 🟡 | 3 resource types, one-way, no retry queue |
 | Pharmacy | 🟡 | view/audit only; no approve/dispense |
 | Appointments & tasks | 🟡 | API + agent only, no UI |
-| Close / reopen / delete patient | ✅ | no discharge summary / soft delete |
+| Visit lifecycle (complete/reopen/cancel) / delete patient | ✅ | no discharge summary / soft delete |
 | Real-time events | ✅ | single node, alerts not persisted |
 | Audit log | ✅ | not tamper-proof |
 | RAG / embeddings / vector store | ✅ | hybrid search, re-ranking missing |
@@ -631,7 +633,7 @@ cd apps/web-app && cp .env.local.example .env.local && npm install && npm run de
 | AI document drafts (SBAR, prior-auth, translation) | 🟡 | drafts; model-quality dependent |
 | Streaming answers | ⬜ | |
 | Voice scribe, SMS follow-up, insurance submission, billing, bed management, lab ordering, dispensing | ⬜ | UI says "not implemented" where visible |
-| Database migrations | ⬜ | `synchronize` only |
+| Database migrations | ✅ | CI check that entities match migrations still missing |
 | CI pipeline | ⬜ | tests run manually |
 | Dead code | 🗑 | `src/ai/mcp`, `src/ai/workflows`, `src/ai/tools/dicom-fhir.tools.ts`, `src/mastra`, `src/app.service.ts`, stale `test/app.e2e-spec.ts` (all marked with TODO headers) |
 
@@ -765,7 +767,10 @@ Line counts are approximate. **Status** uses the legend at the top. "Spec" = uni
 |---|---|
 | `hospital/hospital.controller.ts` | all `/hospital/*` routes with roles (patients, summary, close/reopen/delete, labs, meds, vitals, imaging, preview, appointments, tasks, lifecycle, pharmacy) ✅ |
 | `hospital/hospital-lifecycle.service.ts` | the workflows: register, consult, lab, imaging, triage, ward, queue, alerts, pharmacy, close/reopen/delete; DB-first then best-effort side effects ✅ |
-| `hospital/hospital.service.ts` | data access: patients (list/search, create, close/reopen, cascade delete, `findMentioned`, overview), labs, appointments, tasks ✅ |
+| `hospital/hospital.service.ts` | data access for the person: patients (create, cascade delete incl. visits, duplicate candidates, `findMentioned`), labs, appointments, tasks ✅ |
+| `hospital/visits/*` | visit statuses, transition table, `VisitsService` (single status writer), summaries ✅ |
+| `hospital/patient-directory.service.ts`, `overview.service.ts`, `patient-matching.ts`, `patient-identity.ts`, `mention-matching.ts`, `post-commit.service.ts` | patient list with current visit, hospital numbers, duplicate matching, DOB/age rules, name mentions, best-effort post-commit work ✅ |
+| `database/migrations/*`, `database/typeorm.config.ts`, `database/data-source.ts` | migrations and the shared DB options ✅ |
 | `hospital/clinical-records.service.ts` | consultations (transactional save), vitals, imaging studies ✅ |
 | `hospital/patient-summary.service.ts` | role-aware 360° chart incl. safety alerts ✅ |
 | `hospital/news2.service.ts` (+spec) | NEWS2, SIRS, ESI suggestion ✅ |
@@ -828,7 +833,8 @@ Line counts are approximate. **Status** uses the legend at the top. "Spec" = uni
 | `components/portals/AdminPortal.tsx` | admin page (health, audit) hosting the panels below |
 | `components/portals/AgentObservability.tsx` | metrics, drift, runs, waterfall |
 | `components/portals/KnowledgeBasePanel.tsx` | document upload/list/delete/re-index |
-| `components/portals/PatientManagementPanel.tsx` | close/reopen/delete patients |
+| `components/portals/PatientManagementPanel.tsx` | visit complete/reopen/cancel, history, delete patients |
+| `lib/visits.ts`, `components/ui/VisitPanel.tsx` | single source of visit labels/colours; timeline + transition buttons |
 | `components/ai/MastraChatDrawer.tsx` | the chat assistant UI |
 
 ## 12.4 Tests and tooling

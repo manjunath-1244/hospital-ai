@@ -1,5 +1,3 @@
-import type { ConsultationStatus } from '../database/entities/patient.entity';
-
 export interface Patient {
   id: string;
   name: string;
@@ -11,13 +9,7 @@ export interface Patient {
   allergies: string[];
   currentMedications: string[];
   conditions: string[];
-  chiefComplaint: string | null;
-  consultationStatus: ConsultationStatus;
   registeredAt: Date;
-  consultedAt: Date | null;
-  closedAt: Date | null;
-  closedBy: string | null;
-  closeReason: string | null;
 }
 
 export type LabStatus = 'NORMAL' | 'ABNORMAL' | 'CRITICAL';

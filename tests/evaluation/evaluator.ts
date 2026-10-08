@@ -753,7 +753,7 @@ async function main() {
   const dbWaiting = Number(
     (
       await ds.query(
-        `select count(*)::int as n from patients where "consultationStatus"='WAITING'`,
+        `select count(*)::int as n from visits where status='TRIAGED'`,
       )
     )[0].n,
   );

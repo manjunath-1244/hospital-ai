@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Shield, Cpu, RefreshCw } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
-import type { AuditLogEntry, HealthResponse } from '../../lib/types';
+import { useRealtime } from '../../context/RoleContext';
+import { statusLabel, type VisitStatus } from '../../lib/visits';
+import type { AuditLogEntry, HealthResponse, OverviewResponse } from '../../lib/types';
 import { AgentObservability } from './AgentObservability';
 import { KnowledgeBasePanel } from './KnowledgeBasePanel';
 import { PatientManagementPanel } from './PatientManagementPanel';
@@ -15,6 +17,8 @@ export const AdminPortal: React.FC = () => {
   const [logs, setLogs] = useState<AuditLogEntry[] | null>(null);
   const [logsError, setLogsError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [overviewError, setOverviewError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -33,10 +37,36 @@ export const AdminPortal: React.FC = () => {
     setLoading(false);
   }, []);
 
+  const loadOverview = useCallback(async () => {
+    try {
+      setOverview(await apiFetch<OverviewResponse>('/hospital/overview'));
+      setOverviewError('');
+    } catch (e) {
+      setOverviewError(errorMessage(e));
+    }
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-  }, [load]);
+    loadOverview();
+  }, [load, loadOverview]);
+  useRealtime(['visit.updated', 'patient.registered', 'patient.deleted', 'alert.critical_lab'], loadOverview);
+
+  const tiles: { label: string; value: number | string; tone?: string }[] = overview
+    ? [
+        { label: 'Total patients', value: overview.totalPatients },
+        { label: 'Active visits', value: overview.activeVisits, tone: 'text-indigo-300' },
+        { label: 'Waiting for triage', value: overview.waitingForTriage, tone: 'text-amber-300' },
+        { label: 'Waiting for doctor', value: overview.waitingForDoctor, tone: 'text-orange-300' },
+        { label: 'With doctor', value: overview.withDoctor, tone: 'text-cyan-300' },
+        { label: 'Completed today', value: overview.completedToday, tone: 'text-emerald-300' },
+        { label: 'Longest wait', value: `${overview.longestWaitMinutes} min`, tone: overview.longestWaitMinutes >= 30 ? 'text-rose-300' : 'text-slate-200' },
+        { label: 'Critical labs (24h)', value: overview.criticalLabsLast24h, tone: overview.criticalLabsLast24h ? 'text-rose-300' : 'text-slate-200' },
+        { label: 'Pending staff tasks', value: overview.pendingStaffTasks },
+        { label: 'Scheduled appointments', value: overview.scheduledAppointments },
+      ]
+    : [];
 
   return (
     <div className="space-y-6">
@@ -51,6 +81,27 @@ export const AdminPortal: React.FC = () => {
         <button onClick={load} className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-sm font-bold text-slate-300 hover:text-white border border-slate-700">
           <RefreshCw className="h-4 w-4" /> Refresh
         </button>
+      </div>
+
+      <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
+        <h3 className="text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4">Hospital Overview</h3>
+        {!overview && !overviewError && <Loading text="Loading overview..." />}
+        <ErrorBox message={overviewError} />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {tiles.map((t) => (
+            <div key={t.label} className="rounded-xl bg-slate-950 px-4 py-3 border border-slate-700">
+              <p className="text-sm text-slate-400">{t.label}</p>
+              <p className={`text-3xl font-extrabold ${t.tone ?? 'text-slate-200'}`}>{t.value}</p>
+            </div>
+          ))}
+        </div>
+        {overview && (
+          <div className="flex flex-wrap gap-2 text-sm text-slate-300">
+            {Object.entries(overview.visitsByStatus).map(([k, n]) => (
+              <span key={k} className="rounded-full bg-slate-950 border border-slate-700 px-3 py-1">{statusLabel(k as VisitStatus)}: <span className="font-bold text-white">{n}</span></span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">

@@ -11,6 +11,9 @@ import { ChatThreadEntity } from './chat-thread.entity';
 import { ChatMessageEntity } from './chat-message.entity';
 import { AgentRunEntity } from './agent-run.entity';
 import { KnowledgeDocumentEntity } from './knowledge-document.entity';
+import { DocumentEmbeddingEntity } from './document-embedding.entity';
+import { VisitEntity } from './visit.entity';
+import { VisitEventEntity } from './visit-event.entity';
 
 export const ALL_ENTITIES = [
   PatientEntity,
@@ -26,9 +29,14 @@ export const ALL_ENTITIES = [
   ChatMessageEntity,
   AgentRunEntity,
   KnowledgeDocumentEntity,
+  DocumentEmbeddingEntity,
+  VisitEntity,
+  VisitEventEntity,
 ];
 
 export {
+  VisitEntity,
+  VisitEventEntity,
   KnowledgeDocumentEntity,
   ChatThreadEntity,
   ChatMessageEntity,

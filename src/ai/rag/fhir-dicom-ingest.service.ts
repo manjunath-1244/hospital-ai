@@ -1,8 +1,10 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { HospitalService } from '../../hospital/hospital.service';
 import { ClinicalRecordsService } from '../../hospital/clinical-records.service';
+import { VisitsService } from '../../hospital/visits/visits.service';
 import { VectorRagService } from './vector-rag.service';
 import { RecordDocumentBuilder } from './record-documents';
+import type { PatientEntity } from '../../database/entities/patient.entity';
 import { FhirHapiClient } from '../fhir/fhir-hapi.client';
 import { FhirService } from '../fhir/fhir.service';
 
@@ -17,6 +19,7 @@ export class FhirDicomIngestService implements OnApplicationBootstrap {
   constructor(
     private readonly hospital: HospitalService,
     private readonly records: ClinicalRecordsService,
+    private readonly visits: VisitsService,
     private readonly rag: VectorRagService,
     private readonly fhir: FhirHapiClient,
     private readonly fhirMapper: FhirService,
@@ -33,14 +36,32 @@ export class FhirDicomIngestService implements OnApplicationBootstrap {
     }
   }
 
+  /** Every patient, page by page (no silent cap). */
+  private async allPatients() {
+    const out: PatientEntity[] = [];
+    const page = 200;
+    for (let offset = 0; ; offset += page) {
+      const { items } = await this.hospital.listPatients({
+        limit: page,
+        offset,
+      });
+      out.push(...items);
+      if (items.length < page) return out;
+    }
+  }
+
   /** Makes the search index and FHIR server match the database. Idempotent; unchanged records are skipped cheaply. */
   async reindexAll() {
     let documents = 0;
     let fhirSynced = 0;
-    const { items } = await this.hospital.listPatients({ limit: 200 });
+    const items = await this.allPatients();
     for (const p of items) {
       await this.rag.ingest(RecordDocumentBuilder.patient(p));
       documents++;
+      for (const v of await this.visits.listForPatient(p.id, 100)) {
+        await this.rag.ingest(RecordDocumentBuilder.visit(p, v));
+        documents++;
+      }
       for (const c of await this.records.listConsultations(p.id, 50)) {
         await this.rag.ingest(RecordDocumentBuilder.consultation(p, c));
         documents++;

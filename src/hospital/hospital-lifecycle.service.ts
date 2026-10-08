@@ -5,33 +5,49 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { HospitalService } from './hospital.service';
 import { ClinicalRecordsService } from './clinical-records.service';
 import { News2Service } from './news2.service';
 import { MedicationSafetyService } from './medication-safety.service';
+import { PostCommitService } from './post-commit.service';
+import { PatientDirectoryService } from './patient-directory.service';
+import { VisitsService } from './visits/visits.service';
+import { toVisitSummary } from './visits/visit-summary';
+import { ACTIVE_STATUSES, WAITING_STATUSES } from './visits/visit-status';
+import { manualTransitionsFor } from './visits/visit-transitions';
+import { rankMatches } from './patient-matching';
 import { assessLab } from './lab-rules';
 import { FhirHapiClient } from '../ai/fhir/fhir-hapi.client';
 import { FhirService } from '../ai/fhir/fhir.service';
 import { DicomService } from '../ai/dicom/dicom.service';
 import { OrthancClient } from '../ai/dicom/orthanc.client';
-import { VectorRagService, RagRecord } from '../ai/rag/vector-rag.service';
+import { VectorRagService } from '../ai/rag/vector-rag.service';
 import { RecordDocumentBuilder } from '../ai/rag/record-documents';
 import { HospitalEventsGateway } from '../events/hospital-events.gateway';
 import { AuthUser } from '../security/auth-user';
 import {
+  AppointmentDto,
   ConsultationDto,
   ImagingUploadDto,
   LabResultDto,
   RegistrationDto,
+  StartVisitDto,
+  TaskDto,
   TriageDto,
+  VisitTransitionDto,
 } from './dto/hospital.dto';
 import { PatientEntity } from '../database/entities/patient.entity';
+import { VisitEntity } from '../database/entities/visit.entity';
 import { SafetyReport } from './hospital.types';
 
 /**
  * Orchestrates clinical workflows. Pattern for every step: (1) commit the authoritative record to Postgres,
  * (2) run best-effort side effects (FHIR sync, RAG indexing, realtime event) that must never lose the record.
  * Side-effect outcomes are reported back (`fhirSynced`, `ragIndexed`) instead of being hidden.
+ *
+ * Every clinical record belongs to a VISIT. Writes go to the patient's open visit (409 if there is none), and the
+ * visit status only ever changes through `VisitsService.transition`.
  */
 @Injectable()
 export class HospitalLifecycleService {
@@ -40,6 +56,8 @@ export class HospitalLifecycleService {
   constructor(
     private readonly hospital: HospitalService,
     private readonly records: ClinicalRecordsService,
+    private readonly visits: VisitsService,
+    private readonly directory: PatientDirectoryService,
     private readonly news2: News2Service,
     private readonly medSafety: MedicationSafetyService,
     private readonly fhirMapper: FhirService,
@@ -47,57 +65,66 @@ export class HospitalLifecycleService {
     private readonly dicom: DicomService,
     private readonly orthanc: OrthancClient,
     private readonly rag: VectorRagService,
+    private readonly post: PostCommitService,
     private readonly events: HospitalEventsGateway,
+    private readonly dataSource: DataSource,
   ) {}
 
-  /** Runs a non-critical side effect; returns whether it succeeded. */
-  private async sideEffect(
-    label: string,
-    fn: () => Promise<unknown>,
-  ): Promise<boolean> {
-    try {
-      await fn();
-      return true;
-    } catch (err: any) {
-      this.logger.warn(
-        `${label} failed (record already saved): ${err.message}`,
-      );
-      return false;
-    }
-  }
+  // ---- visits: the single place the workflow moves a visit -------------------------------------------------------
 
-  private index(rec: RagRecord) {
-    return this.sideEffect(`RAG index ${rec.source}`, () =>
-      this.rag.ingest(rec),
-    );
-  }
-
-  /** Clinical writes are refused for closed sessions; an admin/doctor must reopen first. */
-  private assertOpen(patient: PatientEntity): PatientEntity {
-    if (patient.consultationStatus === 'CLOSED') {
-      throw new ConflictException(
-        `Patient ${patient.id} session is closed${patient.closeReason ? ` (${patient.closeReason})` : ''}. Reopen it before recording new data.`,
-      );
-    }
-    return patient;
-  }
-
-  async closePatientSession(id: string, user: AuthUser, reason?: string) {
-    const p = await this.hospital.closePatient(id, user.userName, reason);
-    this.events.emitPatientClosed({
-      patientId: p.id,
-      patientName: p.name,
-      closedBy: user.userName,
+  /** Starts a new visit for a patient who is already registered (returning patient). */
+  async startVisit(patientId: string, dto: StartVisitDto, user: AuthUser) {
+    const patient = await this.hospital.getPatientById(patientId);
+    const visit = await this.visits.start(patient.id, {
+      chiefComplaint: dto.chiefComplaint,
+      actor: user,
     });
-    await this.index(RecordDocumentBuilder.patient(p));
-    return p;
+    await this.announceVisit(patient, visit);
+    return { success: true, patientId: patient.id, visit: this.view(visit) };
   }
 
-  async reopenPatientSession(id: string) {
-    const p = await this.hospital.reopenPatient(id);
-    this.events.emitPatientReopened({ patientId: p.id });
-    await this.index(RecordDocumentBuilder.patient(p));
-    return p;
+  /** The one entry point for manual status changes (complete, reopen, cancel, left-without-seen, hand-offs). */
+  async transitionVisit(
+    visitId: string,
+    dto: VisitTransitionDto,
+    user: AuthUser,
+  ) {
+    const visit = await this.visits.transition(visitId, dto.to, user, {
+      note: dto.note,
+      outcome: dto.outcome,
+    });
+    const patient = await this.hospital.getPatientById(visit.patientId);
+    await this.announceVisit(patient, visit);
+    return { success: true, visit: this.view(visit) };
+  }
+
+  async visitDetail(visitId: string, user: AuthUser) {
+    const visit = await this.visits.get(visitId);
+    const [timeline, patient] = await Promise.all([
+      this.visits.timeline(visitId),
+      this.hospital.getPatientById(visit.patientId),
+    ]);
+    return {
+      visit: this.view(visit),
+      patient: { id: patient.id, name: patient.name },
+      timeline,
+      allowedTransitions: manualTransitionsFor(visit.status, user.role),
+    };
+  }
+
+  private view(visit: VisitEntity) {
+    return toVisitSummary(visit);
+  }
+
+  /** Realtime event + search-index refresh after any visit change. */
+  private async announceVisit(patient: PatientEntity, visit: VisitEntity) {
+    this.events.emitVisitUpdated({
+      visitId: visit.id,
+      patientId: patient.id,
+      patientName: patient.name,
+      status: visit.status,
+    });
+    await this.post.index(RecordDocumentBuilder.visit(patient, visit));
   }
 
   /**
@@ -115,14 +142,14 @@ export class HospitalLifecycleService {
       await this.hospital.deletePatientCascade(patient.id);
 
     let ragChunksRemoved = 0;
-    await this.sideEffect('RAG cleanup', async () => {
+    await this.post.run('RAG cleanup', async () => {
       ragChunksRemoved = await this.rag.removePatient(patientId);
     });
-    const fhirDeleted = await this.sideEffect('FHIR delete', () =>
+    const fhirDeleted = await this.post.run('FHIR delete', () =>
       this.fhir.deletePatientCascade(patientId),
     );
     for (const inst of orthancInstanceIds) {
-      await this.sideEffect('Orthanc delete', () =>
+      await this.post.run('Orthanc delete', () =>
         this.orthanc.deleteInstance(inst),
       );
     }
@@ -133,36 +160,73 @@ export class HospitalLifecycleService {
     return { success: true, patientId, deleted, fhirDeleted, ragChunksRemoved };
   }
 
-  // 1. RECEPTIONIST: register an outpatient
-  async registerOutpatient(dto: RegistrationDto) {
-    const patient = await this.hospital.createPatient(dto);
+  // 1. RECEPTIONIST: register a new person and open their first visit (or flag a possible duplicate first)
+  async registerOutpatient(dto: RegistrationDto, user: AuthUser) {
+    if (!dto.allowDuplicate) {
+      const phoneDigits = dto.phone.replace(/\D/g, '');
+      const candidates = await this.hospital.findDuplicateCandidates(
+        dto.name,
+        phoneDigits,
+      );
+      const matches = rankMatches(candidates, {
+        name: dto.name,
+        phone: dto.phone,
+        dob: dto.dob ?? null,
+      });
+      if (matches.length) {
+        throw new ConflictException({
+          statusCode: 409,
+          error: 'Conflict',
+          message:
+            'This looks like a patient who is already registered. Open their record and start a new visit, or confirm this is a different person.',
+          possibleMatches: matches.map((m) => {
+            const p = candidates.find((c) => c.id === m.patientId)!;
+            return { ...m, name: p.name, age: p.age, phone: p.phone };
+          }),
+        });
+      }
+    }
 
-    const fhirSynced = await this.sideEffect(
-      'FHIR Patient upsert',
-      async () => {
-        await this.fhir.upsertPatient(this.fhirMapper.toFhirPatient(patient));
-        await this.hospital.markFhirSynced(patient.id);
-      },
-    );
-    const ragIndexed = await this.index(RecordDocumentBuilder.patient(patient));
+    const { patient, visit } = await this.dataSource.transaction(async (m) => {
+      const patient = await this.hospital.createPatient(dto, m);
+      const visit = await this.visits.start(
+        patient.id,
+        { chiefComplaint: dto.chiefComplaint, actor: user },
+        m,
+      );
+      return { patient, visit };
+    });
+
+    const fhirSynced = await this.post.run('FHIR Patient upsert', async () => {
+      await this.fhir.upsertPatient(this.fhirMapper.toFhirPatient(patient));
+      await this.hospital.markFhirSynced(patient.id);
+    });
+    const ragIndexed =
+      (await this.post.index(RecordDocumentBuilder.patient(patient))) &&
+      (await this.post.index(RecordDocumentBuilder.visit(patient, visit)));
 
     const payload = {
       patientId: patient.id,
       name: patient.name,
       age: patient.age,
       gender: patient.gender,
-      chiefComplaint: patient.chiefComplaint ?? 'General OPD',
-      registrationTime: patient.registeredAt.toISOString(),
+      visitId: visit.id,
+      chiefComplaint: visit.chiefComplaint ?? 'General OPD',
+      registrationTime: visit.arrivedAt.toISOString(),
     };
     this.events.emitPatientRegistered(payload);
+    this.events.emitVisitUpdated({
+      visitId: visit.id,
+      patientId: patient.id,
+      patientName: patient.name,
+      status: visit.status,
+    });
 
     return {
       success: true,
       patientId: patient.id,
       patient: { ...patient, fhirSynced },
-      registrationTime: payload.registrationTime,
-      status: 'WAITING_FOR_DOCTOR',
-      chiefComplaint: payload.chiefComplaint,
+      visit: this.view(visit),
       fhirSynced,
       ragIndexed,
     };
@@ -170,9 +234,8 @@ export class HospitalLifecycleService {
 
   // 2. DOCTOR: consultation + prescriptions, screened by the medication safety shield
   async recordDoctorConsultation(dto: ConsultationDto, user: AuthUser) {
-    const patient = this.assertOpen(
-      await this.hospital.getPatientById(dto.patientId),
-    );
+    const patient = await this.hospital.getPatientById(dto.patientId);
+    const visit = await this.visits.requireActive(patient.id);
     const safety = await this.screenMedications(patient, dto.prescriptions);
 
     if (safety.status === 'CRITICAL_BLOCK' && !dto.overrideReason) {
@@ -199,19 +262,28 @@ export class HospitalLifecycleService {
         ? user.userName
         : (dto.doctorName ?? user.userName);
 
-    const consultation = await this.records.saveConsultation(patient, {
-      patientId: patient.id,
-      doctorId: user.userId,
-      doctorName,
-      diagnosis: dto.diagnosis,
-      prescriptions: dto.prescriptions,
-      notes: dto.notes,
-      safety,
-      overrideReason: dto.overrideReason ?? null,
-    });
+    const consultation = await this.records.saveConsultation(
+      patient,
+      visit.id,
+      user,
+      {
+        patientId: patient.id,
+        doctorId: user.userId,
+        doctorName,
+        diagnosis: dto.diagnosis,
+        prescriptions: dto.prescriptions,
+        notes: dto.notes,
+        safety,
+        overrideReason: dto.overrideReason ?? null,
+      },
+    );
 
-    await this.index(RecordDocumentBuilder.consultation(patient, consultation));
-    await this.index(RecordDocumentBuilder.patient(patient));
+    const updated = await this.visits.get(visit.id);
+    await this.post.index(
+      RecordDocumentBuilder.consultation(patient, consultation),
+    );
+    await this.post.index(RecordDocumentBuilder.patient(patient));
+    await this.announceVisit(patient, updated);
 
     this.events.emitDoctorConsulted({
       patientId: patient.id,
@@ -231,7 +303,7 @@ export class HospitalLifecycleService {
       prescriptions: consultation.prescriptions,
       notes: consultation.notes,
       consultationTime: consultation.createdAt.toISOString(),
-      status: 'CONSULTATION_COMPLETED',
+      visit: this.view(updated),
       safety,
     };
   }
@@ -255,9 +327,8 @@ export class HospitalLifecycleService {
 
   // 3a. LAB: persist a result, classify it, alert on critical values
   async recordLabResult(dto: LabResultDto, user: AuthUser) {
-    const patient = this.assertOpen(
-      await this.hospital.getPatientById(dto.patientId),
-    );
+    const patient = await this.hospital.getPatientById(dto.patientId);
+    const visit = await this.visits.requireActive(patient.id);
     const { status, criticalLimit } = assessLab(
       dto.testName,
       dto.value,
@@ -267,6 +338,7 @@ export class HospitalLifecycleService {
 
     const lab = await this.hospital.addLab({
       patientId: patient.id,
+      visitId: visit.id,
       testName: dto.testName,
       value: dto.value,
       unit: dto.unit,
@@ -276,8 +348,8 @@ export class HospitalLifecycleService {
       recordedBy: user.userName,
     });
 
-    await this.index(RecordDocumentBuilder.lab(patient, lab));
-    await this.sideEffect('FHIR Observation upsert', () =>
+    await this.post.index(RecordDocumentBuilder.lab(patient, lab));
+    await this.post.run('FHIR Observation upsert', () =>
       this.fhir.upsertObservation(this.fhirMapper.toFhirObservation(lab)),
     );
 
@@ -303,18 +375,18 @@ export class HospitalLifecycleService {
     file: Buffer,
     user: AuthUser,
   ) {
-    const patient = this.assertOpen(
-      await this.hospital.getPatientById(dto.patientId),
-    );
+    const patient = await this.hospital.getPatientById(dto.patientId);
+    const visit = await this.visits.requireActive(patient.id);
     const meta = this.dicom.parseDicomBuffer(file); // throws 400 on invalid DICOM
 
     let orthancInstanceId: string | null = null;
-    const orthancStored = await this.sideEffect('Orthanc upload', async () => {
+    const orthancStored = await this.post.run('Orthanc upload', async () => {
       orthancInstanceId = await this.orthanc.uploadInstance(file);
     });
 
     const study = await this.records.addImagingStudy({
       patientId: patient.id,
+      visitId: visit.id,
       studyInstanceUid: meta.studyInstanceUid,
       seriesInstanceUid: meta.seriesInstanceUid ?? null,
       modality: meta.modality,
@@ -328,7 +400,7 @@ export class HospitalLifecycleService {
       uploadedBy: user.userName,
     });
 
-    const fhirSynced = await this.sideEffect(
+    const fhirSynced = await this.post.run(
       'FHIR ImagingStudy upsert',
       async () => {
         await this.fhir.upsertImagingStudy(
@@ -338,7 +410,7 @@ export class HospitalLifecycleService {
         study.fhirId = study.id;
       },
     );
-    await this.index(RecordDocumentBuilder.imaging(patient, study));
+    await this.post.index(RecordDocumentBuilder.imaging(patient, study));
 
     this.events.emitDicomUploaded({
       patientId: patient.id,
@@ -359,21 +431,29 @@ export class HospitalLifecycleService {
     return { ...rest, hasPreview: !!orthancInstanceId };
   }
 
-  // 4. NURSE: triage + NEWS2 + SIRS + ESI suggestion
+  // 4. NURSE: triage + NEWS2 + SIRS + ESI suggestion; moves the visit to TRIAGED and sets its priority
   async recordTriageAndVitals(dto: TriageDto, user: AuthUser) {
-    const patient = this.assertOpen(
-      await this.hospital.getPatientById(dto.patientId),
-    );
+    const patient = await this.hospital.getPatientById(dto.patientId);
+    const visit = dto.visitId
+      ? await this.visits.get(dto.visitId)
+      : await this.visits.requireActive(patient.id);
+    if (visit.patientId !== patient.id)
+      throw new BadRequestException(
+        `Visit ${visit.id} does not belong to patient ${patient.id}.`,
+      );
     const assessment = this.news2.assess(dto);
 
     const vitals = await this.records.addVitals({
       patientId: patient.id,
+      visitId: visit.id,
       heartRate: dto.heartRate,
       bpSystolic: dto.bpSystolic,
       spO2: dto.spO2,
       tempCelsius: dto.tempCelsius,
       respiratoryRate: dto.respiratoryRate,
       painScore: dto.painScore ?? null,
+      symptoms: dto.symptoms ?? [],
+      glucoseMgDl: dto.glucoseMgDl ?? null,
       consciousness: dto.consciousness,
       onSupplementalO2: dto.onSupplementalO2,
       news2Score: assessment.score,
@@ -381,7 +461,18 @@ export class HospitalLifecycleService {
       recordedBy: user.userName,
     });
 
-    await this.index(RecordDocumentBuilder.vitals(patient, vitals));
+    // Only a visit still in the waiting room advances; re-measuring vitals later leaves the status alone.
+    if ((WAITING_STATUSES as readonly string[]).includes(visit.status)) {
+      await this.visits.transition(visit, 'TRIAGED', user);
+    }
+    await this.visits.setPriority(
+      visit.id,
+      dto.priority ?? assessment.suggestedEsiLevel,
+    );
+    const updated = await this.visits.get(visit.id);
+
+    await this.post.index(RecordDocumentBuilder.vitals(patient, vitals));
+    await this.announceVisit(patient, updated);
 
     if (assessment.escalate) {
       this.events.emitNews2Alert({
@@ -397,6 +488,7 @@ export class HospitalLifecycleService {
       success: true,
       vitalsId: vitals.id,
       patientId: patient.id,
+      visit: this.view(updated),
       news2Score: assessment.score,
       riskLevel: assessment.riskLevel,
       breakdown: assessment.breakdown,
@@ -406,15 +498,35 @@ export class HospitalLifecycleService {
     };
   }
 
-  // Ward board: latest vitals per patient, sickest first
+  // Appointments and tasks are tied to the patient's open visit
+  async bookAppointment(dto: AppointmentDto) {
+    const patient = await this.hospital.getPatientById(dto.patientId);
+    const visit = await this.visits.requireActive(patient.id);
+    return this.hospital.bookAppointment({ ...dto, visitId: visit.id });
+  }
+
+  async createTask(dto: TaskDto) {
+    const visit = dto.patientId
+      ? await this.visits.getActive(dto.patientId)
+      : null;
+    return this.hospital.createTask({ ...dto, visitId: visit?.id ?? null });
+  }
+
+  // Ward board: latest vitals of every patient with an open visit, sickest first
   async wardBoard() {
-    const latest = await this.records.latestVitalsPerPatient();
-    const patients = new Map(
-      (await this.hospital.listPatients({ limit: 200 })).items.map((p) => [
-        p.id,
-        p,
-      ]),
+    const open = await this.visits.listByStatus(ACTIVE_STATUSES, 500);
+    const latest = await this.records.latestVitalsPerVisit(
+      open.map((v) => v.id),
     );
+    const patients = new Map(
+      (
+        await this.directory.list({
+          ids: open.map((v) => v.patientId),
+          limit: 500,
+        })
+      ).items.map((p) => [p.id, p]),
+    );
+    const visitsById = new Map(open.map((v) => [v.id, v]));
     return latest
       .filter((v) => patients.has(v.patientId))
       .map((v) => {
@@ -424,6 +536,7 @@ export class HospitalLifecycleService {
           name: p.name,
           age: p.age,
           gender: p.gender,
+          visit: this.view(visitsById.get(v.visitId!)!),
           latest: {
             news2Score: v.news2Score,
             riskLevel: v.riskLevel,
@@ -439,37 +552,50 @@ export class HospitalLifecycleService {
       .sort((a, b) => b.latest.news2Score - a.latest.news2Score);
   }
 
-  // Waiting-room queue with computed wait times
+  /** Waiting room: visits waiting for triage or for the doctor, with computed wait times. */
   async queue() {
-    const waitAlertMinutes = Number(process.env.WAIT_ALERT_MINUTES ?? 30);
-    const waiting = await this.hospital.findWaiting();
+    const waitAlertMinutes = this.waitAlertMinutes();
+    const waiting = await this.visits.listByStatus(WAITING_STATUSES, 200);
+    const patients = new Map(
+      (
+        await this.directory.list({
+          ids: waiting.map((v) => v.patientId),
+          limit: 200,
+        })
+      ).items.map((p) => [p.id, p]),
+    );
     return {
       waitAlertMinutes,
-      items: waiting.map((p) => ({
-        patientId: p.id,
-        name: p.name,
-        age: p.age,
-        gender: p.gender,
-        chiefComplaint: p.chiefComplaint ?? 'General OPD',
-        registeredAt: p.registeredAt.toISOString(),
-        waitMinutes: Math.floor(
-          (Date.now() - p.registeredAt.getTime()) / 60_000,
-        ),
-        status: 'WAITING_FOR_DOCTOR',
-      })),
+      items: waiting.map((v) => {
+        const p = patients.get(v.patientId);
+        return {
+          patientId: v.patientId,
+          name: p?.name ?? v.patientId,
+          age: p?.age ?? null,
+          gender: p?.gender ?? null,
+          chiefComplaint: v.chiefComplaint ?? 'General OPD',
+          visit: this.view(v),
+        };
+      }),
     };
   }
 
-  /** Read-only: patients waiting longer than the policy limit. Broadcasting is done by QueueMonitorService. */
+  /** Read-only: visits waiting longer than the policy limit. Broadcasting is done by QueueMonitorService. */
   async checkUnconsultedPatientAlerts() {
-    const limit = Number(process.env.WAIT_ALERT_MINUTES ?? 30);
-    const late = await this.hospital.findWaitingLongerThan(limit);
-    const alerts = late.map((p) => ({
-      patientId: p.id,
-      name: p.name,
-      waitMinutes: Math.floor((Date.now() - p.registeredAt.getTime()) / 60_000),
+    const late = await this.visits.findWaitingLongerThan(
+      this.waitAlertMinutes(),
+    );
+    const alerts = late.map((v) => ({
+      patientId: v.patientId,
+      visitId: v.id,
+      status: v.status,
+      waitMinutes: this.view(v).waitMinutes,
     }));
     return { unconsultedAlertsCount: alerts.length, alerts };
+  }
+
+  waitAlertMinutes(): number {
+    return Number(process.env.WAIT_ALERT_MINUTES ?? 30);
   }
 
   // Pharmacy

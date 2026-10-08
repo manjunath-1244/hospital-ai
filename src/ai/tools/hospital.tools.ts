@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { HospitalService } from '../../hospital/hospital.service';
+import { PatientDirectoryService } from '../../hospital/patient-directory.service';
+import { OverviewService } from '../../hospital/overview.service';
+import { HospitalLifecycleService } from '../../hospital/hospital-lifecycle.service';
 import { PatientSummaryService } from '../../hospital/patient-summary.service';
 import { looseInt } from './loose-schema';
 import { ALL_STAFF, ClinicalTool } from './tool-registry';
@@ -13,26 +16,31 @@ const patientId = z.string().describe('Patient ID, e.g. P1001');
 export function buildHospitalTools(d: {
   hospital: HospitalService;
   summaries: PatientSummaryService;
+  directory: PatientDirectoryService;
+  overview: OverviewService;
+  lifecycle: HospitalLifecycleService;
 }): ClinicalTool[] {
   return [
     {
       name: 'searchPatients',
       description:
-        'List or find patients. Use it for "all patients", "who is waiting", "find Eleanor", or to resolve a name to an id. query matches name or id; status is WAITING, SEEN, CLOSED or ALL.',
+        'List or find patients. Use it for "all patients", "who is waiting", "find Eleanor", or to resolve a name to an id. query matches name or id; stage filters by where the patient is: WAITING (waiting for triage or doctor), ACTIVE (any open visit), FINISHED (last visit completed/cancelled), NO_VISIT, or ALL.',
       inputSchema: z.object({
         query: z
           .string()
           .optional()
           .describe('Name or id fragment; omit to list everyone'),
-        status: z.enum(['WAITING', 'SEEN', 'CLOSED', 'ALL']).default('ALL'),
+        stage: z
+          .enum(['ALL', 'ACTIVE', 'WAITING', 'FINISHED', 'NO_VISIT'])
+          .default('ALL'),
         limit: looseInt({ min: 1, max: 100 }).default(50),
       }),
       roles: ALL_STAFF,
-      async run({ query, status, limit }) {
-        const { items, total } = await d.hospital.listPatients({
+      async run({ query, stage, limit }) {
+        const { items, total } = await d.directory.list({
           q: query,
           limit,
-          status: status === 'ALL' ? undefined : status,
+          stage,
         });
         return {
           success: true,
@@ -43,8 +51,10 @@ export function buildHospitalTools(d: {
             name: p.name,
             age: p.age,
             gender: p.gender,
-            chiefComplaint: p.chiefComplaint,
-            status: p.consultationStatus,
+            visitId: p.visit?.id ?? null,
+            chiefComplaint: p.visit?.chiefComplaint ?? null,
+            status: p.visit?.status ?? 'NO_VISIT',
+            statusLabel: p.visit?.statusLabel ?? 'No visit yet',
             registeredAt: p.registeredAt,
           })),
         };
@@ -66,11 +76,11 @@ export function buildHospitalTools(d: {
     {
       name: 'getHospitalOverview',
       description:
-        'Headline numbers: total patients, waiting, seen, closed, longest wait, critical labs in the last 24h, pending tasks, scheduled appointments.',
+        'Headline numbers: total patients, visits by status, waiting for triage, waiting for a doctor, with a doctor, completed today, longest wait, critical labs in the last 24h, pending tasks, scheduled appointments.',
       inputSchema: z.object({}),
       roles: ['DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST', 'CARE_COORDINATOR'],
       async run() {
-        return { success: true, ...(await d.hospital.overview()) };
+        return { success: true, ...(await d.overview.get()) };
       },
     },
     {
@@ -108,13 +118,7 @@ export function buildHospitalTools(d: {
       async run(i) {
         return {
           success: true,
-          appointment: await d.hospital.bookAppointment(
-            i.patientId,
-            i.doctorName,
-            i.department,
-            i.dateTime,
-            i.reason,
-          ),
+          appointment: await d.lifecycle.bookAppointment(i),
         };
       },
     },
@@ -132,12 +136,7 @@ export function buildHospitalTools(d: {
       async run(i) {
         return {
           success: true,
-          task: await d.hospital.createTask(
-            i.title,
-            i.assignedTo,
-            i.patientId,
-            i.priority,
-          ),
+          task: await d.lifecycle.createTask(i),
         };
       },
     },

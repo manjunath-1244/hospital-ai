@@ -15,6 +15,11 @@ export class ImagingStudyEntity {
   @Column({ type: 'varchar' })
   patientId: string;
 
+  /** The visit this record belongs to (null only for data created before visits existed). */
+  @Index()
+  @Column({ type: 'varchar', nullable: true })
+  visitId: string | null;
+
   @Column({ type: 'varchar' }) studyInstanceUid: string;
   @Column({ type: 'varchar', nullable: true }) seriesInstanceUid: string | null;
   @Column({ type: 'varchar' }) modality: string;

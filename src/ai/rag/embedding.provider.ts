@@ -62,7 +62,7 @@ export class LocalHashEmbeddingProvider extends EmbeddingProvider {
       add(tok, 1);
       if (i > 0) add(`${tokens[i - 1]} ${tok}`, 0.5);
     });
-    let norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0)) || 1;
+    const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0)) || 1;
     return vec.map((v) => v / norm);
   }
 }

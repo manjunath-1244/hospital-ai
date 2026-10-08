@@ -8,6 +8,8 @@ import { Agent } from '@mastra/core/agent';
 import { HospitalService } from '../hospital/hospital.service';
 import { ClinicalRecordsService } from '../hospital/clinical-records.service';
 import { PhiAnonymizerService } from './security/phi-anonymizer.service';
+import { VisitsService } from '../hospital/visits/visits.service';
+import { toVisitSummary } from '../hospital/visits/visit-summary';
 import { ClinicalToolsFactory } from './tools/clinical-tools.factory';
 import { createGroundedAgent, createHospitalAgent } from './agent';
 import { classifyIntent, extractPatientIds, Intent } from './routing/intent';
@@ -63,6 +65,7 @@ export class AiService {
     private readonly summarizer: SummarizerService,
     private readonly runs: AgentRunsService,
     private readonly summaries: PatientSummaryService,
+    private readonly visits: VisitsService,
     private readonly news2: News2Service,
   ) {}
 
@@ -502,6 +505,8 @@ export class AiService {
     try {
       const model = this.llm.getModel();
       const patient = await this.hospital.getPatientById(dto.patientId);
+      const [latestVisit] = await this.visits.listForPatient(patient.id, 1);
+      const visit = latestVisit ? toVisitSummary(latestVisit) : null;
       const [labs, vitals, consultations, imaging] = await Promise.all([
         this.hospital.getPatientLabs(patient.id),
         this.records.listVitals(patient.id, 5),
@@ -518,7 +523,14 @@ export class AiService {
         allergies: patient.allergies,
         currentMedications: patient.currentMedications,
         conditions: patient.conditions,
-        chiefComplaint: patient.chiefComplaint,
+        currentVisit: visit
+          ? {
+              status: visit.statusLabel,
+              reason: visit.chiefComplaint,
+              priority: visit.priority,
+              doctor: visit.primaryDoctorName,
+            }
+          : null,
         labs: labs.slice(0, 10).map((l) => ({
           test: l.testName,
           value: l.value,

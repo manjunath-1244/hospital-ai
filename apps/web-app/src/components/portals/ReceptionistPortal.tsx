@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { UserPlus, Clock, Printer, Bell } from 'lucide-react';
+import { UserPlus, Clock, Printer, Bell, Search } from 'lucide-react';
 import { useRealtime } from '../../context/RoleContext';
-import { apiFetch, errorMessage } from '../../lib/api';
-import type { QueueResponse, RegisterOpResponse } from '../../lib/types';
-import { ErrorBox, SuccessBox, Loading, Empty, inputCls, labelCls } from '../ui/common';
+import { ApiError, apiFetch, errorMessage } from '../../lib/api';
+import type { Patient, PatientList, PossibleMatch, QueueResponse, RegisterOpResponse } from '../../lib/types';
+import { isActiveStatus } from '../../lib/visits';
+import { ErrorBox, SuccessBox, Loading, Empty, PriorityBadge, StatusBadge, fmtWait, inputCls, labelCls } from '../ui/common';
 
-const emptyForm = { name: '', age: '', gender: 'Male', phone: '', bloodType: 'O+', chiefComplaint: '' };
+const emptyForm = { name: '', age: '', dob: '', gender: 'Male', phone: '', bloodType: 'O+', chiefComplaint: '' };
 
 export const ReceptionistPortal: React.FC = () => {
   const [formData, setFormData] = useState(emptyForm);
@@ -19,6 +20,10 @@ export const ReceptionistPortal: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [actionMsg, setActionMsg] = useState('');
   const [actionError, setActionError] = useState('');
+  const [matches, setMatches] = useState<PossibleMatch[]>([]);
+  const [search, setSearch] = useState('');
+  const [found, setFound] = useState<Patient[] | null>(null);
+  const [startingId, setStartingId] = useState('');
 
   const loadQueue = useCallback(async () => {
     try {
@@ -35,10 +40,48 @@ export const ReceptionistPortal: React.FC = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadQueue();
   }, [loadQueue]);
-  useRealtime(['patient.registered', 'doctor.consulted'], loadQueue);
+  useRealtime(['patient.registered', 'doctor.consulted', 'visit.updated'], loadQueue);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Search-before-register: look for an existing patient by name / phone / ID.
+  const runSearch = useCallback(async () => {
+    if (search.trim().length < 2) {
+      setFound(null);
+      return;
+    }
+    try {
+      setFound((await apiFetch<PatientList>(`/hospital/patients?q=${encodeURIComponent(search.trim())}&limit=8`)).items);
+    } catch (e) {
+      setActionError(errorMessage(e));
+    }
+  }, [search]);
+  useEffect(() => {
+    const t = setTimeout(runSearch, 300);
+    return () => clearTimeout(t);
+  }, [runSearch]);
+  useRealtime(['visit.updated', 'patient.registered'], runSearch);
+
+  const startVisit = async (patientId: string, name: string) => {
+    setStartingId(patientId);
+    setActionMsg('');
+    setActionError('');
+    try {
+      await apiFetch(`/hospital/patients/${encodeURIComponent(patientId)}/visits`, {
+        method: 'POST',
+        body: formData.chiefComplaint.trim() ? { chiefComplaint: formData.chiefComplaint.trim() } : {},
+      });
+      setActionMsg(`New visit started for ${name} (${patientId}).`);
+      setMatches([]);
+      setFormData(emptyForm);
+      loadQueue();
+      runSearch();
+    } catch (e) {
+      setActionError(errorMessage(e));
+    } finally {
+      setStartingId('');
+    }
+  };
+
+  const register = async (allowDuplicate: boolean) => {
     setSubmitting(true);
     setFormError('');
     setSuccessMsg('');
@@ -47,23 +90,41 @@ export const ReceptionistPortal: React.FC = () => {
         method: 'POST',
         body: {
           name: formData.name.trim(),
-          age: parseInt(formData.age, 10),
+          ...(formData.dob ? { dob: formData.dob } : {}),
+          ...(formData.age !== '' ? { age: parseInt(formData.age, 10) } : {}),
           gender: formData.gender,
           phone: formData.phone.trim(),
           bloodType: formData.bloodType,
           ...(formData.chiefComplaint.trim() ? { chiefComplaint: formData.chiefComplaint.trim() } : {}),
+          ...(allowDuplicate ? { allowDuplicate: true } : {}),
         },
       });
       setSuccessMsg(
         `Patient ${res.patient?.name ?? formData.name} registered as ${res.patientId}. FHIR sync: ${res.fhirSynced ? 'yes' : 'no'}; RAG indexed: ${res.ragIndexed ? 'yes' : 'no'}.`,
       );
       setFormData(emptyForm);
+      setMatches([]);
       loadQueue();
     } catch (err) {
-      setFormError(errorMessage(err));
+      const found = err instanceof ApiError && err.status === 409 ? (err.body as { possibleMatches?: PossibleMatch[] })?.possibleMatches : undefined;
+      if (found?.length) {
+        setMatches(found);
+        setFormError(err instanceof ApiError ? err.message : '');
+      } else {
+        setFormError(errorMessage(err));
+      }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.dob && formData.age === '') {
+      setFormError('Enter the age or the date of birth.');
+      return;
+    }
+    register(false);
   };
 
   const printToken = (name: string, id: string) => {
@@ -95,7 +156,7 @@ export const ReceptionistPortal: React.FC = () => {
     }
   };
 
-  const waiting = queue?.items.filter((p) => p.status === 'WAITING').length ?? 0;
+  const waiting = queue?.items.filter((p) => p.visit.status === 'TRIAGED').length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -113,7 +174,7 @@ export const ReceptionistPortal: React.FC = () => {
             <p className="text-3xl font-extrabold text-emerald-400">{queue?.items.length ?? '—'}</p>
           </div>
           <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-400">Waiting</p>
+            <p className="text-sm text-slate-400">For doctor</p>
             <p className="text-3xl font-extrabold text-amber-400">{queue ? waiting : '—'}</p>
           </div>
         </div>
@@ -129,6 +190,30 @@ export const ReceptionistPortal: React.FC = () => {
             <UserPlus className="h-5 w-5 text-emerald-400" />
             OP Patient Registration
           </h3>
+          <div className="space-y-2">
+            <label className={labelCls}>Already registered? Search by name, phone or ID</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Type at least 2 characters" className={`${inputCls} pl-11`} />
+            </div>
+            {found && found.length === 0 && <p className="text-sm text-slate-400">No existing patient found. Register below.</p>}
+            {found?.map((p) => (
+              <div key={p.id} className="rounded-xl bg-slate-950 border border-slate-700 p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-white truncate">{p.name} <span className="font-mono text-sm text-indigo-400">{p.id}</span></p>
+                  <p className="text-sm text-slate-400">{p.age}y {p.gender} • {p.phone}</p>
+                  <div className="mt-1"><StatusBadge visit={p.visit} /></div>
+                </div>
+                {isActiveStatus(p.visit?.status) ? (
+                  <span className="text-xs text-slate-400 text-right">Visit already open</span>
+                ) : (
+                  <button type="button" disabled={startingId === p.id} onClick={() => startVisit(p.id, p.name)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
+                    {startingId === p.id ? 'Starting...' : 'Start new visit'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={labelCls}>Full Name *</label>
@@ -136,8 +221,8 @@ export const ReceptionistPortal: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Age *</label>
-                <input type="number" min={0} max={130} required value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} className={inputCls} />
+                <label className={labelCls}>Age {formData.dob ? '(optional)' : '*'}</label>
+                <input type="number" min={0} max={130} value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Gender *</label>
@@ -147,6 +232,10 @@ export const ReceptionistPortal: React.FC = () => {
                   <option>Other</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <label className={labelCls}>Date of birth (optional)</label>
+              <input type="date" value={formData.dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} className={inputCls} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -167,6 +256,23 @@ export const ReceptionistPortal: React.FC = () => {
               <textarea rows={2} value={formData.chiefComplaint} onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })} className={inputCls} />
             </div>
             <ErrorBox message={formError} />
+            {matches.length > 0 && (
+              <div className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+                <p className="text-sm font-bold text-amber-200">Possible existing patient{matches.length > 1 ? 's' : ''}</p>
+                {matches.map((m) => (
+                  <div key={m.patientId} className="rounded-lg bg-slate-950 border border-slate-700 p-3 space-y-2">
+                    <p className="font-bold text-white">{m.name} <span className="font-mono text-sm text-indigo-400">{m.patientId}</span></p>
+                    <p className="text-sm text-slate-400">{m.age}y • {m.phone} • {m.strength} match ({m.reasons.map((r) => r.replace('SAME_', 'same ').toLowerCase()).join(', ')})</p>
+                    <button type="button" disabled={startingId === m.patientId} onClick={() => startVisit(m.patientId, m.name)} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
+                      Open this patient / start new visit
+                    </button>
+                  </div>
+                ))}
+                <button type="button" disabled={submitting} onClick={() => register(true)} className="w-full rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm font-bold text-slate-100 hover:bg-slate-700 disabled:opacity-50">
+                  This is a different person – register anyway
+                </button>
+              </div>
+            )}
             <button
               type="submit"
               disabled={submitting}
@@ -199,6 +305,7 @@ export const ReceptionistPortal: React.FC = () => {
                     <th className="pb-3 px-2">Name & Info</th>
                     <th className="pb-3 px-2">Wait</th>
                     <th className="pb-3 px-2">Chief Complaint</th>
+                    <th className="pb-3 px-2">Priority</th>
                     <th className="pb-3 px-2">Status</th>
                     <th className="pb-3 px-2 text-right">Actions</th>
                   </tr>
@@ -209,17 +316,14 @@ export const ReceptionistPortal: React.FC = () => {
                       <td className="py-3 px-2 font-mono font-bold text-indigo-400">{item.patientId}</td>
                       <td className="py-3 px-2">
                         <p className="font-bold text-white">{item.name}</p>
-                        <p className="text-sm text-slate-400">{item.age} yrs • {item.gender}</p>
+                        <p className="text-sm text-slate-400">{item.age ?? '?'} yrs • {item.gender ?? '—'}</p>
                       </td>
-                      <td className={`py-3 px-2 font-mono ${item.waitMinutes >= queue.waitAlertMinutes ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
-                        {item.waitMinutes} min
+                      <td className={`py-3 px-2 font-mono ${(item.visit.waitMinutes ?? 0) >= queue.waitAlertMinutes ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
+                        {fmtWait(item.visit.waitMinutes)}
                       </td>
                       <td className="py-3 px-2 text-slate-300 max-w-[150px] truncate" title={item.chiefComplaint}>{item.chiefComplaint}</td>
-                      <td className="py-3 px-2">
-                        <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border bg-amber-500/10 text-amber-400 border-amber-500/30">
-                          {item.status}
-                        </span>
-                      </td>
+                      <td className="py-3 px-2"><PriorityBadge priority={item.visit.priority} /></td>
+                      <td className="py-3 px-2"><StatusBadge visit={item.visit} /></td>
                       <td className="py-3 px-2 text-right space-x-2">
                         <button
                           onClick={() => printToken(item.name, item.patientId)}

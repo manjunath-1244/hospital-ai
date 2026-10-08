@@ -12,6 +12,8 @@ import { PhiSession } from '../security/phi-anonymizer.service';
 import type { AuthUser } from '../../security/auth-user';
 import { ClinicalTool, ToolTrace } from './tool-registry';
 import { buildHospitalTools } from './hospital.tools';
+import { PatientDirectoryService } from '../../hospital/patient-directory.service';
+import { OverviewService } from '../../hospital/overview.service';
 import { buildRagTools } from './rag.tools';
 import { buildInteropTools } from './fhir-hapi.tools';
 import { buildLifecycleTools } from './lifecycle.tools';
@@ -28,6 +30,8 @@ export class ClinicalToolsFactory {
   constructor(
     hospital: HospitalService,
     summaries: PatientSummaryService,
+    directory: PatientDirectoryService,
+    overview: OverviewService,
     lifecycle: HospitalLifecycleService,
     news2: News2Service,
     medSafety: MedicationSafetyService,
@@ -36,7 +40,13 @@ export class ClinicalToolsFactory {
     orthanc: OrthancClient,
   ) {
     this.definitions = [
-      ...buildHospitalTools({ hospital, summaries }),
+      ...buildHospitalTools({
+        hospital,
+        summaries,
+        directory,
+        overview,
+        lifecycle,
+      }),
       ...buildRagTools(rag),
       ...buildInteropTools(fhir, orthanc),
       ...buildLifecycleTools({ lifecycle, hospital, news2, medSafety }),

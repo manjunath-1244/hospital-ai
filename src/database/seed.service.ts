@@ -7,6 +7,9 @@ import * as bcrypt from 'bcryptjs';
 import { UserEntity } from './entities/user.entity';
 import { PatientEntity } from './entities/patient.entity';
 import { LabResultEntity } from './entities/lab-result.entity';
+import { VisitsService } from '../hospital/visits/visits.service';
+import type { VisitStatus } from '../hospital/visits/visit-status';
+import type { AuthUser } from '../security/auth-user';
 import type { UserRole } from '../security/roles.decorator';
 
 const USERS: Array<{ username: string; displayName: string; role: UserRole }> =
@@ -48,8 +51,6 @@ const DEMO_PATIENTS: Array<Partial<PatientEntity>> = [
     allergies: ['Penicillin', 'Sulfa drugs'],
     currentMedications: ['Lisinopril 10mg', 'Metformin 500mg'],
     conditions: ['Hypertension', 'Type 2 Diabetes'],
-    chiefComplaint: 'Diabetes follow-up',
-    consultationStatus: 'SEEN',
   },
   {
     id: 'P1002',
@@ -62,8 +63,6 @@ const DEMO_PATIENTS: Array<Partial<PatientEntity>> = [
     allergies: ['Aspirin'],
     currentMedications: ['Atorvastatin 20mg', 'Amlodipine 5mg'],
     conditions: ['Hyperlipidemia', 'Coronary Artery Disease'],
-    chiefComplaint: 'Chest tightness on exertion',
-    consultationStatus: 'SEEN',
   },
   {
     id: 'P1003',
@@ -76,9 +75,39 @@ const DEMO_PATIENTS: Array<Partial<PatientEntity>> = [
     allergies: [],
     currentMedications: ['Albuterol Inhaler'],
     conditions: ['Mild Asthma'],
-    chiefComplaint: 'Wheezing',
-    consultationStatus: 'SEEN',
   },
+];
+
+/**
+ * Where each demo patient is in their care, so a fresh install shows every stage of the queue.
+ * Each entry walks the real workflow (start -> triage -> consultation), so seeded data obeys the same rules as live data.
+ */
+const DEMO_VISITS: Array<{
+  patientId: string;
+  chiefComplaint: string;
+  upTo: VisitStatus;
+}> = [
+  {
+    patientId: 'P1001',
+    chiefComplaint: 'Diabetes follow-up',
+    upTo: 'IN_CONSULTATION',
+  },
+  {
+    patientId: 'P1002',
+    chiefComplaint: 'Chest tightness on exertion',
+    upTo: 'TRIAGED',
+  },
+  { patientId: 'P1003', chiefComplaint: 'Wheezing', upTo: 'WAITING_TRIAGE' },
+];
+const SEED_ACTOR: AuthUser = {
+  userId: 'seed',
+  userName: 'seed',
+  role: 'ADMIN',
+};
+const WORKFLOW_PATH: VisitStatus[] = [
+  'WAITING_TRIAGE',
+  'TRIAGED',
+  'IN_CONSULTATION',
 ];
 
 /** First-boot seeding: staff accounts (bcrypt-hashed) and, optionally, demo patients. Idempotent. */
@@ -94,6 +123,7 @@ export class SeedService implements OnApplicationBootstrap {
     private readonly patients: Repository<PatientEntity>,
     @InjectRepository(LabResultEntity)
     private readonly labs: Repository<LabResultEntity>,
+    private readonly visits: VisitsService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -157,6 +187,19 @@ export class SeedService implements OnApplicationBootstrap {
         recordedBy: 'seed',
       }),
     );
-    this.logger.log('Seeded 3 demo patients.');
+    for (const dv of DEMO_VISITS) {
+      const visit = await this.visits.start(dv.patientId, {
+        chiefComplaint: dv.chiefComplaint,
+        actor: SEED_ACTOR,
+      });
+      for (const step of WORKFLOW_PATH.slice(
+        1,
+        WORKFLOW_PATH.indexOf(dv.upTo) + 1,
+      ))
+        await this.visits.transition(visit.id, step, SEED_ACTOR);
+    }
+    this.logger.log(
+      `Seeded ${DEMO_PATIENTS.length} demo patients with visits.`,
+    );
   }
 }

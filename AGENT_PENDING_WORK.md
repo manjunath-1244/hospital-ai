@@ -114,6 +114,8 @@ Persisted per recipient; delivered over the socket to room `user:<id>`; unread c
 
 Effort = one developer, working days. **AC** = acceptance criteria.
 
+> **Status (2026-10-08):** W0.1 migrations ✅ done · W1 visit lifecycle ✅ done (W1.1–W1.7, backend + UI; verified by `npm run test:workflow`, unit tests, `test:eval`, `retrieval-check`). Next: W2 specialists. Remaining W0 items (W0.2–W0.5) still open.
+
 ### W0 Foundations and decisions (3–4 days)
 | ID | Task | Effort | AC |
 |---|---|---|---|

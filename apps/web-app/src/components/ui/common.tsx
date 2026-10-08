@@ -3,6 +3,7 @@
 import React from 'react';
 import { AlertCircle, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react';
 import type { Safety } from '../../lib/types';
+import { PRIORITY_BADGE, STATUS_BADGE, type VisitSummary } from '../../lib/visits';
 
 export const inputCls =
   'w-full min-h-11 rounded-xl bg-slate-950 px-4 py-2.5 text-base text-white border border-slate-700 placeholder:text-slate-500 focus:outline-none focus:border-indigo-400';
@@ -73,3 +74,19 @@ export const splitList = (s: string) =>
     .split(/[,\n]/)
     .map((x) => x.trim())
     .filter(Boolean);
+
+export const StatusBadge: React.FC<{ visit?: VisitSummary | null }> = ({ visit }) =>
+  visit ? (
+    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border whitespace-nowrap ${STATUS_BADGE[visit.status]}`}>{visit.statusLabel}</span>
+  ) : (
+    <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border bg-slate-700/40 text-slate-400 border-slate-600">No visit</span>
+  );
+
+export const PriorityBadge: React.FC<{ priority?: number | null }> = ({ priority }) =>
+  priority ? (
+    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold border ${PRIORITY_BADGE[priority] ?? PRIORITY_BADGE[5]}`} title="Priority (1 = most urgent)">P{priority}</span>
+  ) : (
+    <span className="text-slate-500">—</span>
+  );
+
+export const fmtWait = (m?: number | null) => (m == null ? '—' : m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`);

@@ -81,15 +81,17 @@ export function renderChart(chart: any, sections: Section[] | 'all'): string {
     `${p.name} (${p.id}) — ${p.age} y, ${p.gender}${p.bloodType ? `, blood type ${p.bloodType}` : ''}`,
   );
   if (sections === 'all') {
+    const v = chart.currentVisit;
     out.push(
-      `Status: ${p.status}${p.chiefComplaint ? ` | Chief complaint: ${p.chiefComplaint}` : ''}`,
+      v
+        ? `Current visit: ${v.statusLabel}${v.chiefComplaint ? ` | Reason: ${v.chiefComplaint}` : ''}${v.priority ? ` | Triage priority ${v.priority}` : ''}${v.primaryDoctorName ? ` | Doctor: ${v.primaryDoctorName}` : ''}`
+        : 'No visit on record.',
     );
-    out.push(
-      `Registered: ${fmtDate(p.registeredAt)}${p.consultedAt ? ` | Consulted: ${fmtDate(p.consultedAt)}` : ''}`,
-    );
-    if (p.closedAt)
+    out.push(`Registered: ${fmtDate(p.registeredAt)}`);
+    const history = (chart.visitHistory ?? []).slice(1);
+    if (history.length)
       out.push(
-        `Session closed ${fmtDate(p.closedAt)} by ${p.closedBy}${p.closeReason ? ` (${p.closeReason})` : ''}`,
+        `Earlier visits: ${history.map((h: any) => `${fmtDate(h.arrivedAt)} ${h.statusLabel}${h.chiefComplaint ? ` (${h.chiefComplaint})` : ''}`).join('; ')}`,
       );
   }
 

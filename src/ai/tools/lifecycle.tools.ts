@@ -27,7 +27,7 @@ export function buildLifecycleTools(d: {
     {
       name: 'registerOpPatient',
       description:
-        'Register a new outpatient (creates the chart, syncs to FHIR, indexes for search). Only call after the user has confirmed all details.',
+        'Register a new outpatient and open their first visit (creates the chart, syncs to FHIR, indexes for search). Fails with possibleMatches if the patient may already exist; then show those to the user instead of registering again. Only call after the user has confirmed all details.',
       inputSchema: z.object({
         name: z.string().min(2),
         age: looseInt({ min: 0, max: 130 }),
@@ -37,12 +37,13 @@ export function buildLifecycleTools(d: {
         chiefComplaint: z.string().optional(),
       }),
       roles: ['RECEPTIONIST', 'ADMIN'],
-      run: async (i) =>
+      run: async (i, { user }) =>
         d.lifecycle.registerOutpatient(
           await validateDto(RegistrationDto, {
             ...i,
             gender: String(i.gender).toLowerCase(),
           }),
+          user,
         ),
     },
     {

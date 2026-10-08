@@ -497,7 +497,7 @@ Reading it: *in the policy run 99.6 % of the time is the model; everything else 
 | Minimum-necessary views | seeing data a role doesn't need | `PatientSummaryService` |
 | Input validation | malformed/unknown fields; the model creating invalid records | ValidationPipe, `validate-dto.ts` |
 | Deterministic clinical checks | unsafe prescriptions, mis-scored vitals, missed critical labs | `MedicationSafetyService` (409 unless override reason), `News2Service`, `lab-rules` |
-| Closed-session guard | writes to a closed encounter | `assertOpen` |
+| Open-visit guard | clinical writes to a visit that is finished or does not exist | `VisitsService.requireActive` |
 | Grounding + guardrails | invented facts, dropped items, raw JSON | section 4.7 |
 | Privacy | names to the model | section 4.8 |
 | Audit & traces | untraceable actions | audit log, run recorder |
@@ -591,7 +591,7 @@ Each lab is a safe experiment you can run on the live system to *see* a concept.
 "Mastra `Agent` + `createTool`, per-request role-filtered toolset, retrieve-first routing in `AiService.gatherContext` with a deterministic decision ladder; direct renderers for lookups; grounded (tool-less) mode for reasoning; pgvector (HNSW, cosine) with nomic-embed-text; PHI masking via a per-request `PhiSession`; timeout→retry→breaker around the model; spans persisted in `agent_runs`; metrics and drift from those rows; an evaluator with a scripted model, a live-model section and a baseline-based regression gate."
 
 ## 7.4 To security / compliance
-"Deny-by-default JWT guard, role checks per route and per tool, minimum-necessary chart views, audit log of every request, names/phones masked before any model call, traces store masked arguments, closed-session write block, typed-id confirmation for deletion. Not yet: MFA, httpOnly cookies, encryption at rest, retention/purge of chat and traces, DICOM patient-match check, hard human approval for agent writes. It's a POC, not certified."
+"Deny-by-default JWT guard, role checks per route and per tool, minimum-necessary chart views, audit log of every request, names/phones masked before any model call, traces store masked arguments, open-visit requirement for clinical writes, typed-id confirmation for deletion. Not yet: MFA, httpOnly cookies, encryption at rest, retention/purge of chat and traces, DICOM patient-match check, hard human approval for agent writes. It's a POC, not certified."
 
 ## 7.5 Twenty questions cheat sheet
 | Question | Short answer |

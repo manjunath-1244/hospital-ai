@@ -26,7 +26,7 @@ export interface AlertNotification {
   read: boolean;
 }
 
-export type RealtimeEvent = 'patient.registered' | 'patient.closed' | 'patient.reopened' | 'patient.deleted' | 'doctor.consulted' | 'dicom.uploaded' | 'alert.critical_lab' | 'alert.news2_deterioration';
+export type RealtimeEvent = 'patient.registered' | 'visit.updated' | 'patient.deleted' | 'doctor.consulted' | 'dicom.uploaded' | 'alert.critical_lab' | 'alert.news2_deterioration';
 
 interface RoleContextType {
   /** Portal currently displayed (own role, or the admin's "view as" selection). */
@@ -87,11 +87,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
       push('INFO', 'New OP Registration', `Patient ${d.name ?? d.patientId} registered at the front desk.`);
       emitLocal('patient.registered', d);
     });
-    socket.on('patient.closed', (d: any) => {
-      push('INFO', 'Session Closed', `${d.patientName ?? d.patientId} was closed${d.closedBy ? ` by ${d.closedBy}` : ''}.`);
-      emitLocal('patient.closed', d);
-    });
-    socket.on('patient.reopened', (d: any) => emitLocal('patient.reopened', d));
+    socket.on('visit.updated', (d: any) => emitLocal('visit.updated', d));
     socket.on('patient.deleted', (d: any) => emitLocal('patient.deleted', d));
     socket.on('doctor.consulted', (d: any) => {
       push('INFO', 'Consultation Recorded', `${d.doctorName ?? 'Doctor'} consulted ${d.patientName ?? d.patientId}${d.diagnosis ? ` — ${d.diagnosis}` : ''}.`);

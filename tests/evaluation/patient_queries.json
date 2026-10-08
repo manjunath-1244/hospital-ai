@@ -1,12 +1,92 @@
 [
-  { "id": "EVAL-01", "query": "What are the lab results for patient P1001?", "tool": "getPatientSummary", "args": { "patientId": "P1001" }, "expectContains": "HbA1c", "answerMustMatch": "7\\.8" },
-  { "id": "EVAL-02", "query": "Does patient P1001 have any penicillin allergies?", "tool": "getPatientSummary", "args": { "patientId": "P1001" }, "expectContains": "Penicillin", "answerMustMatch": "penicillin" },
-  { "id": "EVAL-03", "query": "What is the official procedure for emergency patient discharge?", "tool": "searchHospitalPolicies", "args": { "query": "emergency patient discharge", "topK": 3 }, "expectContains": "discharge", "answerMustMatch": "discharge" },
-  { "id": "EVAL-04", "query": "Is prescribing Amoxicillin 500mg safe for patient P1001?", "tool": "verifyMedicationSafety", "args": { "patientId": "P1001", "medications": ["Amoxicillin 500mg"] }, "expectContains": "CRITICAL_BLOCK", "answerMustMatch": "allerg|not safe|unsafe|contraindicat|should not|avoid|block" },
-  { "id": "EVAL-05", "query": "Assess triage: HR 125, systolic BP 92, SpO2 91% on air, temp 39.2, RR 26, confused.", "tool": "assessTriage", "args": { "heartRate": 125, "bpSystolic": 92, "spO2": 91, "tempCelsius": 39.2, "respiratoryRate": 26, "consciousness": "CONFUSION", "onSupplementalO2": false }, "expectContains": "suggestedEsiLevel", "answerMustMatch": "NEWS2|ESI|high" },
-  { "id": "EVAL-06", "query": "Show the imaging studies for P1001.", "tool": "getPatientSummary", "args": { "patientId": "P1001" }, "expectContains": "imaging", "answerMustMatch": "imaging|stud|no |not" },
-  { "id": "EVAL-07", "query": "List all patients in the hospital.", "tool": "searchPatients", "args": {}, "expectContains": "P1002", "answerMustMatch": "(?=[\\s\\S]*Eleanor)(?=[\\s\\S]*Marcus)(?=[\\s\\S]*Sophia)" },
-  { "id": "EVAL-08", "query": "Give me the hospital overview: how many patients are waiting, seen and closed?", "tool": "getHospitalOverview", "args": {}, "expectContains": "waitingForDoctor", "answerMustMatch": "waiting" },
-  { "id": "EVAL-09", "query": "Which patients are allergic to penicillin?", "tool": "searchClinicalRecords", "args": { "query": "penicillin allergy" }, "acceptTools": ["searchClinicalRecords", "searchPatients"], "expectContains": "P1001", "answerMustMatch": "Eleanor|P1001" },
-  { "id": "EVAL-10", "query": "What is the ward emergency code word for a missing patient?", "tool": "searchHospitalPolicies", "args": { "query": "emergency code word for a missing patient" }, "expectContains": "BLUE HERON", "answerMustMatch": "BLUE HERON", "needsUploadedDoc": true }
+  {
+    "id": "EVAL-01",
+    "query": "What are the lab results for patient P1001?",
+    "tool": "getPatientSummary",
+    "args": { "patientId": "P1001" },
+    "expectContains": "HbA1c",
+    "answerMustMatch": "7\\.8"
+  },
+  {
+    "id": "EVAL-02",
+    "query": "Does patient P1001 have any penicillin allergies?",
+    "tool": "getPatientSummary",
+    "args": { "patientId": "P1001" },
+    "expectContains": "Penicillin",
+    "answerMustMatch": "penicillin"
+  },
+  {
+    "id": "EVAL-03",
+    "query": "What is the official procedure for emergency patient discharge?",
+    "tool": "searchHospitalPolicies",
+    "args": { "query": "emergency patient discharge", "topK": 3 },
+    "expectContains": "discharge",
+    "answerMustMatch": "discharge"
+  },
+  {
+    "id": "EVAL-04",
+    "query": "Is prescribing Amoxicillin 500mg safe for patient P1001?",
+    "tool": "verifyMedicationSafety",
+    "args": { "patientId": "P1001", "medications": ["Amoxicillin 500mg"] },
+    "expectContains": "CRITICAL_BLOCK",
+    "answerMustMatch": "allerg|not safe|unsafe|contraindicat|should not|avoid|block"
+  },
+  {
+    "id": "EVAL-05",
+    "query": "Assess triage: HR 125, systolic BP 92, SpO2 91% on air, temp 39.2, RR 26, confused.",
+    "tool": "assessTriage",
+    "args": {
+      "heartRate": 125,
+      "bpSystolic": 92,
+      "spO2": 91,
+      "tempCelsius": 39.2,
+      "respiratoryRate": 26,
+      "consciousness": "CONFUSION",
+      "onSupplementalO2": false
+    },
+    "expectContains": "suggestedEsiLevel",
+    "answerMustMatch": "NEWS2|ESI|high"
+  },
+  {
+    "id": "EVAL-06",
+    "query": "Show the imaging studies for P1001.",
+    "tool": "getPatientSummary",
+    "args": { "patientId": "P1001" },
+    "expectContains": "imaging",
+    "answerMustMatch": "imaging|stud|no |not"
+  },
+  {
+    "id": "EVAL-07",
+    "query": "List all patients in the hospital.",
+    "tool": "searchPatients",
+    "args": {},
+    "expectContains": "P1002",
+    "answerMustMatch": "(?=[\\s\\S]*Eleanor)(?=[\\s\\S]*Marcus)(?=[\\s\\S]*Sophia)"
+  },
+  {
+    "id": "EVAL-08",
+    "query": "Give me the hospital overview: how many patients are waiting, seen and closed?",
+    "tool": "getHospitalOverview",
+    "args": {},
+    "expectContains": "waitingForDoctor",
+    "answerMustMatch": "waiting"
+  },
+  {
+    "id": "EVAL-09",
+    "query": "Which patients are allergic to penicillin?",
+    "tool": "searchClinicalRecords",
+    "args": { "query": "penicillin allergy" },
+    "acceptTools": ["searchClinicalRecords", "searchPatients"],
+    "expectContains": "P1001",
+    "answerMustMatch": "Eleanor|P1001"
+  },
+  {
+    "id": "EVAL-10",
+    "query": "What is the ward emergency code word for a missing patient?",
+    "tool": "searchHospitalPolicies",
+    "args": { "query": "emergency code word for a missing patient" },
+    "expectContains": "BLUE HERON",
+    "answerMustMatch": "BLUE HERON",
+    "needsUploadedDoc": true
+  }
 ]

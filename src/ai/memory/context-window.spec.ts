@@ -2,7 +2,7 @@ import { selectWindow } from './context-window';
 
 const m = (n: number, len = 40) =>
   Array.from({ length: n }, (_, i) => ({
-    role: (i % 2 ? 'assistant' : 'user') as 'user' | 'assistant',
+    role: i % 2 ? 'assistant' : 'user',
     content: `${i}`.padEnd(len, 'x'),
   }));
 

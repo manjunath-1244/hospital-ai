@@ -20,7 +20,7 @@ export const PatientPicker: React.FC<Props> = ({ value, onChange, label = 'Patie
   const [error, setError] = useState('');
 
   const [rt, setRt] = useState(0);
-  useRealtime(['patient.registered', 'patient.closed', 'patient.reopened', 'patient.deleted'], () => setRt((n) => n + 1));
+  useRealtime(['patient.registered', 'visit.updated', 'patient.deleted'], () => setRt((n) => n + 1));
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +50,7 @@ export const PatientPicker: React.FC<Props> = ({ value, onChange, label = 'Patie
         <option value="">{loading ? 'Loading patients...' : patients.length ? 'Select a patient' : 'No patients found'}</option>
         {patients.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.name} ({p.id}) — {p.age}y {p.gender}{p.consultationStatus === 'CLOSED' ? ' (closed)' : ''}
+            {p.name} ({p.id}) — {p.age}y {p.gender}{p.visit ? ` — ${p.visit.statusLabel}` : ' — no visit'}
           </option>
         ))}
       </select>

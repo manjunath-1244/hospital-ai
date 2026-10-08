@@ -17,25 +17,31 @@ import { HospitalService } from './hospital.service';
 import { ClinicalRecordsService } from './clinical-records.service';
 import { HospitalLifecycleService } from './hospital-lifecycle.service';
 import { PatientSummaryService } from './patient-summary.service';
+import { PatientDirectoryService } from './patient-directory.service';
+import { OverviewService } from './overview.service';
+import { VisitsService } from './visits/visits.service';
+import { toVisitSummary } from './visits/visit-summary';
+import { VISIT_STATUSES, type VisitStatus } from './visits/visit-status';
 import { OrthancClient } from '../ai/dicom/orthanc.client';
 import {
   AppointmentDto,
-  ClosePatientDto,
   ConsultationDto,
   ImagingUploadDto,
   LabResultDto,
   PatientQueryDto,
   PharmacyAuditDto,
   RegistrationDto,
+  StartVisitDto,
   TaskDto,
   TriageDto,
+  VisitTransitionDto,
 } from './dto/hospital.dto';
 import { Roles } from '../security/roles.decorator';
 import { AuthUser, CurrentUser } from '../security/auth-user';
 import { PatientEntity } from '../database/entities/patient.entity';
 
 /** Receptionists see demographics and queue status only: no clinical history (minimum necessary). */
-function viewFor(user: AuthUser, p: PatientEntity) {
+function viewFor<T extends PatientEntity>(user: AuthUser, p: T): T {
   if (user.role === 'RECEPTIONIST')
     return { ...p, allergies: [], currentMedications: [], conditions: [] };
   return p;
@@ -49,18 +55,23 @@ export class HospitalController {
     private readonly lifecycle: HospitalLifecycleService,
     private readonly orthanc: OrthancClient,
     private readonly summaries: PatientSummaryService,
+    private readonly directory: PatientDirectoryService,
+    private readonly overview: OverviewService,
+    private readonly visits: VisitsService,
   ) {}
 
   // --- Patients ---
   @Get('patients')
   async patients(@Query() q: PatientQueryDto, @CurrentUser() user: AuthUser) {
-    const { items, total } = await this.hospital.listPatients(q);
+    const { items, total } = await this.directory.list(q);
     return { items: items.map((p) => viewFor(user, p)), total };
   }
 
   @Get('patients/:id')
   async patient(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return viewFor(user, await this.hospital.getPatientById(id));
+    const item = await this.directory.getOne(id);
+    if (!item) await this.hospital.getPatientById(id); // throws the 404
+    return viewFor(user, item!);
   }
 
   @Get('patients/:id/summary')
@@ -68,20 +79,56 @@ export class HospitalController {
     return this.summaries.summary(id, user.role);
   }
 
-  @Post('patients/:id/close')
-  @Roles('ADMIN', 'DOCTOR')
-  close(
-    @Param('id') id: string,
-    @Body() dto: ClosePatientDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.lifecycle.closePatientSession(id, user, dto.reason);
+  // --- Visits (one episode of care; the status lives here, not on the patient) ---
+  @Get('patients/:id/visits')
+  async patientVisits(@Param('id') id: string) {
+    await this.hospital.getPatientById(id);
+    return (await this.visits.listForPatient(id)).map((v) => toVisitSummary(v));
   }
 
-  @Post('patients/:id/reopen')
-  @Roles('ADMIN', 'DOCTOR')
-  reopen(@Param('id') id: string) {
-    return this.lifecycle.reopenPatientSession(id);
+  @Post('patients/:id/visits')
+  @Roles('RECEPTIONIST', 'NURSE', 'ADMIN')
+  startVisit(
+    @Param('id') id: string,
+    @Body() dto: StartVisitDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lifecycle.startVisit(id, dto, user);
+  }
+
+  @Get('visits')
+  async visitList(@Query('status') status?: string) {
+    const wanted = (status ?? '')
+      .split(',')
+      .map((x) => x.trim().toUpperCase())
+      .filter((x): x is VisitStatus =>
+        (VISIT_STATUSES as readonly string[]).includes(x),
+      );
+    const rows = await this.visits.listByStatus(
+      wanted.length ? wanted : VISIT_STATUSES,
+      200,
+    );
+    return rows.map((v) => toVisitSummary(v));
+  }
+
+  @Get('visits/:id')
+  visit(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.lifecycle.visitDetail(id, user);
+  }
+
+  @Post('visits/:id/transition')
+  transition(
+    @Param('id') id: string,
+    @Body() dto: VisitTransitionDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.lifecycle.transitionVisit(id, dto, user);
+  }
+
+  @Get('overview')
+  @Roles('DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST', 'CARE_COORDINATOR')
+  overviewStats() {
+    return this.overview.get();
   }
 
   @Delete('patients/:id')
@@ -140,13 +187,7 @@ export class HospitalController {
   @Post('appointments')
   @Roles('DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST')
   book(@Body() b: AppointmentDto) {
-    return this.hospital.bookAppointment(
-      b.patientId,
-      b.doctorName,
-      b.department,
-      b.dateTime,
-      b.reason,
-    );
+    return this.lifecycle.bookAppointment(b);
   }
 
   @Get('tasks')
@@ -158,19 +199,14 @@ export class HospitalController {
   @Post('tasks')
   @Roles('DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST', 'CARE_COORDINATOR')
   createTask(@Body() b: TaskDto) {
-    return this.hospital.createTask(
-      b.title,
-      b.assignedTo,
-      b.patientId,
-      b.priority,
-    );
+    return this.lifecycle.createTask(b);
   }
 
   // --- Lifecycle ---
   @Post('lifecycle/register-op')
   @Roles('RECEPTIONIST', 'ADMIN')
-  registerOp(@Body() dto: RegistrationDto) {
-    return this.lifecycle.registerOutpatient(dto);
+  registerOp(@Body() dto: RegistrationDto, @CurrentUser() user: AuthUser) {
+    return this.lifecycle.registerOutpatient(dto, user);
   }
 
   @Get('lifecycle/queue')
