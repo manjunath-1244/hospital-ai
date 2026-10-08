@@ -464,6 +464,10 @@ Every concept uses the same template: **What · Why · How it works · Where · 
 * **Improve:** show the context in the admin run view, bind read tools by purpose, add referral/approval state (W6/W7), compare context hashes across runs.
 * **Status:** ✅ (W3) · 🟡 not yet visible in the UI.
 
+## 4.6a Routing audit (2026-10-08) — what was wrong and how it is guarded
+The router picks the data a question needs with cheap rules. An audit with 64 realistic questions (`src/ai/routing/routing-golden.spec.ts`, written first) failed 25 times. Examples: any "how many …" returned the patient overview (specialists, doctors, beds, appointments, even "how many hours must vitals be stable"); words like *update*, *record*, *order*, *discharge*, *give* turned plain reads ("any update on X", "the discharge policy", "give details about X") into actions or medication questions, which skips the instant data path. Now: an **action** is a request that *starts with* a verb (any clause, polite prefixes allowed, plus "yes/confirm"); count questions are routed by the **noun** (patients, waiting, appointments, tasks, critical labs, completed today, with doctor, specialists, staff) and answered with only those numbers; counts of things the system does not keep (beds, ambulances) get an honest "I do not keep a count of …"; quantities (hours, mg, times) and counts about one named patient are not hospital counts. `tests/workflow/chat-golden.mjs` asks 16 such questions through the real API and compares each answer with the REST data.
+**Known remaining weak spots:** the referral rules (`referral-rules.service.ts`) still hold their thresholds and the two specialties in code, not in data, and need clinician sign-off (W0.4); routing is regex-based, so unusual phrasing falls through to the slow model; only specialists and staff names are matched by role words.
+
 ## 4.6 Intent routing and direct answers
 * **What:** the deterministic layer in `src/ai/routing/`.
 * **Why:** exact lookups should be exact, instant and model-independent.

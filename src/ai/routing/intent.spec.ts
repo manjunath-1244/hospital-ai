@@ -61,7 +61,7 @@ describe('classifyIntent', () => {
 
   it('routes nothing for small talk', () => {
     const i = classifyIntent('hello there');
-    expect(Object.values(i).some(Boolean)).toBe(false);
+    expect(Object.values(i).some((v) => v === true)).toBe(false);
   });
 });
 

@@ -92,3 +92,6 @@ Known gaps: streaming chat path does not reconcile false claims; nurses on the v
 - `NotificationService.getUnreadCount` crashed with HTTP 500 for every user (TypeORM v1 refuses `null` in `where`; use `IsNull()`); found by the browser tests. `roles-matrix.mjs` now also fails on any 5xx from an allowed call.
 - Admin "View as: Specialist" showed an error banner (the admin is not a specialist): the portal now has a specialist selector for admins (source changed in `SpecialistPortal.tsx`; **web app rebuild + `npm run test:ui` pending** — the rebuild was interrupted by the user).
 - `npm run test:ui` (Playwright, `tests/ui`): 9 of 10 passed before the fix above; the 10th (admin View as) is the specialist-portal bug.
+
+### 8d. Routing audit (see PROJECT_GUIDE 4.6a)
+`routing-golden.spec.ts` (64 questions) + `tests/workflow/chat-golden.mjs` (16 live questions, answers compared with REST data) now guard the router. Gates: unit 294, eval 142/142, workflow scripts all pass. The `/ai/chat` rate limit is 20/min, so do not run the chat script twice in a minute.

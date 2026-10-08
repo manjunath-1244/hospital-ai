@@ -69,6 +69,22 @@ export class SpecialistService {
     return (await qb.getMany()).map((u) => this.view(u));
   }
 
+  /** Staff accounts grouped by role (names only; no patient data). */
+  async staffByRole() {
+    const users = await this.users.find({ order: { displayName: 'ASC' } });
+    const byRole: Record<
+      string,
+      Array<{ name: string; specialty: string | null; isAvailable: boolean }>
+    > = {};
+    for (const u of users)
+      (byRole[u.role] ??= []).push({
+        name: u.displayName,
+        specialty: u.specialty,
+        isAvailable: u.isAvailable,
+      });
+    return byRole;
+  }
+
   /** The distinct specialties on offer (drives the referral UI and the agent's choices; nothing hardcoded). */
   async specialties(): Promise<string[]> {
     const rows: { specialty: string }[] = await this.users

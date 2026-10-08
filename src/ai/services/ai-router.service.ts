@@ -11,7 +11,11 @@ import {
 } from '../routing/chart-view';
 import { renderReferralReview } from '../routing/referral-view';
 import { renderSpecialists } from '../routing/specialists-view';
-import { renderOverview } from '../routing/overview-view';
+import { renderStaff } from '../routing/staff-view';
+import {
+  renderOverview,
+  renderUnsupportedCount,
+} from '../routing/overview-view';
 import { renderPatientList } from '../guardrails';
 import { RunRecorder } from '../observability/run-recorder';
 
@@ -43,6 +47,7 @@ export class AiRouterService {
       didYouMean?: Array<{ typed: string; patientId: string; name: string }>;
       unknownName?: string | null;
       specialists?: any | null;
+      staff?: any | null;
     },
     rec: RunRecorder,
   ): DirectResponseResult {
@@ -82,7 +87,7 @@ export class AiRouterService {
     const overviewText =
       pureOverview && overviewOut
         ? [
-            renderOverview(overviewOut),
+            renderOverview(overviewOut, intent.metrics),
             intent.waiting &&
             overviewOut.waitingForDoctor + overviewOut.waitingForTriage > 0
               ? `\n${renderPatientList(rec.trace, 'Waiting (for triage or a doctor)') ?? ''}`
@@ -153,6 +158,14 @@ export class AiRouterService {
         ? renderSpecialists(context.specialists)
         : null;
 
+    const staffText =
+      intent.staff && !intent.write && context.staff
+        ? renderStaff(context.staff, message)
+        : null;
+    const unsupportedText = intent.unsupported
+      ? renderUnsupportedCount(intent.countedNoun)
+      : null;
+
     const unknown = context.unknownName
       ? `I could not find a patient named "${context.unknownName}", not even a close spelling. Check the name, or ask me to list the patients.`
       : null;
@@ -161,6 +174,8 @@ export class AiRouterService {
       clarify ??
       unknown ??
       specialistText ??
+      staffText ??
+      unsupportedText ??
       (directText0 && context.corrected
         ? `Showing ${context.corrected.name} (${context.corrected.patientId}); you typed "${context.corrected.typed}".\n${directText0}`
         : directText0);

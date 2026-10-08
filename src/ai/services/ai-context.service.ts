@@ -30,6 +30,8 @@ export interface GatheredContext {
   unknownName?: string | null;
   /** Output of findSpecialists when the question is about the specialists themselves. */
   specialists?: any | null;
+  /** Output of getStaffSummary when the question is about staff counts/names. */
+  staff?: any | null;
 }
 
 @Injectable()
@@ -191,6 +193,12 @@ export class AiContextService {
       }
     }
 
+    let staff: any = null;
+    if (intent.staff) {
+      staff = await this.tools.runDirect('getStaffSummary', {}, ctx);
+      if (staff) parts.push({ source: 'staff accounts', data: staff });
+    }
+
     let specialists: any = null;
     if (intent.specialists) {
       const all = await this.tools.runDirect('findSpecialists', {}, ctx);
@@ -314,6 +322,7 @@ export class AiContextService {
       referral,
       corrected,
       specialists,
+      staff,
     };
   }
 }

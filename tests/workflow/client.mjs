@@ -55,7 +55,9 @@ export async function call(as, method, path, body) {
       ...(as ? { authorization: `Bearer ${tokens[as]}` } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
-  });
+    // a direct answer is instant; anything slower went to the language model, which these scripts must not wait for
+    signal: AbortSignal.timeout(path.startsWith('/ai/chat') ? 25_000 : 60_000),
+  }).catch((e) => ({ status: 0, text: async () => JSON.stringify({ response: `NO ANSWER IN TIME (${e.name})` }) }));
   const text = await res.text();
   let json;
   try {

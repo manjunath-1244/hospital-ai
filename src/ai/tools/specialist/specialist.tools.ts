@@ -24,6 +24,16 @@ export function buildSpecialistTools(d: {
       },
     },
     {
+      name: 'getStaffSummary',
+      description:
+        'How many staff accounts there are per role (doctors, nurses, pharmacists, radiologists, receptionists, care coordinators, specialists) and their names. Use for "how many doctors/nurses are there".',
+      inputSchema: z.object({}),
+      roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'CARE_COORDINATOR', 'ADMIN'],
+      async run() {
+        return { success: true, byRole: await d.specialists.staffByRole() };
+      },
+    },
+    {
       name: 'findSpecialists',
       description:
         'List specialists (id, name, specialty, whether they are available). Optionally only one specialty, e.g. Cardiology or Neurology. Use it before booking or referring so you use a real doctor id.',
