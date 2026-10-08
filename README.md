@@ -1,6 +1,6 @@
 # Hospital AI Platform (PoC)
 
-> **Documentation:** [PROJECT_GUIDE.md](PROJECT_GUIDE.md) (full reference of every concept and file) · [AI_AGENT_CONCEPTS.md](AI_AGENT_CONCEPTS.md) (the AI agent explained from first principles, with real examples, labs and how to present it) · [AGENT_UPGRADE_PLAN.md](AGENT_UPGRADE_PLAN.md) (plan to turn the RAG assistant into a true action-taking agent).
+> **Documentation:** [PROJECT_GUIDE.md](PROJECT_GUIDE.md) (full reference of every concept and file) · [AI_AGENT_CONCEPTS.md](AI_AGENT_CONCEPTS.md) (the AI agent explained from first principles, with real examples, labs and how to present it) · [AGENT_UPGRADE_PLAN.md](AGENT_UPGRADE_PLAN.md) (approval/action design) · [POC_DECISIONS.md](POC_DECISIONS.md) (open questions with recommended answers) · [AGENT_PENDING_WORK.md](AGENT_PENDING_WORK.md) (**the checked backlog to turn the app into a workflow-driven agent: gap analysis, work packages W0–W13, milestones**).
 >
 > **Full documentation: [PROJECT_GUIDE.md](PROJECT_GUIDE.md)** — what each concept is, why it exists, how it works, where it lives in the code, what can go wrong, how to explain it, what is done / partial / not built, and the roadmap.
 

@@ -1,5 +1,8 @@
 # Plan: from "RAG assistant" to a real AI agent
 
+> **Update (2026-10-08):** the ordering of this plan is superseded by [`AGENT_PENDING_WORK.md`](AGENT_PENDING_WORK.md), which starts from the hospital workflow (visit lifecycle → specialists → AgentContext → referral recommendation) and uses **this document's Phase 1 (approvals, autonomy tiers, action audit, task evals) as work package W6**.
+
+
 > **Goal (from the owner):** an AI agent that **takes decisions, asks the user's permission when needed, and completes the task**: not just a question-answering assistant.
 > **Today (honest baseline):** a retrieve-first assistant. Answers are exact and safe, but only 4 of 15 tools can act, "ask permission" is an instruction (not enforced), there is no plan, no task state, no verification, nothing proactive, and no evaluation of *task completion*.
 > **Companion docs:** [`PROJECT_GUIDE.md`](PROJECT_GUIDE.md) (system reference) · [`AI_AGENT_CONCEPTS.md`](AI_AGENT_CONCEPTS.md) (concepts, failures, labs).

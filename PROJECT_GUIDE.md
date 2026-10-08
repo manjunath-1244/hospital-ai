@@ -656,7 +656,7 @@ cd apps/web-app && cp .env.local.example .env.local && npm install && npm run de
 
 # 10. Roadmap: how to improve it
 
-> The detailed, phased plan for turning the assistant into an action-taking agent (approvals, task plans, proactive behaviour, task evals) is in [`AGENT_UPGRADE_PLAN.md`](AGENT_UPGRADE_PLAN.md).
+> The detailed, phased plan for turning the assistant into an action-taking agent (approvals, task plans, proactive behaviour, task evals) is in [`AGENT_UPGRADE_PLAN.md`](AGENT_UPGRADE_PLAN.md); the workflow-first backlog (visits, specialists, referrals, notifications, evals) is in [`AGENT_PENDING_WORK.md`](AGENT_PENDING_WORK.md).
 
 **Before presenting (hours):** add a working cloud/proxy model and re-run `npm run test:eval:live` · rehearse the demo in section 11.3 · give FHIR/PACS dedicated servers or remove the stray FHIR patients · copy the Ollama/proxy variables into `.env.example`.
 
