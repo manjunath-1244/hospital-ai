@@ -1,3 +1,6 @@
+---
+docType: sop
+---
 # 🚨 Emergency Department Triage & Escalation SOP
 
 ## 1. Emergency Severity Index (ESI) Triage Levels

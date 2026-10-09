@@ -325,6 +325,8 @@ export interface ChatToolCall {
   args?: unknown;
   success: boolean;
   durationMs?: number;
+  /** Why the tool refused or failed (shown to the user). */
+  error?: string;
 }
 
 export interface ChatMemoryInfo {

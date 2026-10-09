@@ -254,11 +254,19 @@ export class ReferralService {
       const visit = await this.visitRepo.findOne({
         where: { id: saved.visitId },
       });
-      if (visit?.status === 'IN_CONSULTATION')
-        await this.visits.transition(visit, 'FOLLOW_UP', actor, {
+      if (visit?.status === 'IN_CONSULTATION') {
+        const moved = await this.visits.transition(visit, 'FOLLOW_UP', actor, {
           note: `${saved.specialty} consultation completed`,
           system: true,
         });
+        // Every screen showing this visit must see the change without a reload.
+        this.eventsGateway.emitVisitUpdated({
+          visitId: moved.id,
+          patientId: moved.patientId,
+          patientName: done?.name ?? saved.patientId,
+          status: moved.status,
+        });
+      }
       await this.notificationService.sendNotification({
         recipientUserId: saved.requestedById,
         type: 'REFERRAL_COMPLETED',

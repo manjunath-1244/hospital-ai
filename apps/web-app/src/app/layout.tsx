@@ -8,8 +8,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'CURAAI — Hospital AI Platform',
-  description: 'Hospital operations portals backed by the CURAAI API (Mastra AI, NestJS, FHIR, DICOM).',
+  title: 'MK — Clinical Operations',
+  description: 'Hospital operations portals backed by the MK API (Mastra AI, NestJS, FHIR, DICOM).',
 };
 
 export default function RootLayout({
@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${jetbrains.variable}`}>
-      <body className="antialiased min-h-screen bg-[#0a0f1c] text-slate-100">
+    <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
+      <body className="antialiased min-h-screen bg-canvas text-ink">
         <AuthProvider>
           <RoleProvider>{children}</RoleProvider>
         </AuthProvider>

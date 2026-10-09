@@ -1,3 +1,6 @@
+---
+docType: policy
+---
 # 🏥 Inpatient Discharge & Follow-up Clinical Policy
 
 ## 1. Readiness Criteria for Inpatient Discharge

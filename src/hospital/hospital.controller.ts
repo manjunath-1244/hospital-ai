@@ -1,3 +1,4 @@
+import { mayRead } from './section-access';
 import {
   BadRequestException,
   Body,
@@ -52,11 +53,16 @@ import { ReferralRecommendationService } from './referrals/referral-recommendati
 /** Every signed-in staff role except SPECIALIST, who works only from their referral inbox (minimum necessary). */
 const STAFF_ROLES: UserRole[] = USER_ROLES.filter((r) => r !== 'SPECIALIST');
 
-/** Receptionists see demographics and queue status only: no clinical history (minimum necessary). */
+/** Each role gets only the clinical parts it may read (see section-access.ts); the rest is emptied. */
 function viewFor<T extends PatientEntity>(user: AuthUser, p: T): T {
-  if (user.role === 'RECEPTIONIST')
-    return { ...p, allergies: [], currentMedications: [], conditions: [] };
-  return p;
+  return {
+    ...p,
+    allergies: mayRead(user.role, 'allergies') ? p.allergies : [],
+    currentMedications: mayRead(user.role, 'medications')
+      ? p.currentMedications
+      : [],
+    conditions: mayRead(user.role, 'conditions') ? p.conditions : [],
+  };
 }
 
 @Controller('hospital')

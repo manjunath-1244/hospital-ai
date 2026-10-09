@@ -17,6 +17,21 @@ export interface RunStep {
   args?: unknown;
 }
 
+export interface RouteTrace {
+  intent: string;
+  entity: string;
+  scope: string;
+  filters: Record<string, unknown>;
+  confidence: number;
+  source: 'L1' | 'L2';
+  usedL2: boolean;
+  /** HANDLE | CLARIFY | AGENT (what the router decided) */
+  decision: string;
+  /** Which handler produced the answer: a deterministic one, the grounded model, the agent, a clarification... */
+  handler: string;
+  alternatives: Array<{ intent: string; entity: string; confidence: number }>;
+}
+
 /** One agent execution = one trace. Source for observability, metrics and drift detection. */
 @Entity('agent_runs')
 export class AgentRunEntity {
@@ -50,6 +65,9 @@ export class AgentRunEntity {
   /** Fingerprint and PHI-free snapshot of the AgentContext this run used (null for runs before it existed). */
   @Column({ type: 'varchar', nullable: true }) contextHash: string | null;
   @Column({ type: 'jsonb', nullable: true }) context: unknown;
+
+  /** How the question was understood and routed: plan (intent/entity/scope/filters), confidence, L1/L2, handler, outcome. */
+  @Column({ type: 'jsonb', nullable: true }) route: RouteTrace | null;
 
   /** High-level goal or query intent for this run. */
   @Column({ type: 'text', nullable: true }) goal: string | null;

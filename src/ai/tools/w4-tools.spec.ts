@@ -191,18 +191,36 @@ describe('W4 Tools Suite', () => {
 
     it('proposeFollowUp returns proposal object', async () => {
       const tool = proposeTools.find((t) => t.name === 'proposeFollowUp')!;
-      const res: any = await tool.run(
-        {
-          patientId: 'P1001',
-          planType: 'APPOINTMENT',
-          timeframe: '2 weeks',
-          instructions: 'Cardiology outpatient review in 2 weeks',
-        },
+      const followUp: any = {
+        generateProposal: jest.fn().mockResolvedValue({
+          plan: {
+            id: 'PLAN1',
+            patientId: 'P1001',
+            items: [{ summary: 'Cardiology review' }],
+          },
+          proposalAction: {
+            id: 'ACT9',
+            summary: 'Follow-up plan',
+            tier: 'ASK',
+            expiresAt: new Date(),
+          },
+        }),
+      };
+      const visits: any = {
+        getActive: jest.fn().mockResolvedValue({ id: 'V100' }),
+      };
+      const t = buildProposeTools({ followUp, visits }).find(
+        (x) => x.name === 'proposeFollowUp',
+      )!;
+      const res: any = await t.run(
+        { patientId: 'P1001' },
         { user: { role: 'DOCTOR' } as any },
       );
       expect(res.success).toBe(true);
       expect(res.proposalType).toBe('FOLLOW_UP');
-      expect(res.status).toBe('PROPOSED');
+      expect(res.status).toBe('PENDING_APPROVAL');
+      expect(res.proposedAction.planId).toBe('PLAN1');
+      expect(tool).toBeDefined();
     });
 
     it('proposeTask returns proposal object', async () => {

@@ -1,3 +1,6 @@
+---
+docType: sop
+---
 # 🚨 Emergency Escalation SOP
 
 ## 1. Critical Lab Values (Red Alert Thresholds)

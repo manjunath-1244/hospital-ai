@@ -77,6 +77,8 @@ export class AgentActionEntity {
     verified: boolean;
     checks: string[];
     error?: string;
+    /** Some items of a multi-item action were done before one failed. */
+    partial?: boolean;
   };
 
   @Column({ unique: true })

@@ -7,10 +7,12 @@ import { apiFetch, errorMessage } from '../../lib/api';
 import type { DocumentResponse, WardEntry } from '../../lib/types';
 import { LabResultForm } from '../ui/LabResultForm';
 import { PendingActionsPanel } from './PendingActionsPanel';
-import { AiDraftBanner, Empty, ErrorBox, Loading, fmtTime } from '../ui/common';
+import { AiDraftBanner, ErrorBox, Loading, fmtTime } from '../ui/common';
+import { Badge, Button, Card, EmptyState, SectionTitle, StatTile, cx } from '../ui/kit';
 
 const riskCls = (r: string) =>
-  r === 'HIGH' ? 'border-rose-500/50 bg-rose-500/10' : r === 'MEDIUM' || r === 'LOW_MEDIUM' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-800 bg-slate-950';
+  r === 'HIGH' ? 'border-danger-200 bg-danger-50' : r === 'MEDIUM' || r === 'LOW_MEDIUM' ? 'border-warning-200 bg-warning-50' : 'border-line bg-surface';
+const riskTone = (r: string) => (r === 'HIGH' ? 'danger' : r === 'MEDIUM' || r === 'LOW_MEDIUM' ? 'warning' : 'neutral');
 
 export const NurseWardPortal: React.FC = () => {
   const [ward, setWard] = useState<WardEntry[] | null>(null);
@@ -51,99 +53,91 @@ export const NurseWardPortal: React.FC = () => {
     }
   };
 
+  const selectedName = ward?.find((w) => w.patientId === selected)?.name ?? selected;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl glass-panel p-7 border-l-4 border-l-rose-500">
-        <div>
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Activity className="h-8 w-8 text-rose-400" />
+      <section className="space-y-4">
+        <SectionTitle icon={<Activity className="h-5 w-5" />} hint="Latest recorded NEWS2 per patient, highest score first." className="mb-0">
           Ward Monitoring & SBAR Handoff
-        </h2>
-        <p className="text-base text-slate-300 mt-1.5">Latest recorded NEWS2 per patient, highest score first.</p>
+        </SectionTitle>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StatTile label="Patients" value={ward?.length ?? '—'} />
+          <StatTile label="High risk" value={ward ? ward.filter((w) => w.latest.riskLevel === 'HIGH').length : '—'} tone="danger" />
         </div>
-        <div className="flex gap-3">
-          <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-300">Patients</p>
-            <p className="text-3xl font-extrabold text-indigo-300">{ward?.length ?? '—'}</p>
-          </div>
-          <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-300">High risk</p>
-            <p className="text-3xl font-extrabold text-rose-300">{ward ? ward.filter((w) => w.latest.riskLevel === 'HIGH').length : '—'}</p>
-          </div>
-        </div>
-      </div>
+      </section>
 
-      <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-        <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-          <Activity className="h-5 w-5 text-rose-400" /> Ward NEWS2 Overview
-        </h3>
-        {loading && <Loading text="Loading ward..." />}
-        <ErrorBox message={error} />
-        {!loading && !error && ward?.length === 0 && <Empty text="No patients with recorded vitals." />}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {ward?.map((p) => (
-            <button
-              key={p.patientId}
-              onClick={() => setSelected(p.patientId)}
-              className={`text-left rounded-xl border p-4 text-sm space-y-1 transition-all ${riskCls(p.latest.riskLevel)} ${selected === p.patientId ? 'ring-2 ring-indigo-400' : ''}`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-white">{p.name}</span>
-                <span className="font-mono font-black text-white">NEWS2 {p.latest.news2Score}</span>
-              </div>
-              <p className="text-sm text-slate-400">{p.patientId} • {p.age}y {p.gender} • {p.latest.riskLevel}</p>
-              <p className="font-mono text-sm text-slate-300">
-                HR {p.latest.heartRate} | SBP {p.latest.bpSystolic} | SpO2 {p.latest.spO2}% | T {p.latest.tempCelsius} | RR {p.latest.respiratoryRate}
-              </p>
-              <p className="text-sm text-slate-500">{fmtTime(p.latest.recordedAt)}</p>
-            </button>
-          ))}
+      <Card>
+        <SectionTitle icon={<Activity className="h-5 w-5" />}>Ward NEWS2 Overview</SectionTitle>
+        <div className="space-y-4">
+          {loading && <Loading text="Loading ward..." />}
+          <ErrorBox message={error} />
+          {!loading && !error && ward?.length === 0 && <EmptyState title="No patients with recorded vitals." hint="Patients appear here once vitals have been recorded." />}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {ward?.map((p) => (
+              <button
+                key={p.patientId}
+                type="button"
+                data-testid="ward-patient"
+                aria-pressed={selected === p.patientId}
+                onClick={() => setSelected(p.patientId)}
+                className={cx('min-h-11 space-y-1 rounded-lg border p-4 text-left text-sm', riskCls(p.latest.riskLevel), selected === p.patientId && 'ring-2 ring-brand-500')}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">{p.name}</span>
+                  <span className="font-mono font-semibold text-ink">NEWS2 {p.latest.news2Score}</span>
+                </div>
+                <p className="flex flex-wrap items-center gap-2 text-ink-3">
+                  <span>{p.patientId} • {p.age}y {p.gender}</span>
+                  <Badge tone={riskTone(p.latest.riskLevel)}>{p.latest.riskLevel}</Badge>
+                </p>
+                <p className="font-mono text-ink-2">
+                  HR {p.latest.heartRate} | SBP {p.latest.bpSystolic} | SpO2 {p.latest.spO2}% | T {p.latest.tempCelsius} | RR {p.latest.respiratoryRate}
+                </p>
+                <p className="text-ink-3">{fmtTime(p.latest.recordedAt)}</p>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </Card>
 
       <PendingActionsPanel />
 
-      <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-        <h3 className="text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4">Lab results</h3>
-        <p className="text-base text-slate-300">
-          {selected ? `Recording for ${ward?.find((w) => w.patientId === selected)?.name ?? selected} (${selected}).` : 'Select a patient card above to add a lab result.'}
-        </p>
-        <LabResultForm patientId={selected} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <FileText className="h-5 w-5 text-indigo-400" /> SBAR Handoff
-          </h3>
-          <p className="text-sm text-slate-400">
-            {selected ? `Selected patient: ${ward?.find((w) => w.patientId === selected)?.name ?? selected}` : 'Select a patient card above.'}
+      <Card>
+        <SectionTitle>Lab results</SectionTitle>
+        <div className="space-y-4">
+          <p className="text-sm text-ink-2">
+            {selected ? `Recording for ${selectedName} (${selected}).` : 'Select a patient card above to add a lab result.'}
           </p>
-          <button
-            onClick={generate}
-            disabled={!selected || sbarLoading}
-            className="w-full rounded-xl bg-indigo-600 py-3 text-base font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
-          >
-            {sbarLoading ? 'Generating...' : 'Generate SBAR draft'}
-          </button>
-          <ErrorBox message={sbarError} />
-          {sbar && (
-            <div className="space-y-3">
-              <AiDraftBanner />
-              <pre className="whitespace-pre-wrap rounded-xl bg-slate-950 p-4 border border-slate-700 text-sm text-slate-200 font-sans">{sbar.content}</pre>
-              <p className="text-sm text-slate-500">{sbar.disclaimer}</p>
-            </div>
-          )}
+          <LabResultForm patientId={selected} />
         </div>
+      </Card>
 
-        <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <Mic className="h-5 w-5 text-slate-500" /> Voice Scribe
-          </h3>
-          <button disabled className="w-full rounded-xl bg-slate-900 py-3 text-base font-bold text-slate-500 border border-slate-700 cursor-not-allowed">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <SectionTitle icon={<FileText className="h-5 w-5" />}>SBAR Handoff</SectionTitle>
+          <div className="space-y-4">
+            <p className="text-sm text-ink-3">{selected ? `Selected patient: ${selectedName}` : 'Select a patient card above.'}</p>
+            <Button onClick={generate} disabled={!selected || sbarLoading} loading={sbarLoading} className="w-full" data-testid="sbar-generate">
+              {sbarLoading ? 'Generating...' : 'Generate SBAR draft'}
+            </Button>
+            <ErrorBox message={sbarError} />
+            {sbar && (
+              <div className="space-y-3">
+                <AiDraftBanner />
+                <pre className="whitespace-pre-wrap rounded-lg border border-line bg-surface-muted p-4 font-sans text-sm text-ink">{sbar.content}</pre>
+                <p className="text-sm text-ink-3">{sbar.disclaimer}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <SectionTitle icon={<Mic className="h-5 w-5" />}>Voice Scribe</SectionTitle>
+          <Button variant="secondary" disabled className="w-full">
             Voice scribe – not implemented
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     </div>
   );

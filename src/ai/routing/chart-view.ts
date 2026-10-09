@@ -10,12 +10,25 @@ export type Section =
   | 'vitals'
   | 'consultations'
   | 'imaging'
-  | 'appointments';
+  | 'appointments'
+  | 'visit';
+
+/** Plan entity (what the parser understood, typos repaired) -> chart section. */
+export const ENTITY_SECTION: Record<string, Section> = {
+  MEDICATION: 'medications',
+  ALLERGY: 'allergies',
+  LAB: 'labs',
+  VITALS: 'vitals',
+  CONDITION: 'conditions',
+  IMAGING: 'imaging',
+  APPOINTMENT: 'appointments',
+  VISIT: 'visit',
+};
 
 const SECTION_WORDS: Array<[Section, RegExp]> = [
   [
     'medications',
-    /\b(medic\w*|prescri\w*|drugs?|tablets?|pills?|dose|dosage|given|gave)\b/i,
+    /\b(medic\w*|prescri\w*|drugs?|tablets?|pills?|dose|dosage|given|gave|give)\b/i,
   ],
   ['allergies', /\ballerg\w*\b/i],
   [
@@ -32,8 +45,9 @@ const SECTION_WORDS: Array<[Section, RegExp]> = [
   ],
   [
     'consultations',
-    /\b(consult\w*|doctor said|doctor gave|doctor's|notes?|visit|treatment|treated)\b/i,
+    /\b(consult\w*|doctor said|doctor gave|doctor's|notes?|treatment|treated)\b/i,
   ],
+  ['visit', /\b(visits?|admission|visit status|current status)\b/i],
   ['imaging', /\b(imaging|scans?|x-?rays?|mri|ct|ultrasound|radiolog\w*)\b/i],
   ['appointments', /\b(appointments?|follow-?ups?|scheduled|booked)\b/i],
 ];
@@ -80,14 +94,14 @@ export function renderChart(chart: any, sections: Section[] | 'all'): string {
   out.push(
     `${p.name} (${p.id}) — ${p.age} y, ${p.gender}${p.bloodType ? `, blood type ${p.bloodType}` : ''}`,
   );
-  if (sections === 'all') {
+  if (want('visit')) {
     const v = chart.currentVisit;
     out.push(
       v
         ? `Current visit: ${v.statusLabel}${v.chiefComplaint ? ` | Reason: ${v.chiefComplaint}` : ''}${v.priority ? ` | Triage priority ${v.priority}` : ''}${v.primaryDoctorName ? ` | Doctor: ${v.primaryDoctorName}` : ''}`
         : 'No visit on record.',
     );
-    out.push(`Registered: ${fmtDate(p.registeredAt)}`);
+    if (sections === 'all') out.push(`Registered: ${fmtDate(p.registeredAt)}`);
     const history = (chart.visitHistory ?? []).slice(1);
     if (history.length)
       out.push(

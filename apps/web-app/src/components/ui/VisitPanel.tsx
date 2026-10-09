@@ -5,7 +5,8 @@ import { History } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import { useRealtime } from '../../context/RoleContext';
 import { statusLabel, transitionLabel, type TransitionOption, type VisitDetail, type VisitSummary } from '../../lib/visits';
-import { ErrorBox, Loading, PriorityBadge, StatusBadge, fmtTime, inputCls, labelCls } from './common';
+import { ErrorBox, Loading, PriorityBadge, StatusBadge, fmtTime } from './common';
+import { Button, Field, Input } from './kit';
 
 interface Props {
   visitId: string;
@@ -68,59 +69,56 @@ export const VisitPanel: React.FC<Props> = ({ visitId, onChanged }) => {
   const v = detail.visit;
 
   return (
-    <div className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3 text-sm">
+    <div className="space-y-3 rounded-lg border border-line bg-surface-muted p-4 text-sm" data-testid="visit-panel">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="font-bold text-slate-300 uppercase flex items-center gap-1"><History className="h-4 w-4" /> Current visit</p>
+        <p className="flex items-center gap-1.5 font-semibold text-ink-2"><History className="h-4 w-4 text-ink-3" aria-hidden /> Current visit</p>
         <StatusBadge visit={v} />
         <PriorityBadge priority={v.priority} />
-        {v.primaryDoctorName && <span className="text-slate-400">Doctor: {v.primaryDoctorName}</span>}
+        {v.primaryDoctorName && <span className="text-ink-3">Doctor: {v.primaryDoctorName}</span>}
       </div>
-      <p className="text-slate-300">Chief complaint: {v.chiefComplaint || '—'}</p>
+      <p className="text-ink-2">Chief complaint: {v.chiefComplaint || '—'}</p>
 
       {detail.allowedTransitions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {detail.allowedTransitions.map((t) => (
-            <button
+            <Button
               key={t.to}
-              type="button"
+              size="sm"
+              variant={t.to === 'COMPLETED' || t.from === 'COMPLETED' ? 'primary' : 'secondary'}
               disabled={busy}
               onClick={() => click(t)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-bold disabled:opacity-50 ${
-                t.to === 'COMPLETED' || t.from === 'COMPLETED' ? 'bg-emerald-600 text-white hover:bg-emerald-500' : t.noteRequired ? 'bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-500'
-              }`}
             >
               {transitionLabel(t)}
-            </button>
+            </Button>
           ))}
         </div>
       )}
 
       {pending && (
-        <div className="space-y-2 rounded-xl border border-slate-700 p-3">
-          <label className={labelCls}>
-            {transitionLabel(pending)}: {pending.noteRequired ? 'reason (required)' : 'note (optional)'}
-          </label>
-          <input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} autoFocus />
-          <div className="flex gap-2">
-            <button type="button" disabled={busy || (!!pending.noteRequired && !note.trim())} onClick={() => run(pending, note)} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50">
+        <div className="space-y-2 rounded-lg border border-line bg-surface p-3">
+          <Field label={`${transitionLabel(pending)}: ${pending.noteRequired ? 'reason (required)' : 'note (optional)'}`}>
+            {(id) => <Input id={id} value={note} onChange={(e) => setNote(e.target.value)} autoFocus />}
+          </Field>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" disabled={busy || (!!pending.noteRequired && !note.trim())} loading={busy} onClick={() => run(pending, note)}>
               {busy ? 'Working...' : 'Confirm'}
-            </button>
-            <button type="button" disabled={busy} onClick={() => setPending(null)} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-bold text-slate-300 border border-slate-700">
+            </Button>
+            <Button size="sm" variant="secondary" disabled={busy} onClick={() => setPending(null)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
       <ErrorBox message={error} />
 
       <div>
-        <p className="font-bold text-slate-400 uppercase mb-1">Timeline</p>
-        <ul className="space-y-1 text-slate-300">
+        <p className="mb-1 font-semibold text-ink-2">Timeline</p>
+        <ul className="space-y-1 text-ink-2">
           {detail.timeline.map((t, i) => (
             <li key={i}>
-              <span className="text-slate-500">{fmtTime(t.at)}</span> — {t.fromStatus ? `${statusLabel(t.fromStatus)} → ` : ''}<span className="font-semibold">{statusLabel(t.toStatus)}</span>
-              {t.actorName && <span className="text-slate-400"> by {t.actorName}</span>}
-              {t.note && <span className="text-slate-400"> — {t.note}</span>}
+              <span className="text-ink-3">{fmtTime(t.at)}</span> — {t.fromStatus ? `${statusLabel(t.fromStatus)} → ` : ''}<span className="font-semibold text-ink">{statusLabel(t.toStatus)}</span>
+              {t.actorName && <span className="text-ink-3"> by {t.actorName}</span>}
+              {t.note && <span className="text-ink-3"> — {t.note}</span>}
             </li>
           ))}
         </ul>
@@ -132,17 +130,17 @@ export const VisitPanel: React.FC<Props> = ({ visitId, onChanged }) => {
 /** Compact list of a patient's past and current visits. */
 export const VisitHistory: React.FC<{ visits: VisitSummary[] }> = ({ visits }) =>
   visits.length === 0 ? (
-    <p className="text-slate-500 text-sm">No visits yet.</p>
+    <p className="text-sm text-ink-3">No visits yet.</p>
   ) : (
-    <ul className="space-y-1 text-sm text-slate-300">
+    <ul className="space-y-1 text-sm text-ink-2">
       {visits.map((v) => (
         <li key={v.id} className="flex flex-wrap items-center gap-2">
-          <span className="text-slate-500">{fmtTime(v.arrivedAt)}</span>
+          <span className="text-ink-3">{fmtTime(v.arrivedAt)}</span>
           <StatusBadge visit={v} />
           <span>{v.chiefComplaint || '—'}</span>
-          {v.primaryDoctorName && <span className="text-slate-400">• {v.primaryDoctorName}</span>}
-          {v.outcome && <span className="text-slate-400">• {v.outcome}</span>}
-          {v.closeReason && <span className="text-slate-400">• {v.closeReason}</span>}
+          {v.primaryDoctorName && <span className="text-ink-3">• {v.primaryDoctorName}</span>}
+          {v.outcome && <span className="text-ink-3">• {v.outcome}</span>}
+          {v.closeReason && <span className="text-ink-3">• {v.closeReason}</span>}
         </li>
       ))}
     </ul>

@@ -1,0 +1,541 @@
+[
+ {
+  "id": "NUR-HSP-001",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many patients are waiting",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "waiting"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The hospital overview shows how many patients are waiting for triage and for a doctor.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-002",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many patients are waiting right now",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "waiting"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The hospital overview shows how many patients are waiting for triage and for a doctor.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-003",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many appointments are there",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "appointments"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The number of scheduled appointments.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-004",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many appointments are scheduled",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "appointments"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The number of scheduled appointments.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-005",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many tasks are pending",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "tasks"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "follow-up",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The number of pending staff tasks.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-006",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many staff tasks are in the queue",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "tasks"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "follow-up",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The number of pending staff tasks.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-007",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many patients do we have",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "patients"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getHospitalOverview",
+   "behaviour": "routing"
+  },
+  "reference": "The total number of patients.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-008",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "who has been waiting the longest",
+    "expect": {
+     "handler": "list.waiting",
+     "modelCalls": 0,
+     "contains": [
+      "Waiting longest"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "searchPatients",
+   "behaviour": "routing"
+  },
+  "reference": "The patient who has waited longest, then everyone waiting from the longest wait down.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-009",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "which patients have waited more than 3 hours",
+    "expect": {
+     "handler": "list.waiting",
+     "modelCalls": 0,
+     "contains": [
+      "Waiting longest"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "searchPatients",
+   "behaviour": "routing"
+  },
+  "reference": "The patients waiting, longest first.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-010",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "list all patients",
+    "expect": {
+     "handler": "list.patients",
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "P1002",
+      "P1003"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "searchPatients",
+   "behaviour": "routing"
+  },
+  "reference": "A list of patients in the system including Eleanor Vance, Marcus Brody and Sophia Martinez.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-011",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "show me every patient in the hospital",
+    "expect": {
+     "handler": "list.patients",
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "P1002",
+      "P1003"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "searchPatients",
+   "behaviour": "routing"
+  },
+  "reference": "A list of patients in the system including Eleanor Vance, Marcus Brody and Sophia Martinez.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-012",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "list the specialists",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Chen",
+      "Wilson"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  },
+  "reference": "The specialists: Dr. Michael Chen (Neurology) and Dr. Sarah Wilson (Cardiology).",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-013",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "who is the cardiologist",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Wilson"
+     ],
+     "notContains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  },
+  "reference": "Dr. Sarah Wilson is the cardiology specialist.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-014",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "who is the neurologist",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Chen"
+     ],
+     "notContains": [
+      "Wilson"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  },
+  "reference": "Dr. Michael Chen is the neurology specialist.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-015",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "list all available doctors in cardiology",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Wilson"
+     ],
+     "notContains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  },
+  "reference": "Dr. Sarah Wilson is the available cardiology specialist.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-016",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many cardiologists do we have",
+    "expect": {
+     "handler": "count.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Cardiology"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  },
+  "reference": "There is one cardiology specialist.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-017",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many doctors are there",
+    "expect": {
+     "handler": "count.staff",
+     "modelCalls": 0,
+     "contains": [
+      "doctor"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  },
+  "reference": "The number of doctors on staff.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-018",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many nurses are on staff",
+    "expect": {
+     "handler": "count.staff",
+     "modelCalls": 0,
+     "contains": [
+      "nurse"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  },
+  "reference": "The number of nurses on staff.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-019",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "who is Dr. Sarah Wilson",
+    "expect": {
+     "handler": "lookup.staff",
+     "modelCalls": 0,
+     "contains": [
+      "Wilson",
+      "Cardiology"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "referral",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Dr. Sarah Wilson is a cardiology specialist.",
+  "semanticMin": 0.4
+ },
+ {
+  "id": "NUR-HSP-020",
+  "role": "NURSE",
+  "model": "none",
+  "category": "hospital-figures",
+  "turns": [
+   {
+    "say": "how many beds are free",
+    "expect": {
+     "handler": "count.unsupported",
+     "modelCalls": 0,
+     "contains": [
+      "beds"
+     ],
+     "notContains": [
+      "There are 0",
+      "There is 0"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "registration",
+   "tool": "none",
+   "behaviour": "routing"
+  },
+  "reference": "The system does not keep a count of beds.",
+  "semanticMin": 0.4
+ }
+]

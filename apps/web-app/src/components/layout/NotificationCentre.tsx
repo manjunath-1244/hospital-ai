@@ -6,6 +6,7 @@ import { useRealtime, useRole } from '../../context/RoleContext';
 import { apiFetch, errorMessage } from '../../lib/api';
 import { destinationFor, type AppNotification } from '../../lib/notifications';
 import { fmtTime } from '../ui/common';
+import { Alert, Button, Spinner } from '../ui/kit';
 
 /** Per-user inbox (GET /hospital/notifications). Works for every role; refreshes on `notification.new`. */
 export const NotificationCentre: React.FC = () => {
@@ -92,43 +93,58 @@ export const NotificationCentre: React.FC = () => {
   return (
     <div className="relative" ref={wrapRef}>
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-slate-200 hover:text-white hover:bg-slate-800 border border-slate-700"
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-line-strong bg-surface text-ink-2 hover:bg-surface-muted"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
         aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls="notification-popover"
         data-testid="notification-bell"
       >
         <BellRing className="h-5 w-5" aria-hidden="true" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 flex min-w-6 h-6 px-1 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-xs font-semibold text-white">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[28rem] max-w-[90vw] max-h-[30rem] overflow-y-auto glass-panel rounded-xl border border-slate-700 p-3 space-y-2 z-50">
-          <div className="flex items-center justify-between px-1">
-            <p className="text-lg font-bold text-white">Notifications</p>
-            <button onClick={markAll} disabled={unread === 0} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-bold text-slate-200 hover:bg-slate-800 disabled:opacity-40">
-              <CheckCheck className="h-4 w-4" /> Mark all read
-            </button>
+        <div
+          id="notification-popover"
+          role="dialog"
+          aria-label="Notifications"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setOpen(false);
+          }}
+          className="absolute right-0 z-50 mt-2 max-h-[30rem] w-[28rem] max-w-[90vw] space-y-2 overflow-y-auto rounded-card border border-line bg-surface p-2 shadow-pop"
+        >
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-base font-semibold text-ink">Notifications</p>
+            <Button variant="secondary" size="sm" onClick={markAll} disabled={unread === 0} icon={<CheckCheck className="h-4 w-4" aria-hidden />}>
+              Mark all read
+            </Button>
           </div>
-          {error && <p className="px-1 text-sm font-semibold text-rose-300">{error}</p>}
-          {loaded && items.length === 0 && !error && <p className="p-4 text-base text-slate-400">No notifications.</p>}
+          {error && <Alert tone="danger">{error}</Alert>}
+          {!loaded && !error && <Spinner text="Loading notifications..." />}
+          {loaded && items.length === 0 && !error && <p className="p-4 text-sm text-ink-3">No notifications.</p>}
           {items.map((n) => {
             const dest = destinationFor(n, role, ownRole === 'ADMIN');
             return (
               <button
                 key={n.id}
+                type="button"
                 onClick={() => openItem(n)}
-                className={`w-full text-left rounded-lg border p-3 ${n.readAt ? 'bg-slate-950 border-slate-800' : 'bg-indigo-950/50 border-indigo-500/40'} hover:border-slate-500`}
+                data-testid="notification-item"
+                className={`min-h-11 w-full rounded-lg border p-3 text-left hover:bg-surface-muted ${n.readAt ? 'border-line bg-surface' : 'border-brand-200 bg-brand-50'}`}
               >
-                <p className="text-base font-bold text-white flex items-center gap-2">
-                  {!n.readAt && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-400" aria-label="Unread" />}
+                <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  {!n.readAt && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-600" aria-hidden />}
+                  {!n.readAt && <span className="sr-only">Unread: </span>}
                   {n.title}
                 </p>
-                <p className="text-sm text-slate-300 mt-1 break-words">{n.body}</p>
-                <p className="text-xs text-slate-400 mt-1 font-mono">
+                <p className="mt-1 break-words text-sm text-ink-2">{n.body}</p>
+                <p className="mt-1 text-xs text-ink-3">
                   {fmtTime(n.createdAt)}{dest ? ' • click to open' : ''}
                 </p>
               </button>

@@ -1,0 +1,391 @@
+[
+ {
+  "id": "RAD-WRD-001",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitals of p1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-002",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "meds of P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-003",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "alergies of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-004",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitlas P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-005",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is P1002 on aspirin",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-006",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what did the doctor prescribe to P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-007",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "current visit status of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001",
+      "Current visit"
+     ],
+     "notContains": [
+      "Consultations (most recent"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getCurrentVisit",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-008",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what is the phone number of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "Contact details"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-009",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many docs",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "count.staff",
+     "contains": [
+      "doctor"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-010",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who is the heart doctor",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "list.specialists",
+     "contains": [
+      "Wilson"
+     ],
+     "notContains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "RAD-WRD-011",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what allergies does Eleanor Vance P9999 have",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "P9999",
+      "Eleanor"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "ambiguity"
+  }
+ },
+ {
+  "id": "RAD-WRD-012",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what allergies does Eleanor Vance P1002 have",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "more than one patient"
+     ],
+     "notContains": [
+      "Penicillin",
+      "Aspirin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "ambiguity"
+  }
+ },
+ {
+  "id": "RAD-WRD-013",
+  "role": "RADIOLOGIST",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who verifies the patient identity before giving medication",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "RAD-WRD-014",
+  "role": "RADIOLOGIST",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many ESI levels does the triage protocol define",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "RAD-WRD-015",
+  "role": "RADIOLOGIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is a referral needed for P1002",
+    "expect": {
+     "modelCalls": 0,
+     "containsAny": [
+      "cannot run a specialist-need review",
+      "not available"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "referral",
+   "tool": "reviewReferralNeed",
+   "behaviour": "rbac"
+  }
+ }
+]

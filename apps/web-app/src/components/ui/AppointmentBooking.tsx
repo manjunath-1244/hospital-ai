@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { CalendarPlus, ChevronDown, ChevronRight } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import { fmtSlot, type AvailabilityResponse, type Specialist } from '../../lib/specialists';
-import { ErrorBox, Loading, SuccessBox, inputCls, labelCls } from './common';
+import { ErrorBox, Loading, SuccessBox } from './common';
+import { Button, Card, Field, Select, Textarea, cx } from './kit';
 import { PatientPicker } from './PatientPicker';
 
 /** Patient -> specialty -> specialist -> free slot -> reason -> book. Everything is loaded from the API. */
@@ -95,56 +96,63 @@ export const AppointmentBooking: React.FC<{ collapsible?: boolean }> = ({ collap
   const ready = patientId && doctorId && slot && reason.trim();
 
   return (
-    <div data-testid="appointment-booking" className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-      <button
-        type="button"
-        onClick={() => collapsible && setOpen((o) => !o)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-2 text-left text-xl font-semibold text-white tracking-tight"
-      >
-        <CalendarPlus className="h-5 w-5 text-teal-400" />
-        Book appointment
-        {collapsible && (open ? <ChevronDown className="h-5 w-5 ml-auto text-slate-400" /> : <ChevronRight className="h-5 w-5 ml-auto text-slate-400" />)}
-      </button>
+    <Card as="div" data-testid="appointment-booking">
+      <h2 className="text-lg font-semibold text-ink">
+        <button
+          type="button"
+          onClick={() => collapsible && setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-h-10 w-full items-center gap-2 rounded-lg text-left"
+        >
+          <CalendarPlus className="h-5 w-5 text-brand-600" aria-hidden />
+          Book appointment
+          {collapsible && (open ? <ChevronDown className="ml-auto h-5 w-5 text-ink-3" aria-hidden /> : <ChevronRight className="ml-auto h-5 w-5 text-ink-3" aria-hidden />)}
+        </button>
+      </h2>
 
       {open && (
-        <div className="space-y-4 border-t border-slate-700 pt-4">
-          <p className="text-sm text-slate-400">The patient needs an open visit. Slots are shown in your local time.</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 space-y-4 border-t border-line pt-4">
+          <p className="text-sm text-ink-3">The patient needs an open visit. Slots are shown in your local time.</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <PatientPicker value={patientId} onChange={(id) => { setPatientId(id); setSuccess(''); }} />
-            <div>
-              <label className={labelCls}>Specialty</label>
-              <select value={specialty} onChange={(e) => pickSpecialty(e.target.value)} className={inputCls}>
-                <option value="">Select a specialty</option>
-                {specialties.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Specialist</label>
-              <select value={doctorId} onChange={(e) => pickDoctor(e.target.value)} className={inputCls} disabled={!specialty}>
-                <option value="">{specialty ? 'Select a specialist' : 'Choose a specialty first'}</option>
-                {specialists.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}{s.isAvailable ? '' : ' (unavailable)'}</option>
-                ))}
-              </select>
-            </div>
+            <Field label="Specialty">
+              {(id) => (
+                <Select id={id} value={specialty} onChange={(e) => pickSpecialty(e.target.value)}>
+                  <option value="">Select a specialty</option>
+                  {specialties.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="Specialist">
+              {(id) => (
+                <Select id={id} value={doctorId} onChange={(e) => pickDoctor(e.target.value)} disabled={!specialty}>
+                  <option value="">{specialty ? 'Select a specialist' : 'Choose a specialty first'}</option>
+                  {specialists.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}{s.isAvailable ? '' : ' (unavailable)'}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
           </div>
 
           {doctorId && (
             <div>
-              <label className={labelCls}>Free slots</label>
+              <p className="mb-1.5 text-sm font-medium text-ink" id="booking-slots-label">Free slots</p>
               {slotsLoading && <Loading text="Loading slots..." />}
-              {!slotsLoading && slots.length === 0 && <p className="text-sm text-slate-400">No free slots for this specialist.</p>}
-              <div className="flex flex-wrap gap-2">
+              {!slotsLoading && slots.length === 0 && <p className="text-sm text-ink-3">No free slots for this specialist.</p>}
+              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="booking-slots-label">
                 {slots.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setSlot(s)}
                     aria-pressed={slot === s}
-                    className={`rounded-lg px-3 py-2 text-sm font-bold border ${slot === s ? 'bg-teal-600 border-teal-400 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-white'}`}
+                    className={cx(
+                      'min-h-10 rounded-lg border px-3 text-sm font-semibold',
+                      slot === s ? 'border-brand-700 bg-brand-700 text-white' : 'border-line-strong bg-surface text-ink hover:bg-surface-muted',
+                    )}
                   >
                     {fmtSlot(s)}
                   </button>
@@ -153,23 +161,17 @@ export const AppointmentBooking: React.FC<{ collapsible?: boolean }> = ({ collap
             </div>
           )}
 
-          <div>
-            <label className={labelCls}>Reason</label>
-            <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
-          </div>
+          <Field label="Reason">
+            {(id) => <Textarea id={id} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />}
+          </Field>
 
           <SuccessBox message={success} />
           <ErrorBox message={error} />
-          <button
-            type="button"
-            disabled={!ready || booking}
-            onClick={book}
-            className="rounded-xl min-h-12 bg-teal-600 hover:bg-teal-500 px-6 py-3 text-base font-bold text-white disabled:opacity-50"
-          >
+          <Button type="button" disabled={!ready || booking} loading={booking} onClick={book} data-testid="appointment-book">
             {booking ? 'Booking...' : 'Book appointment'}
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

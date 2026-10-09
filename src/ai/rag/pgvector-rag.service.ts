@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EmbeddingProvider } from './embedding.provider';
+import { toOrTsQuery } from './query-terms';
 
 export type DocKind = 'policy' | 'patient_record';
 
@@ -21,10 +22,23 @@ export interface SearchHit {
   heading: string;
   content: string;
   patientId: string | null;
+  /** Ranking score (cosine for dense search, fused rank score for hybrid). */
   score: number;
+  /** Cosine similarity to the query (0-1), present on every hit: the measure of 'is this actually about my question'. */
+  similarity?: number;
   metadata?: Record<string, any>;
   citationSpan?: string;
   quote?: string;
+}
+
+export interface SearchOptions {
+  topK: number;
+  kind: DocKind;
+  patientId?: string;
+  /** Only chunks of these document types (policy | sop | guideline). */
+  docTypes?: string[];
+  /** Chunks of these types get a rank bonus (a preference, not a filter). */
+  preferDocTypes?: string[];
 }
 
 /** Storage port for vectors. RagService depends on this abstraction, so another backend can replace pgvector. */
@@ -34,17 +48,13 @@ export abstract class VectorStore {
   abstract deleteExcept(source: string, keepIds: string[]): Promise<void>;
   abstract search(
     embedding: number[],
-    opts: { topK: number; kind: DocKind; patientId?: string },
+    opts: SearchOptions,
   ): Promise<SearchHit[]>;
+  /** Vector similarity + keyword (any meaningful word) search fused by rank (RRF). The production search path. */
   abstract searchHybrid(
     queryText: string,
     embedding: number[],
-    opts: {
-      topK: number;
-      kind: DocKind;
-      patientId?: string;
-      metadata?: Record<string, any>;
-    },
+    opts: SearchOptions,
   ): Promise<SearchHit[]>;
   abstract count(): Promise<number>;
   abstract deleteByPatient(patientId: string): Promise<number>;
@@ -105,7 +115,7 @@ export class PgVectorStore extends VectorStore {
     );
     try {
       await this.dataSource.query(
-        `CREATE INDEX IF NOT EXISTS document_embeddings_tsv ON document_embeddings USING gin(to_tsvector('english', heading || ' ' || content))`,
+        `CREATE INDEX IF NOT EXISTS document_embeddings_tsv2 ON document_embeddings USING gin(to_tsvector('english', heading || ' ' || coalesce(metadata->>'title','') || ' ' || content))`,
       );
     } catch {
       // safe fallback if tsvector index exists or unhandled
@@ -155,127 +165,105 @@ export class PgVectorStore extends VectorStore {
     );
   }
 
-  async search(
-    embedding: number[],
-    opts: { topK: number; kind: DocKind; patientId?: string },
-  ): Promise<SearchHit[]> {
+  async search(embedding: number[], opts: SearchOptions): Promise<SearchHit[]> {
     const params: unknown[] = [
       `[${embedding.join(',')}]`,
       this.embedder.modelId,
       opts.kind,
       opts.topK,
     ];
-    let patientFilter = '';
+    let filters = '';
     if (opts.patientId) {
       params.push(opts.patientId.toUpperCase());
-      patientFilter = `AND patient_id = $5`;
+      filters += ` AND patient_id = $${params.length}`;
+    }
+    if (opts.docTypes?.length) {
+      params.push(opts.docTypes);
+      filters += ` AND metadata->>'docType' = ANY($${params.length}::text[])`;
     }
     const rows = await this.dataSource.query(
       `SELECT source, heading, content, patient_id, metadata, 1 - (embedding <=> $1::vector) AS score
        FROM document_embeddings
-       WHERE embedding_model = $2 AND kind = $3 ${patientFilter}
+       WHERE embedding_model = $2 AND kind = $3 ${filters}
        ORDER BY embedding <=> $1::vector
        LIMIT $4`,
       params,
     );
-    return rows.map((r: any) => ({
+    return rows.map((r: any) =>
+      this.toHit(r, Number(r.score), Number(r.score)),
+    );
+  }
+
+  private toHit(r: any, score: number, similarity: number): SearchHit {
+    return {
       source: r.source,
       heading: r.heading,
       content: r.content,
       patientId: r.patient_id,
       metadata: r.metadata ?? {},
-      score: Number(Number(r.score).toFixed(4)),
+      score: Number(score.toFixed(4)),
+      similarity: Number(similarity.toFixed(4)),
       citationSpan: `[${r.source} # ${r.heading}]`,
       quote: r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
-    }));
+    };
   }
 
-  /** Hybrid search combining Vector Cosine Similarity and PostgreSQL tsvector Full-Text Search via Reciprocal Rank Fusion (RRF). */
+  /**
+   * Hybrid search: vector similarity and keyword match (PostgreSQL full text, ANY meaningful word) are ranked
+   * separately and fused with Reciprocal Rank Fusion. Chunks of a preferred document type get a rank bonus.
+   * Every hit carries its cosine similarity, so callers can still apply a relevance cut-off.
+   */
   async searchHybrid(
     queryText: string,
     embedding: number[],
-    opts: {
-      topK: number;
-      kind: DocKind;
-      patientId?: string;
-      metadata?: Record<string, any>;
-    },
+    opts: SearchOptions,
   ): Promise<SearchHit[]> {
-    const vectorHits = await this.search(embedding, opts);
+    const pool = Math.max(opts.topK * 3, 12);
+    const vectorHits = await this.search(embedding, { ...opts, topK: pool });
 
     let ftsHits: SearchHit[] = [];
-    try {
-      const cleanQuery = queryText.replace(/[^\w\s]/g, ' ').trim();
-      if (cleanQuery) {
+    const tsQuery = toOrTsQuery(queryText);
+    if (tsQuery) {
+      try {
         const params: unknown[] = [
-          cleanQuery,
+          tsQuery,
           this.embedder.modelId,
           opts.kind,
-          opts.topK * 2,
+          pool,
+          `[${embedding.join(',')}]`,
         ];
-        let patientFilter = '';
+        let filters = '';
         if (opts.patientId) {
           params.push(opts.patientId.toUpperCase());
-          patientFilter = `AND patient_id = $5`;
+          filters += ` AND patient_id = $${params.length}`;
         }
+        if (opts.docTypes?.length) {
+          params.push(opts.docTypes);
+          filters += ` AND metadata->>'docType' = ANY($${params.length}::text[])`;
+        }
+        const doc = `to_tsvector('english', heading || ' ' || coalesce(metadata->>'title','') || ' ' || content)`;
         const rows = await this.dataSource.query(
           `SELECT source, heading, content, patient_id, metadata,
-                  ts_rank_cd(to_tsvector('english', heading || ' ' || content), plainto_tsquery('english', $1)) AS fts_score
-           FROM document_embeddings
-           WHERE embedding_model = $2 AND kind = $3 ${patientFilter}
-             AND to_tsvector('english', heading || ' ' || content) @@ plainto_tsquery('english', $1)
-           ORDER BY fts_score DESC
-           LIMIT $4`,
+                  ts_rank_cd(${doc}, to_tsquery('english', $1), 1) AS fts_score, -- 1 = divide by chunk length: a short chunk about the words beats a long one that merely mentions them
+                  1 - (embedding <=> $5::vector) AS similarity
+             FROM document_embeddings
+            WHERE embedding_model = $2 AND kind = $3 ${filters}
+              AND ${doc} @@ to_tsquery('english', $1)
+            ORDER BY fts_score DESC
+            LIMIT $4`,
           params,
         );
-        ftsHits = rows.map((r: any) => ({
-          source: r.source,
-          heading: r.heading,
-          content: r.content,
-          patientId: r.patient_id,
-          metadata: r.metadata ?? {},
-          score: Number(Number(r.fts_score).toFixed(4)),
-          citationSpan: `[${r.source} # ${r.heading}]`,
-          quote:
-            r.content.slice(0, 150) + (r.content.length > 150 ? '...' : ''),
-        }));
+        ftsHits = rows.map((r: any) =>
+          this.toHit(r, Number(r.fts_score), Number(r.similarity)),
+        );
+      } catch (err: any) {
+        // A broken keyword leg must never break search: fall back to vector hits and say so.
+        this.logger.warn(
+          `Keyword search failed, using vector search only: ${err.message}`,
+        );
       }
-    } catch (err: any) {
-      this.logger.debug(`FTS query skipped: ${err.message}`);
     }
-
-    if (!ftsHits.length) return vectorHits;
-
-    const k = 60;
-    const scores = new Map<string, { hit: SearchHit; rrfScore: number }>();
-
-    vectorHits.forEach((hit, rank) => {
-      const key = `${hit.source}#${hit.heading}`;
-      const rrf = 1 / (k + rank + 1);
-      scores.set(key, { hit, rrfScore: rrf });
-    });
-
-    ftsHits.forEach((hit, rank) => {
-      const key = `${hit.source}#${hit.heading}`;
-      const rrf = 1 / (k + rank + 1);
-      const existing = scores.get(key);
-      if (existing) {
-        existing.rrfScore += rrf;
-      } else {
-        scores.set(key, { hit, rrfScore: rrf });
-      }
-    });
-
-    return [...scores.values()]
-      .sort((a, b) => b.rrfScore - a.rrfScore)
-      .slice(0, opts.topK)
-      .map(({ hit, rrfScore }) => ({
-        ...hit,
-        score: Number(rrfScore.toFixed(4)),
-        citationSpan: `[${hit.source} # ${hit.heading}]`,
-        quote:
-          hit.content.slice(0, 150) + (hit.content.length > 150 ? '...' : ''),
-      }));
+    return fuseRanks(vectorHits, ftsHits, opts);
   }
 
   async count(): Promise<number> {
@@ -308,4 +296,39 @@ export class PgVectorStore extends VectorStore {
     );
     return r[0].n;
   }
+}
+
+/** Reciprocal Rank Fusion of the vector and keyword rankings, plus a bonus for preferred document types. */
+export function fuseRanks(
+  vectorHits: SearchHit[],
+  ftsHits: SearchHit[],
+  opts: { topK: number; preferDocTypes?: string[] },
+): SearchHit[] {
+  const K = 60;
+  const key = (h: SearchHit) => `${h.source}#${h.heading}`;
+  const fused = new Map<string, { hit: SearchHit; rrf: number }>();
+  const add = (hits: SearchHit[]) =>
+    hits.forEach((hit, rank) => {
+      const cur = fused.get(key(hit));
+      const part = 1 / (K + rank + 1);
+      if (cur) {
+        cur.rrf += part;
+        cur.hit.similarity = Math.max(
+          cur.hit.similarity ?? 0,
+          hit.similarity ?? 0,
+        );
+      } else fused.set(key(hit), { hit: { ...hit }, rrf: part });
+    });
+  add(vectorHits);
+  add(ftsHits);
+  const prefer = new Set(opts.preferDocTypes ?? []);
+  const bonus = 0.75 / (K + 1); // worth about "top of one ranking"
+  return [...fused.values()]
+    .map((f) => ({
+      ...f,
+      rrf: f.rrf + (prefer.has(f.hit.metadata?.docType) ? bonus : 0),
+    }))
+    .sort((a, b) => b.rrf - a.rrf)
+    .slice(0, opts.topK)
+    .map(({ hit, rrf }) => ({ ...hit, score: Number(rrf.toFixed(4)) }));
 }

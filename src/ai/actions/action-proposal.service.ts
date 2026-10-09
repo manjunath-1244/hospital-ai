@@ -16,6 +16,7 @@ import {
 } from './action-policy';
 import { AuthUser } from '../../security/auth-user';
 import { HospitalEventsGateway } from '../../events/hospital-events.gateway';
+import { ActionValidatorService } from './action-validator.service';
 import { newId } from '../../common/ids';
 
 export interface ProposeActionInput {
@@ -35,6 +36,7 @@ export class ActionProposalService {
     @InjectRepository(AgentActionEntity)
     private readonly actionsRepo: Repository<AgentActionEntity>,
     private readonly eventsGateway: HospitalEventsGateway,
+    private readonly validator: ActionValidatorService,
   ) {}
 
   async propose(
@@ -56,25 +58,41 @@ export class ActionProposalService {
       );
     }
 
-    const summary = renderActionSummary(typeUpper, input.payload);
+    // Reject what cannot work BEFORE a card exists (unknown patient, no open visit, slot taken, duplicate referral ...).
+    const payload = await this.validator.validate(typeUpper, input.payload);
+    const summary = renderActionSummary(typeUpper, payload);
     const def = ACTION_CATALOGUE[typeUpper];
     const expiryMins = def?.expiresInMinutes ?? 1440;
     const expiresAt = new Date(Date.now() + expiryMins * 60_000);
 
-    const idempotencyRaw = `${user.userId}:${typeUpper}:${JSON.stringify(
-      input.payload,
-    )}`;
-    const idempotencyKey = createHash('sha256')
+    const idempotencyRaw = `${user.userId}:${typeUpper}:${JSON.stringify(payload)}`;
+    let idempotencyKey = createHash('sha256')
       .update(idempotencyRaw)
       .digest('hex');
 
-    // Check existing proposal for idempotency
+    // The same request twice returns the proposal that is still WAITING (or was completed moments ago). A proposal that
+    // was declined, expired, failed or completed long ago is history: asking again creates a NEW proposal.
     const existing = await this.actionsRepo.findOne({
       where: { idempotencyKey },
     });
     if (existing) {
-      this.logger.log(`Idempotent proposal match found: ${existing.id}`);
-      return existing;
+      const live =
+        existing.status === 'PENDING' && existing.expiresAt > new Date();
+      const justDone =
+        existing.status === 'DONE' &&
+        Date.now() - (existing.decidedAt?.getTime() ?? 0) < 10 * 60_000;
+      if (live || justDone) {
+        this.logger.log(`Idempotent proposal match found: ${existing.id}`);
+        // Asked again in another conversation: the card is shown there now, so a typed "yes" there must reach it
+        // (same user, same request; only the conversation it is attached to moves).
+        if (live && input.threadId && existing.threadId !== input.threadId) {
+          existing.threadId = input.threadId;
+          existing.traceId = input.traceId ?? existing.traceId;
+          return this.actionsRepo.save(existing);
+        }
+        return existing;
+      }
+      idempotencyKey = `${idempotencyKey}:${Date.now()}`;
     }
 
     const action = this.actionsRepo.create({
@@ -83,11 +101,11 @@ export class ActionProposalService {
       traceId: input.traceId,
       proposedByUserId: user.userId,
       proposedByRole: user.role,
-      patientId: input.patientId || input.payload?.patientId,
-      visitId: input.visitId || input.payload?.visitId,
+      patientId: input.patientId || payload?.patientId,
+      visitId: input.visitId || payload?.visitId,
       type: typeUpper,
       tier,
-      payload: input.payload,
+      payload,
       summary,
       status: 'PENDING',
       expiresAt,

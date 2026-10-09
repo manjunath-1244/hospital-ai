@@ -1,8 +1,8 @@
 # Hospital AI Platform (PoC)
 
-> **Documentation:** [PROJECT_GUIDE.md](PROJECT_GUIDE.md) (full reference of every concept and file) · [AI_AGENT_CONCEPTS.md](AI_AGENT_CONCEPTS.md) (the AI agent explained from first principles, with real examples, labs and how to present it) · [AGENT_UPGRADE_PLAN.md](AGENT_UPGRADE_PLAN.md) (approval/action design) · [POC_DECISIONS.md](POC_DECISIONS.md) (open questions with recommended answers) · [AGENT_PENDING_WORK.md](AGENT_PENDING_WORK.md) (**the checked backlog to turn the app into a workflow-driven agent: gap analysis, work packages W0–W13, milestones**).
+> **Documentation:** [PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md) (full reference of every concept and file) · [AI_AGENT_CONCEPTS.md](docs/AI_AGENT_CONCEPTS.md) (the AI agent explained from first principles, with real examples, labs and how to present it) · [POC_DECISIONS.md](docs/POC_DECISIONS.md) (open questions with recommended answers) · [AGENT_PENDING_WORK.md](docs/AGENT_PENDING_WORK.md) (**the checked backlog to turn the app into a workflow-driven agent: gap analysis, work packages W0–W13, milestones**).
 >
-> **Full documentation: [PROJECT_GUIDE.md](PROJECT_GUIDE.md)** — what each concept is, why it exists, how it works, where it lives in the code, what can go wrong, how to explain it, what is done / partial / not built, and the roadmap.
+> **Full documentation: [PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md)** — what each concept is, why it exists, how it works, where it lives in the code, what can go wrong, how to explain it, what is done / partial / not built, and the roadmap.
 
 NestJS 11 API + Mastra AI agent + Next.js UI. PostgreSQL/pgvector is the single source of truth; HAPI FHIR and Orthanc PACS
 are mirrors; a local or cloud LLM answers questions about the data. This is a proof of concept: not a certified medical
@@ -73,7 +73,8 @@ Admins upload policies (`.md`, `.txt`, `.pdf`) in the app; they are searchable b
 ```bash
 npm test                      # ~120 unit tests (NEWS2, drug safety, lab rules, routing, guardrails, resilience, ...)
 npm run test:eval             # 100+ checks on the real app: tools, RBAC, memory, retries/timeouts/breaker, tracing, routing
-npx ts-node tests/evaluation/retrieval-check.ts   # new data searchable at once; policy/patient retrieval; delete cleanup
+npx ts-node tests/evaluation/retrieval/retrieval-check.ts   # 29 checks: new data searchable at once; policy/patient retrieval (hybrid, same path as production); delete cleanup
+node --env-file=.env tests/workflow/rag-answers-live.mjs   # REAL model, slow: 12 policy questions must contain the written fact and cite the right document
 npm run test:workflow          # roles x endpoints matrix (415 combinations) + (visit, specialists and the full referral/approval/follow-up loop) # patient journey end to end against the RUNNING API (creates and deletes its own patients)
 npm run test:ui                # Playwright browser tests (tests/ui): signs in as all 9 logins on the RUNNING UI (3001) + API (3000); checks portals, role-only controls, no error banner, no 401/403/5xx (uses /usr/bin/google-chrome; UI_CHROME_PATH / UI_URL override)
 npm run test:eval:live        # also asks the REAL configured model 10 questions (tool/data choice + grounded answers)
@@ -90,3 +91,7 @@ npm run test:eval:baseline    # accept current results as the regression baselin
 - Not built: billing/insurance submission, pharmacy dispensing, bed management, lab ordering, SMS follow-up, an
   appointment-booking screen (API and agent can book).
 - `npm run seed:fhir` writes 50 random patients to FHIR only (not PostgreSQL); avoid it or fix it (see PROJECT_GUIDE.md).
+
+
+## Reliability hardening and design system (2026-10-09)
+See `docs/AGENT_AUDIT_2026-10-09.md` (findings and resolution status), `docs/PROJECT_GUIDE.md` sections 4.5c (actions), 4.14 (evaluation: `npm run test:agent-eval`, 1,707 behaviour scenarios, about 175 per role; see `tests/evaluation/README.md`) and 5.3/5.4 (design system, approval cards).

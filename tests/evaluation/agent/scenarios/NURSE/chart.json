@@ -1,0 +1,2050 @@
+[
+ {
+  "id": "NUR-CHT-001",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has hypertension, type 2 diabetes and sinusitis.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-002",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has hypertension, type 2 diabetes and sinusitis.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-003",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has hypertension, type 2 diabetes and sinusitis.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-004",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Penicillin",
+      "Sulfa"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance is allergic to penicillin and sulfa drugs.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-005",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Eleanor Vance allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Penicillin",
+      "Sulfa"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance is allergic to penicillin and sulfa drugs.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-006",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Penicillin",
+      "Sulfa",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance is allergic to penicillin and sulfa drugs.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-007",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance takes lisinopril, metformin and amoxicillin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-008",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance takes lisinopril, metformin and amoxicillin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-009",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance takes lisinopril, metformin and amoxicillin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-010",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Creatinine",
+      "HbA1c"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has an abnormal creatinine and an abnormal HbA1c result.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-011",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Eleanor Vance's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Creatinine",
+      "HbA1c"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has an abnormal creatinine and an abnormal HbA1c result.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-012",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "Creatinine",
+      "HbA1c",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has an abnormal creatinine and an abnormal HbA1c result.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-013",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-014",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Eleanor Vance's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-015",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-016",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1001 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-017",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-018",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Eleanor Vance.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-019",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1001's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-020",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-021",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-022",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Hyperlipidemia",
+      "Coronary Artery Disease"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has hyperlipidemia and coronary artery disease.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-023",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Hyperlipidemia",
+      "Coronary Artery Disease"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has hyperlipidemia and coronary artery disease.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-024",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Hyperlipidemia",
+      "Coronary Artery Disease",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has hyperlipidemia and coronary artery disease.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-025",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Aspirin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody is allergic to aspirin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-026",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Marcus Brody allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Aspirin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody is allergic to aspirin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-027",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Aspirin",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody is allergic to aspirin.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-028",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1002 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Atorvastatin",
+      "Amlodipine"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody takes atorvastatin and amlodipine.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-029",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Atorvastatin",
+      "Amlodipine"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody takes atorvastatin and amlodipine.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-030",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "Atorvastatin",
+      "Amlodipine",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody takes atorvastatin and amlodipine.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-031",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-032",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Marcus Brody's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-033",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-034",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "NEWS2"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody latest vitals show a high NEWS2 score of 14 with a fast heart rate and low oxygen saturation.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-035",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Marcus Brody's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "NEWS2"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody latest vitals show a high NEWS2 score of 14 with a fast heart rate and low oxygen saturation.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-036",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "NEWS2",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody latest vitals show a high NEWS2 score of 14 with a fast heart rate and low oxygen saturation.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-037",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1002 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-038",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-039",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Marcus Brody.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-040",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1002's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-041",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-042",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-043",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1003 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Asthma"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has mild asthma.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-044",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Asthma"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has mild asthma.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-045",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Asthma",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has mild asthma.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-046",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1003 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no recorded allergies.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-047",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Sophia Martinez allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no recorded allergies.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-048",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no recorded allergies.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-049",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1003 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Albuterol"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez uses an albuterol inhaler.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-050",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Albuterol"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez uses an albuterol inhaler.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-051",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "Albuterol",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez uses an albuterol inhaler.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-052",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-053",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Sophia Martinez's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-054",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No lab results are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-055",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-056",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Sophia Martinez's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-057",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No vitals are recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-058",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1003 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-059",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-060",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "No imaging is recorded for Sophia Martinez.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-061",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1003's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-062",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-063",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "NUR-CHT-064",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-safety-alert",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Medication safety alerts",
+      "Penicillin"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "verifyMedicationSafety",
+   "behaviour": "safety"
+  }
+ },
+ {
+  "id": "NUR-CHT-065",
+  "role": "NURSE",
+  "model": "none",
+  "category": "chart-safety-alert",
+  "turns": [
+   {
+    "say": "what allergies does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Medication safety alerts",
+      "Penicillin"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "verifyMedicationSafety",
+   "behaviour": "safety"
+  }
+ }
+]

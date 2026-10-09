@@ -16,6 +16,9 @@ import { OllamaWarmupService } from './llm/warmup.service';
 import { LlmRunner } from './reliability/llm-runner';
 import { ConversationMemoryService } from './memory/conversation-memory.service';
 import { SummarizerService } from './memory/summarizer.service';
+import { QueryRouterService } from './query/query-router.service';
+import { L2PlannerService } from './query/l2-planner.service';
+import { VocabularyService } from './query/vocabulary.service';
 import { AgentContextBuilder } from './context/agent-context.builder';
 import { AgentRunsService } from './observability/agent-runs.service';
 
@@ -42,6 +45,9 @@ import { AgentRunsService } from './observability/agent-runs.service';
     SummarizerService,
     AgentRunsService,
     AgentContextBuilder,
+    QueryRouterService,
+    L2PlannerService,
+    VocabularyService,
   ],
   exports: [
     AiService,

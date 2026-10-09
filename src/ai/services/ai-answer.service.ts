@@ -1,3 +1,4 @@
+import { stripFence } from '../data-fence';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Agent } from '@mastra/core/agent';
 import { createGroundedAgent, createHospitalAgent } from '../agent';
@@ -7,6 +8,7 @@ import {
   checkGuardrails,
   looksLikeRawToolCall,
   reconcileActionClaims,
+  appendClosestPassage,
 } from '../guardrails';
 import { LlmRunner } from '../reliability/llm-runner';
 import { PhiAnonymizerService } from '../security/phi-anonymizer.service';
@@ -77,7 +79,8 @@ export class AiAnswerService {
       rec.step('llm', 'agent.generate', () =>
         this.runner.run(
           'agent.generate',
-          () => agent.generate(msgs as any, { maxSteps: 8 } as any),
+          () =>
+            agent.generate(msgs as any, { maxSteps: 8, maxRetries: 0 } as any),
           () => rec.retries++,
         ),
       );
@@ -98,7 +101,7 @@ export class AiAnswerService {
     const rawStillBroken = looksLikeRawToolCall(String(result.text ?? ''));
     let response = rawStillBroken
       ? 'I could not complete that request reliably with the current AI model. Please rephrase or try again.'
-      : session.restore(result.text);
+      : stripFence(session.restore(result.text));
 
     const completed =
       intent.list || intent.waiting
@@ -106,8 +109,10 @@ export class AiAnswerService {
         : { text: response, omitted: 0 };
 
     response = completed.text;
-    const reconciled = reconcileActionClaims(response, rec.trace);
-    response = reconciled.text;
+    const reconciled = reconcileActionClaims(response, rec.trace, {
+      actionRequested: intent.plan.intent === 'ACTION' || intent.write,
+    });
+    response = appendClosestPassage(reconciled.text, rec.trace, dtoMessage);
     const guard = checkGuardrails(response, rec.trace, knownText);
     guard.notes.push(...reconciled.notes);
     if (rawStillBroken) {
@@ -128,50 +133,6 @@ export class AiAnswerService {
       guardrailStatus: guard.status,
       guardrailNotes: guard.notes,
     };
-  }
-
-  /** Stream chunks from model generation for SSE / socket streaming endpoint. */
-  async *streamAgent(
-    user: AuthUser,
-    model: any,
-    grounded: boolean,
-    agentContext: any,
-    session: Awaited<ReturnType<PhiAnonymizerService['createSession']>>,
-    rec: RunRecorder,
-    activePatientId: string | null,
-    messages: any[],
-  ): AsyncGenerator<string, void, unknown> {
-    const agent = grounded
-      ? createGroundedAgent({ model, role: user.role })
-      : createHospitalAgent({
-          model,
-          role: user.role,
-          tools: this.tools.build({
-            user,
-            phi: session,
-            trace: rec.trace,
-            context: agentContext,
-            traceId: rec.traceId,
-          }),
-          focusPatientId: activePatientId,
-          context: agentContext,
-        });
-
-    const streamResult: any = await rec.step('llm', 'agent.stream', () =>
-      this.runner.run(
-        'agent.stream',
-        () => agent.stream(messages as any, { maxSteps: 8 } as any),
-        () => rec.retries++,
-      ),
-    );
-
-    if (streamResult.textStream) {
-      for await (const chunk of streamResult.textStream) {
-        yield session.restore(chunk);
-      }
-    } else {
-      yield session.restore(await streamResult.text);
-    }
   }
 
   async generateDocument(

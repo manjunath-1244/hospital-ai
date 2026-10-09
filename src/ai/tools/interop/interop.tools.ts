@@ -55,11 +55,20 @@ export function buildInteropTools(
         minScore: looseNumber({ min: 0, max: 1 })
           .optional()
           .describe('Optional relevance cutoff 0-1'),
+        docType: z
+          .enum(['policy', 'sop', 'guideline'])
+          .optional()
+          .describe(
+            'Only this kind of document (policy/sop: who does what; guideline: clinical criteria). Usually omit.',
+          ),
       }),
       roles: [...ALL_STAFF, 'SPECIALIST'],
-      async run({ query, topK, minScore }) {
-        const found = await rag.searchPolicies(query, topK);
-        const matches = found.filter((m) => m.score >= (minScore ?? 0));
+      async run({ query, topK, minScore, docType }) {
+        // minScore is a relevance cut-off on cosine similarity (not on the fused rank score)
+        const matches = await rag.searchPolicies(query, topK, {
+          minSimilarity: minScore,
+          docTypes: docType ? [docType] : undefined,
+        });
         return {
           success: true,
           count: matches.length,
@@ -68,6 +77,7 @@ export function buildInteropTools(
             heading: m.heading,
             text: m.content,
             score: m.score,
+            similarity: m.similarity,
           })),
         };
       },

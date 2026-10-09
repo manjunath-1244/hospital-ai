@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Radio, Upload } from 'lucide-react';
 import { apiFetch, apiFetchBlobUrl, errorMessage } from '../../lib/api';
 import type { Patient, ImagingStudy, ImagingUploadResponse } from '../../lib/types';
-import { Empty, ErrorBox, Loading, SuccessBox, fmtTime, inputCls, labelCls } from '../ui/common';
+import { ErrorBox, Loading, SuccessBox, fmtTime } from '../ui/common';
+import { Alert, Button, Card, EmptyState, Field, PageHeader, SectionTitle, Textarea, cx, fieldInputCls } from '../ui/kit';
 import { isActiveStatus } from '../../lib/visits';
 import { LabResultForm } from '../ui/LabResultForm';
 import { PatientPicker } from '../ui/PatientPicker';
@@ -106,75 +107,83 @@ export const RadiologyPortal: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl glass-panel p-7 border-l-4 border-l-cyan-500">
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Radio className="h-8 w-8 text-cyan-400" />
-          Radiology: DICOM Studies & Lab Results
-        </h2>
-        <p className="text-base text-slate-300 mt-1.5">Upload .dcm files, review studies per patient, and record lab results.</p>
-      </div>
+      <PageHeader
+        icon={<Radio className="h-6 w-6" />}
+        title="Radiology: DICOM Studies & Lab Results"
+        subtitle="Upload .dcm files, review studies per patient, and record lab results."
+      />
 
-      <div className="glass-panel p-7 rounded-2xl border border-slate-700 max-w-2xl">
+      <Card className="max-w-2xl">
         <PatientPicker value={patientId} onChange={changePatient} />
-        {patientClosed && <p className="mt-2 text-sm font-semibold text-rose-400">Patient has no open visit: uploads and lab entry are disabled.</p>}
-      </div>
+        {patientClosed && (
+          <div className="mt-3">
+            <Alert tone="warning">Patient has no open visit: uploads and lab entry are disabled.</Alert>
+          </div>
+        )}
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <form onSubmit={upload} className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-            <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-              <Upload className="h-5 w-5 text-cyan-400" /> Upload DICOM Study
-            </h3>
-            <div>
-              <label className={labelCls}>DICOM file (.dcm) *</label>
-              <input ref={fileRef} type="file" accept=".dcm,application/dicom" required className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Impression</label>
-              <textarea rows={2} value={impression} onChange={(e) => setImpression(e.target.value)} className={inputCls} />
-            </div>
-            <ErrorBox message={uploadError} />
-            <SuccessBox message={uploadMsg} />
-            <button type="submit" disabled={uploading || !patientId || patientClosed} className="w-full rounded-xl bg-cyan-600 py-3 text-base font-bold text-white hover:bg-cyan-500 disabled:opacity-50">
-              {uploading ? 'Uploading...' : 'Upload study'}
-            </button>
-          </form>
+          <Card as="div">
+            <form onSubmit={upload} className="space-y-4">
+              <SectionTitle icon={<Upload className="h-5 w-5" />} className="!mb-0">Upload DICOM Study</SectionTitle>
+              <Field label="DICOM file (.dcm) *">
+                {(id) => <input id={id} ref={fileRef} type="file" accept=".dcm,application/dicom" required className={fieldInputCls} />}
+              </Field>
+              <Field label="Impression">
+                {(id) => <Textarea id={id} rows={2} value={impression} onChange={(e) => setImpression(e.target.value)} />}
+              </Field>
+              <ErrorBox message={uploadError} />
+              <SuccessBox message={uploadMsg} />
+              <Button type="submit" loading={uploading} disabled={uploading || !patientId || patientClosed} className="w-full" data-testid="dicom-upload-submit">
+                {uploading ? 'Uploading...' : 'Upload study'}
+              </Button>
+            </form>
+          </Card>
 
-          <LabResultForm patientId={patientId} open={!!patientId && !patientClosed} accent="bg-cyan-600 hover:bg-cyan-500" />
+          <LabResultForm patientId={patientId} open={!!patientId && !patientClosed} />
         </div>
 
-        <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4">Studies</h3>
-          {!patientId && <Empty text="Select a patient to list their studies." />}
+        <Card className="space-y-4">
+          <SectionTitle className="!mb-0">Studies</SectionTitle>
+          {!patientId && <EmptyState title="Select a patient to list their studies." />}
           {studiesLoading && <Loading text="Loading studies..." />}
           <ErrorBox message={studiesError} />
-          {patientId && !studiesLoading && !studiesError && studies.length === 0 && <Empty text="No imaging studies for this patient." />}
+          {patientId && !studiesLoading && !studiesError && studies.length === 0 && (
+            <EmptyState title="No imaging studies for this patient." hint="Uploaded studies appear here." />
+          )}
           <div className="space-y-2">
             {studies.map((s) => (
               <button
                 key={s.id}
+                type="button"
+                data-testid="imaging-study-item"
+                aria-pressed={selectedStudy?.id === s.id}
                 onClick={() => setSelectedStudy(s)}
-                className={`w-full text-left rounded-xl border p-3 text-sm ${selectedStudy?.id === s.id ? 'bg-cyan-600/20 border-cyan-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}
+                className={cx(
+                  'min-h-11 w-full rounded-lg border p-3 text-left text-sm',
+                  selectedStudy?.id === s.id ? 'border-brand-600 bg-brand-50' : 'border-line bg-surface hover:bg-surface-muted',
+                )}
               >
-                <p className="font-bold text-white">{s.modality} — {s.description}</p>
-                <p className="text-sm text-slate-400">{fmtTime(s.studyDate ?? s.createdAt)} • uploaded by {s.uploadedBy}{s.hasPreview ? '' : ' • no preview'}</p>
+                <p className="font-semibold text-ink">{s.modality} — {s.description}</p>
+                <p className="text-sm text-ink-3">{fmtTime(s.studyDate ?? s.createdAt)} • uploaded by {s.uploadedBy}{s.hasPreview ? '' : ' • no preview'}</p>
               </button>
             ))}
           </div>
 
           {selectedStudy && (
-            <div className="space-y-3 border-t border-slate-800 pt-4">
-              <p className="text-sm font-mono text-slate-500 break-all">UID {selectedStudy.studyInstanceUid}</p>
-              {selectedStudy.rows && selectedStudy.columns && <p className="text-sm text-slate-400">{selectedStudy.columns} x {selectedStudy.rows}</p>}
-              {selectedStudy.impression && <p className="text-sm text-slate-200">Impression: {selectedStudy.impression}</p>}
+            <div className="space-y-3 border-t border-line pt-4">
+              <p className="break-all font-mono text-sm text-ink-3">UID {selectedStudy.studyInstanceUid}</p>
+              {selectedStudy.rows && selectedStudy.columns && <p className="text-sm text-ink-3">{selectedStudy.columns} x {selectedStudy.rows}</p>}
+              {selectedStudy.impression && <p className="text-sm text-ink">Impression: {selectedStudy.impression}</p>}
               {previewLoading && <Loading text="Loading preview..." />}
               <ErrorBox message={previewError} />
-              {!selectedStudy.hasPreview && <Empty text="No preview available for this study." />}
+              {!selectedStudy.hasPreview && <EmptyState title="No preview available for this study." />}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {previewUrl && <img src={previewUrl} alt={`${selectedStudy.modality} preview`} className="max-h-96 w-full object-contain rounded-xl bg-black border border-slate-700" />}
+              {previewUrl && <img src={previewUrl} alt={`${selectedStudy.modality} preview`} className="max-h-96 w-full rounded-lg border border-line bg-ink object-contain" />}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

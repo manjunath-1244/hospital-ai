@@ -17,7 +17,12 @@ import {
   type ReferralUrgency,
 } from '../../lib/referrals';
 import type { Specialist } from '../../lib/specialists';
-import { Empty, ErrorBox, Loading, SuccessBox, fmtTime, inputCls, labelCls } from '../ui/common';
+import { ErrorBox, Loading, SuccessBox, fmtTime } from '../ui/common';
+import { Alert, Button, Card, EmptyState, Field, SectionTitle, Select, Textarea, cx } from '../ui/kit';
+
+const Pill: React.FC<{ cls: string; children: React.ReactNode }> = ({ cls, children }) => (
+  <span className={cx('inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold', cls)}>{children}</span>
+);
 
 interface Props {
   patientId: string;
@@ -139,103 +144,107 @@ export const ReferralsPanel: React.FC<Props> = ({ patientId, visitId, visitOpen 
     }
   };
 
+  const formDisabled = !visitId || !visitOpen;
+
   return (
-    <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-5">
-      <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-        <Send className="h-5 w-5 text-indigo-400" /> Referrals
-      </h3>
-      {!referrals && !error && <Loading text="Loading referrals..." />}
-      <ErrorBox message={error} />
-      {referrals && referrals.length === 0 && <Empty text="No referrals for this patient." />}
-      <div className="space-y-2">
-        {referrals?.map((r) => (
-          <div key={r.id} className="rounded-xl bg-slate-950 border border-slate-700 p-4 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-lg font-bold text-white">{r.specialty}</span>
-              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${URGENCY_BADGE[r.urgency]}`}>{r.urgency}</span>
-              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${REFERRAL_STATUS_BADGE[r.status]}`}>{REFERRAL_STATUS_LABEL[r.status]}</span>
-              <span className="ml-auto font-mono text-sm text-slate-400">{r.id}</span>
-            </div>
-            <p className="text-base text-slate-200">{r.reason}</p>
-            <p className="text-sm text-slate-400">
-              Specialist: {r.assignedSpecialistName ?? 'unassigned (any ' + r.specialty + ' specialist)'} • requested by {r.requestedByName} • {fmtTime(r.createdAt)} ({ageLabel(r.createdAt)} ago)
-            </p>
-            {r.cancellationReason && <p className="text-sm text-slate-400">Cancelled: {r.cancellationReason}</p>}
-          </div>
-        ))}
+    <Card as="section" className="space-y-6" data-testid="referrals-panel">
+      <div>
+        <SectionTitle icon={<Send className="h-5 w-5" />} hint="Specialist referrals for this patient.">Referrals</SectionTitle>
+        {!referrals && !error && <Loading text="Loading referrals..." />}
+        <ErrorBox message={error} />
+        {referrals && referrals.length === 0 && <EmptyState title="No referrals for this patient." hint="Use the review or the form below to refer to a specialist." />}
+        <ul className="space-y-2">
+          {referrals?.map((r) => (
+            <li key={r.id} data-testid="referral-row" className="space-y-1 rounded-lg border border-line bg-surface-muted p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-base font-semibold text-ink">{r.specialty}</span>
+                <Pill cls={URGENCY_BADGE[r.urgency]}>{r.urgency}</Pill>
+                <Pill cls={REFERRAL_STATUS_BADGE[r.status]}>{REFERRAL_STATUS_LABEL[r.status]}</Pill>
+                <span className="ml-auto text-xs text-ink-3">{r.id}</span>
+              </div>
+              <p className="text-sm text-ink">{r.reason}</p>
+              <p className="text-sm text-ink-3">
+                Specialist: {r.assignedSpecialistName ?? 'unassigned (any ' + r.specialty + ' specialist)'} • requested by {r.requestedByName} • {fmtTime(r.createdAt)} ({ageLabel(r.createdAt)} ago)
+              </p>
+              {r.cancellationReason && <p className="text-sm text-ink-3">Cancelled: {r.cancellationReason}</p>}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <div className="rounded-xl bg-slate-950 border border-slate-700 p-4 space-y-3">
+      <div className="space-y-3 rounded-lg border border-line bg-surface-muted p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-base font-bold text-slate-200">AI review for specialist referral</p>
-          <button onClick={review} disabled={recBusy} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-600/20 px-4 text-base font-bold text-indigo-100 hover:bg-indigo-600/30 disabled:opacity-50">
-            <Sparkles className="h-4 w-4" /> {recBusy ? 'Reviewing...' : 'Review for specialist'}
-          </button>
+          <p className="text-base font-semibold text-ink">AI review for specialist referral</p>
+          <Button variant="secondary" onClick={review} loading={recBusy} icon={<Sparkles className="h-4 w-4" />} data-testid="referral-review-button">
+            {recBusy ? 'Reviewing...' : 'Review for specialist'}
+          </Button>
         </div>
         <ErrorBox message={recError} />
         {rec && (
-          <div className="space-y-2 text-base text-slate-200">
-            {rec.recommendation === 'NONE' && <p className="font-bold text-emerald-300">No specialist referral recommended.</p>}
-            {rec.recommendation === 'NEEDS_DOCTOR_REVIEW' && <p className="font-bold text-amber-300">Needs doctor review: {rec.verification.reason ?? 'evidence could not be verified.'}</p>}
+          <div className="space-y-2 text-sm text-ink">
+            {rec.recommendation === 'NONE' && <Alert tone="success">No specialist referral recommended.</Alert>}
+            {rec.recommendation === 'NEEDS_DOCTOR_REVIEW' && <Alert tone="warning">Needs doctor review: {rec.verification.reason ?? 'evidence could not be verified.'}</Alert>}
             {rec.recommendation === 'SPECIALIST' && (
-              <p className="font-bold text-indigo-200">
+              <Alert tone={rec.verification.verified ? 'info' : 'warning'}>
                 Recommend {rec.specialty} ({rec.urgency}) - confidence {Math.round(rec.confidence * 100)}%{rec.verification.verified ? ', evidence verified' : ', evidence NOT verified'}
-              </p>
+              </Alert>
             )}
-            {rec.rationale.map((x, i) => <p key={i} className="text-sm text-slate-300">- {x}</p>)}
+            {rec.rationale.map((x, i) => <p key={i} className="text-ink-2">- {x}</p>)}
             {rec.evidence.length > 0 && (
               <div>
-                <p className="text-sm font-bold text-slate-400 uppercase">Evidence</p>
-                {rec.evidence.map((x, i) => <p key={i} className="text-sm text-slate-300 font-mono">{evidenceText(x)}</p>)}
+                <p className="text-xs font-semibold uppercase text-ink-3">Evidence</p>
+                {rec.evidence.map((x, i) => <p key={i} className="text-ink-2">{evidenceText(x)}</p>)}
               </div>
             )}
-            {rec.missingInfo.length > 0 && <p className="text-sm text-amber-300">Missing information: {rec.missingInfo.join('; ')}</p>}
+            {rec.missingInfo.length > 0 && <p className="text-warning-700">Missing information: {rec.missingInfo.join('; ')}</p>}
             {rec.recommendation === 'SPECIALIST' && (
-              <button onClick={useRecommendation} className="min-h-11 rounded-xl bg-indigo-600 px-4 text-base font-bold text-white hover:bg-indigo-500">Fill the referral form from this</button>
+              <Button onClick={useRecommendation}>Fill the referral form from this</Button>
             )}
           </div>
         )}
       </div>
 
-      <form onSubmit={submit} className="space-y-3">
-        <p className="text-base font-bold text-slate-200">Refer to specialist</p>
-        {!visitId && <p className="text-base font-semibold text-rose-400">This patient has no visit; a referral needs an open visit.</p>}
-        {visitId && !visitOpen && <p className="text-base font-semibold text-rose-400">The visit is closed; referrals are disabled.</p>}
-        <fieldset disabled={!visitId || !visitOpen} className={`space-y-3 min-w-0 ${!visitId || !visitOpen ? 'opacity-50' : ''}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={labelCls}>Specialty *</label>
-              <select required value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value, specialistId: '' })} className={inputCls}>
-                <option value="">Select specialty</option>
-                {specialties.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Specialist (optional)</label>
-              <select value={form.specialistId} onChange={(e) => setForm({ ...form, specialistId: e.target.value })} className={inputCls} disabled={!form.specialty}>
-                <option value="">Any {form.specialty || 'specialist'}</option>
-                {specialists.map((s) => <option key={s.id} value={s.id}>{s.name}{s.isAvailable ? '' : ' (unavailable)'}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Urgency</label>
-              <select value={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.value as ReferralUrgency })} className={inputCls}>
-                {REFERRAL_URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
+      <form onSubmit={submit} className="space-y-4" data-testid="referral-form">
+        <h3 className="text-base font-semibold text-ink">Refer to specialist</h3>
+        {!visitId && <Alert tone="danger">This patient has no visit; a referral needs an open visit.</Alert>}
+        {visitId && !visitOpen && <Alert tone="danger">The visit is closed; referrals are disabled.</Alert>}
+        <fieldset disabled={formDisabled} className={cx('min-w-0 space-y-4', formDisabled && 'opacity-60')}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Field label="Specialty *">
+              {(id) => (
+                <Select id={id} required value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value, specialistId: '' })}>
+                  <option value="">Select specialty</option>
+                  {specialties.map((s) => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              )}
+            </Field>
+            <Field label="Specialist (optional)">
+              {(id) => (
+                <Select id={id} value={form.specialistId} onChange={(e) => setForm({ ...form, specialistId: e.target.value })} disabled={!form.specialty}>
+                  <option value="">Any {form.specialty || 'specialist'}</option>
+                  {specialists.map((s) => <option key={s.id} value={s.id}>{s.name}{s.isAvailable ? '' : ' (unavailable)'}</option>)}
+                </Select>
+              )}
+            </Field>
+            <Field label="Urgency">
+              {(id) => (
+                <Select id={id} value={form.urgency} onChange={(e) => setForm({ ...form, urgency: e.target.value as ReferralUrgency })}>
+                  {REFERRAL_URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}
+                </Select>
+              )}
+            </Field>
           </div>
-          <div>
-            <label className={labelCls}>Reason *</label>
-            <textarea required rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className={inputCls} />
-          </div>
-          {ai && <p className="text-sm text-indigo-300">AI rationale and evidence will be attached to this referral.</p>}
+          <Field label="Reason *">
+            {(id) => <Textarea id={id} required rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />}
+          </Field>
+          {ai && <p className="text-sm text-info-700">AI rationale and evidence will be attached to this referral.</p>}
           <ErrorBox message={formError} />
           <SuccessBox message={formMsg} />
-          <button type="submit" disabled={busy || !form.specialty || !form.reason.trim()} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3 text-base font-bold text-white disabled:opacity-50">
+          <Button type="submit" className="w-full" loading={busy} disabled={!form.specialty || !form.reason.trim()} data-testid="referral-submit">
             {busy ? 'Sending...' : 'Refer to specialist'}
-          </button>
+          </Button>
         </fieldset>
       </form>
-    </div>
+    </Card>
   );
 };

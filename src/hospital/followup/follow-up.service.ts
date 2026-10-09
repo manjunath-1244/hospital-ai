@@ -36,6 +36,7 @@ export class FollowUpService {
   async generateProposal(
     visitId: string,
     createdBy: AuthUser,
+    origin: { threadId?: string; traceId?: string } = {},
   ): Promise<{ plan: FollowUpPlanEntity; proposalAction: any }> {
     const visit = await this.visitRepo.findOne({ where: { id: visitId } });
     if (!visit) {
@@ -135,6 +136,8 @@ export class FollowUpService {
         type: 'FOLLOW_UP',
         patientId: visit.patientId,
         visitId: visit.id,
+        threadId: origin.threadId,
+        traceId: origin.traceId,
         payload: {
           planId: savedPlan.id,
           visitId: visit.id,

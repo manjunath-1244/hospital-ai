@@ -20,7 +20,7 @@ export default function Home() {
   const { user, ready } = useAuth();
   const { role } = useRole();
 
-  if (!ready) return <div className="min-h-screen bg-[#0a0f1c]" />;
+  if (!ready) return <div className="min-h-screen bg-canvas" />;
   if (!user) return <LoginScreen />;
 
   const renderActivePortal = () => {
@@ -29,7 +29,7 @@ export default function Home() {
         return <ReceptionistPortal />;
       case 'ED_NURSE':
         return (
-          <div className="space-y-10">
+          <div className="space-y-8">
             <EdTriagePortal />
             <NurseWardPortal />
           </div>
@@ -50,10 +50,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0f1c] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-canvas text-ink">
       <HeaderNav />
       <a href="#main" className="skip-link">Skip to content</a>
-      <main id="main" className="flex-1 mx-auto max-w-[96rem] w-full px-6 py-8 lg:px-8 space-y-8">
+      <main id="main" className="flex-1 mx-auto max-w-[90rem] w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
         {renderActivePortal()}
       </main>
       <MastraChatDrawer />

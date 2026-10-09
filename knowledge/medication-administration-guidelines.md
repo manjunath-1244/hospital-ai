@@ -1,3 +1,6 @@
+---
+docType: guideline
+---
 # 💊 Medication Administration & Patient Safety Protocol
 
 ## 1. High-Alert Medication Double-Check Protocol

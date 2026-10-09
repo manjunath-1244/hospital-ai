@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, Bot, CheckCircle2, XCircle, BookOpen, AlertTriangle, Plus, History, Trash2 } from 'lucide-react';
+import { Sparkles, X, Send, Bot, CheckCircle2, XCircle, BookOpen, Plus, History, Trash2, Wrench } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch, errorMessage, newId } from '../../lib/api';
 import { ApprovalCard } from './ApprovalCard';
+import { Alert, Badge, Button, cx } from '../ui/kit';
 import type { AgentAction } from '../../lib/actions';
 import type { ChatResponse, ChatThreadDetail, ChatThreadSummary, ChatToolCall } from '../../lib/types';
 
@@ -48,7 +49,12 @@ export const MastraChatDrawer: React.FC = () => {
     return () => clearInterval(t);
   }, [loading]);
 
+  const inputRef = useRef<HTMLInputElement>(null);
   const cancelRequest = () => abortRef.current?.abort();
+
+  useEffect(() => {
+    if (isOpen) inputRef.current?.focus();
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,118 +173,172 @@ export const MastraChatDrawer: React.FC = () => {
     }
   };
 
+  /** Minimal, safe formatting of the assistant's text: paragraphs, bullet lines and **bold**. No HTML is ever injected. */
+  const renderText = (text: string) => {
+    const bold = (line: string) =>
+      line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : <React.Fragment key={i}>{part}</React.Fragment>));
+    const lines = text.split('\n');
+    const out: React.ReactNode[] = [];
+    let list: string[] = [];
+    const flush = () => {
+      if (list.length) {
+        out.push(
+          <ul key={`ul${out.length}`} className="my-1 list-disc space-y-0.5 pl-5">
+            {list.map((l, i) => (
+              <li key={i}>{bold(l)}</li>
+            ))}
+          </ul>,
+        );
+        list = [];
+      }
+    };
+    for (const raw of lines) {
+      const m = raw.match(/^\s*(?:[•\-*]|\d+[.)])\s+(.*)$/);
+      if (m) list.push(m[1]);
+      else {
+        flush();
+        if (raw.trim()) out.push(<p key={`p${out.length}`} className="break-words">{bold(raw)}</p>);
+      }
+    }
+    flush();
+    return <div className="space-y-1.5">{out}</div>;
+  };
+
+  const SUGGESTIONS = ['How many patients are waiting?', 'Who are the specialists?', 'What is the discharge policy?'];
+
   return (
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle AI assistant"
+        aria-expanded={isOpen}
         data-testid="chat-toggle"
         title="AI Assistant"
-        className="group fixed bottom-6 right-6 z-50 flex h-16 items-center gap-3 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 pl-5 pr-6 text-white shadow-xl shadow-black/50 border border-indigo-300/30 hover:from-indigo-500 hover:to-indigo-400"
+        className="fixed bottom-6 right-6 z-50 flex h-14 items-center gap-2.5 rounded-full border border-brand-800 bg-brand-700 pl-4 pr-5 text-white shadow-pop hover:bg-brand-800"
       >
-        <Sparkles className="h-6 w-6" aria-hidden="true" />
-        <span className="text-base font-bold">Ask AI</span>
+        <Sparkles className="h-5 w-5" aria-hidden="true" />
+        <span className="text-sm font-semibold">Ask AI</span>
       </button>
 
       {isOpen && (
-        <div data-testid="chat-drawer" className="fixed bottom-28 right-6 z-50 flex h-[80vh] max-h-[760px] w-[520px] max-w-[calc(100vw-2rem)] flex-col rounded-3xl glass-panel border border-slate-600 shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-5 py-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600/30 border border-indigo-500/40">
-                <Bot className="h-5 w-5 text-indigo-400" />
+        <div
+          role="dialog"
+          aria-label="AI assistant"
+          data-testid="chat-drawer"
+          onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+          className="fixed bottom-24 right-6 z-50 flex h-[80vh] max-h-[760px] w-[520px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card border border-line bg-surface shadow-pop"
+        >
+          <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                <Bot className="h-5 w-5" aria-hidden />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white leading-tight">AI Assistant</h3>
-                <p className="text-sm text-slate-300">Signed in as {user?.displayName}</p>
+                <h2 className="text-base font-semibold leading-tight text-ink">AI Assistant</h2>
+                <p className="text-xs text-ink-3">Signed in as {user?.displayName}. Changes need your approval.</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={newChat} title="New chat" className="whitespace-nowrap shrink-0 flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 text-sm font-bold text-slate-200 hover:bg-slate-800 hover:text-white">
-                <Plus className="h-4 w-4" /> New chat
+              <Button variant="secondary" size="sm" onClick={newChat} title="New chat" icon={<Plus className="h-4 w-4" aria-hidden />}>
+                New chat
+              </Button>
+              <button onClick={toggleThreads} title="Previous chats" aria-label="Previous chats" aria-expanded={showThreads} className={cx('flex h-9 w-9 items-center justify-center rounded-lg hover:bg-surface-muted', showThreads ? 'text-brand-700' : 'text-ink-3')}>
+                <History className="h-5 w-5" aria-hidden />
               </button>
-              <button onClick={toggleThreads} title="Previous chats" aria-label="Previous chats" className={`flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-800 hover:text-white ${showThreads ? 'text-indigo-400' : 'text-slate-400'}`}>
-                <History className="h-5 w-5" />
-              </button>
-              <button onClick={() => setIsOpen(false)} aria-label="Close AI assistant" className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white">
-                <X className="h-5 w-5" />
+              <button onClick={() => setIsOpen(false)} aria-label="Close AI assistant" className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-muted hover:text-ink">
+                <X className="h-5 w-5" aria-hidden />
               </button>
             </div>
           </div>
 
           {showThreads && (
-            <div className="max-h-64 overflow-y-auto border-b border-slate-700 bg-slate-950/80 p-2 space-y-1">
-              {threadsLoading && <p className="p-2 text-sm text-slate-300">Loading chats...</p>}
-              {threadsError && <p className="p-2 text-sm font-semibold text-rose-300">{threadsError}</p>}
-              {threads && threads.length === 0 && !threadsLoading && <p className="p-2 text-sm text-slate-400">No previous chats.</p>}
+            <div className="max-h-64 space-y-1 overflow-y-auto border-b border-line bg-surface-muted p-2">
+              {threadsLoading && <p className="p-2 text-sm text-ink-3">Loading chats...</p>}
+              {threadsError && <p className="p-2 text-sm font-medium text-danger-700">{threadsError}</p>}
+              {threads && threads.length === 0 && !threadsLoading && <p className="p-2 text-sm text-ink-3">No previous chats.</p>}
               {threads?.map((t) => (
-                <div key={t.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-800/70 ${t.id === threadId ? 'bg-slate-800/60' : ''}`}>
-                  <button onClick={() => openThread(t.id)} className="min-w-0 flex-1 text-left">
-                    <p className="truncate font-semibold text-slate-200">{t.title || 'Untitled chat'}</p>
-                    <p className="text-xs text-slate-400">{new Date(t.updatedAt).toLocaleString()}</p>
+                <div key={t.id} className={cx('flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface', t.id === threadId && 'bg-surface')}>
+                  <button onClick={() => openThread(t.id)} className="btn-inline min-w-0 flex-1 text-left">
+                    <p className="truncate font-medium text-ink">{t.title || 'Untitled chat'}</p>
+                    <p className="text-xs text-ink-3">{new Date(t.updatedAt).toLocaleString()}</p>
                   </button>
-                  <button onClick={() => deleteThread(t.id)} title="Delete chat" aria-label="Delete chat" className="flex h-10 w-10 items-center justify-center rounded text-slate-400 hover:text-rose-300">
-                    <Trash2 className="h-4 w-4" />
+                  <button onClick={() => deleteThread(t.id)} title="Delete chat" aria-label="Delete chat" className="flex h-9 w-9 items-center justify-center rounded text-ink-3 hover:text-danger-700">
+                    <Trash2 className="h-4 w-4" aria-hidden />
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto bg-canvas p-4" role="log" aria-live="polite" aria-label="Conversation">
             {messages.length === 0 && (
-              <p className="text-base text-slate-300 leading-relaxed">Ask a question about a patient, policy, or workflow. Answers are AI-generated and need clinician review.</p>
+              <div className="space-y-3">
+                <p className="text-sm leading-relaxed text-ink-2">Ask about a patient, a policy or a workflow, or ask me to prepare something (a referral, an appointment, a task). I never change records myself: every change appears as a card for you to approve.</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTIONS.map((q) => (
+                    <button key={q} onClick={() => setInput(q)} className="btn-inline rounded-full border border-line-strong bg-surface px-3 py-1.5 text-sm text-ink-2 hover:bg-surface-muted">
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+              <div key={msg.id} className={cx('flex flex-col', msg.sender === 'user' ? 'items-end' : 'items-start')}>
                 <div
-                  className={`max-w-[92%] rounded-2xl px-4 py-3 text-base leading-relaxed ${
+                  data-testid={msg.sender === 'user' ? 'chat-message-user' : 'chat-message-agent'}
+                  className={cx(
+                    'max-w-[92%] rounded-xl px-4 py-3 text-sm leading-relaxed',
                     msg.sender === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-md'
+                      ? 'rounded-br-sm bg-brand-700 text-white'
                       : msg.isError
-                      ? 'bg-rose-950/60 text-rose-200 border border-rose-500/40 rounded-bl-none'
-                      : 'bg-slate-800 text-slate-100 border border-slate-600 rounded-bl-md'
-                  }`}
+                        ? 'rounded-bl-sm border border-danger-200 bg-danger-50 text-danger-700'
+                        : 'rounded-bl-sm border border-line bg-surface text-ink shadow-card',
+                  )}
                 >
-                  <p className={`whitespace-pre-wrap break-words ${msg.sender === 'user' ? 'text-base leading-relaxed' : 'font-mono text-[0.9rem] leading-7'}`}>{msg.text}</p>
+                  {msg.sender === 'user' ? <p className="whitespace-pre-wrap break-words">{msg.text}</p> : renderText(msg.text)}
 
                   {msg.guardrailStatus === 'WARNING' && (
-                    <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
-                      <p className="font-bold flex items-center gap-1">
-                        <AlertTriangle className="h-4 w-4" /> Guardrail warning
-                      </p>
-                      {msg.guardrailNotes?.map((n, i) => (
-                        <p key={i}>- {n}</p>
-                      ))}
+                    <div className="mt-3">
+                      <Alert tone="warning" title="Check this answer">
+                        {msg.guardrailNotes?.map((n, i) => (
+                          <p key={i}>{n}</p>
+                        ))}
+                      </Alert>
                     </div>
                   )}
 
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <div className="mt-3 space-y-1.5 border-t border-slate-600 pt-3">
-                      <p className="text-sm font-bold text-slate-300">Tools called:</p>
-                      {msg.toolCalls.map((t, idx) => (
-                        <span
-                          key={idx}
-                          title={t.args ? JSON.stringify(t.args) : undefined}
-                          className="inline-flex items-center gap-1 rounded-md bg-indigo-950/80 px-2.5 py-1 text-[0.8125rem] font-mono text-indigo-200 border border-indigo-700/60 mr-1.5 mb-1"
-                        >
-                          {t.success ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-rose-400" />}
-                          {t.name}
-                          {typeof t.durationMs === 'number' && <span className="text-slate-400">{t.durationMs} ms</span>}
-                        </span>
-                      ))}
-                    </div>
+                    <details className="mt-3 border-t border-line pt-2">
+                      <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-ink-3">
+                        <Wrench className="h-3.5 w-3.5" aria-hidden /> Tools used ({msg.toolCalls.length}){msg.toolCalls.some((t) => !t.success) ? ' · some failed' : ''}
+                      </summary>
+                      <ul className="mt-2 space-y-1.5">
+                        {msg.toolCalls.map((t, idx) => (
+                          <li key={idx} className="rounded-md border border-line bg-surface-muted px-2.5 py-1.5 text-xs">
+                            <span className="flex flex-wrap items-center gap-1.5 font-mono text-ink">
+                              {t.success ? <CheckCircle2 className="h-3.5 w-3.5 text-success-700" aria-label="succeeded" /> : <XCircle className="h-3.5 w-3.5 text-danger-700" aria-label="failed" />}
+                              {t.name}
+                              {typeof t.durationMs === 'number' && <span className="text-ink-3">{t.durationMs} ms</span>}
+                            </span>
+                            {t.error && <span className="mt-0.5 block text-danger-700">{t.error}</span>}
+                            {t.args != null && <span className="mt-0.5 block break-all font-mono text-ink-3">{JSON.stringify(t.args)}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
 
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="mt-3 space-y-1.5">
-                      <p className="text-sm font-bold text-slate-300 flex items-center gap-1">
-                        <BookOpen className="h-4 w-4 text-amber-400" /> Sources:
-                      </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className="flex items-center gap-1 text-xs font-semibold text-ink-3">
+                        <BookOpen className="h-3.5 w-3.5" aria-hidden /> Sources
+                      </span>
                       {msg.citations.map((c, idx) => (
-                        <span key={idx} className="inline-block rounded-md bg-amber-950/80 px-2.5 py-1 text-[0.8125rem] font-medium text-amber-200 border border-amber-700/60 mr-1.5 mb-1">
+                        <Badge key={idx} tone="brand">
                           {c.file}
                           {c.heading ? ` — ${c.heading}` : ''}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   )}
@@ -290,12 +350,10 @@ export const MastraChatDrawer: React.FC = () => {
                     ))}
                   </div>
                 )}
-                {msg.summarized && (
-                  <span className="mt-1 rounded-full border border-slate-700 bg-slate-900 px-3 py-0.5 text-xs text-slate-300">older turns summarized</span>
-                )}
-                <span className="mt-1 text-xs text-slate-400 font-mono px-1">{msg.timestamp}</span>
+                {msg.summarized && <span className="mt-1 text-xs text-ink-3">older turns summarized</span>}
+                <span className="mt-1 px-1 text-xs text-ink-3">{msg.timestamp}</span>
                 {msg.traceId && (
-                  <button onClick={() => copyTrace(msg.traceId!)} title="Click to copy trace ID" className="btn-inline px-1 text-xs font-mono text-slate-300 hover:text-white underline-offset-2 hover:underline">
+                  <button onClick={() => copyTrace(msg.traceId!)} title="Click to copy trace ID" className="btn-inline px-1 font-mono text-xs text-ink-3 underline-offset-2 hover:text-ink hover:underline">
                     {copied === msg.traceId ? 'copied' : `trace ${msg.traceId}`}
                   </button>
                 )}
@@ -303,38 +361,38 @@ export const MastraChatDrawer: React.FC = () => {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-3 rounded-xl bg-slate-900 p-4 text-base text-indigo-200 border border-indigo-500/30 max-w-[95%]">
-                <Sparkles className="h-5 w-5 shrink-0 animate-spin" />
+              <div role="status" className="flex max-w-[95%] items-center gap-3 rounded-lg border border-info-200 bg-info-50 p-3 text-sm text-info-700">
+                <Sparkles className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                 <div className="min-w-0 flex-1">
                   <p>Thinking… {elapsed}s</p>
-                  {elapsed >= 30 && <p className="text-sm text-amber-300">Still working — local/slow models can take a minute</p>}
+                  {elapsed >= 30 && <p className="text-xs">Still working. A slow model can take a minute; you can cancel.</p>}
                 </div>
-                <button onClick={cancelRequest} className="shrink-0 rounded-lg border border-slate-600 px-3 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white">
+                <Button variant="secondary" size="sm" onClick={cancelRequest}>
                   Cancel
-                </button>
+                </Button>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 border-t border-slate-700 bg-slate-900 flex items-center gap-3">
+          <form
+            className="flex items-center gap-2 border-t border-line bg-surface p-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSend();
+            }}
+          >
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              aria-label="Message to the AI assistant"
               placeholder="Ask the assistant..."
-              className="flex-1 min-h-12 rounded-xl bg-slate-950 px-4 py-2.5 text-base text-white placeholder-slate-500 border border-slate-600 focus:outline-none focus:border-indigo-400"
+              className="min-h-11 flex-1 rounded-lg border border-line-strong bg-surface px-3.5 text-sm text-ink placeholder:text-ink-3 focus:border-brand-500"
             />
-            <button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              aria-label="Send message"
-              className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </div>
+            <Button type="submit" disabled={loading || !input.trim()} aria-label="Send message" icon={<Send className="h-4 w-4" aria-hidden />} className="w-11 px-0" />
+          </form>
         </div>
       )}
     </>

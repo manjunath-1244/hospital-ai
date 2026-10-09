@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -83,6 +84,17 @@ export class HospitalService {
     return findMentionedPatients(message, await this.patients.find(), max);
   }
 
+  /** Every patient as {kind, id, name}, for name resolution. */
+  async allPatientBriefs() {
+    return (await this.patients.find({ select: { id: true, name: true } })).map(
+      (p) => ({
+        kind: 'PATIENT' as const,
+        id: p.id,
+        name: p.name,
+      }),
+    );
+  }
+
   async getAllPatientNames(): Promise<string[]> {
     return (await this.patients.find({ select: { name: true } })).map(
       (r) => r.name,
@@ -119,7 +131,14 @@ export class HospitalService {
     input: NewPatient,
     manager?: EntityManager,
   ): Promise<PatientEntity> {
-    const birth = resolveBirth({ age: input.age, dob: input.dob });
+    let birth: ReturnType<typeof resolveBirth>;
+    try {
+      birth = resolveBirth({ age: input.age, dob: input.dob });
+    } catch (err) {
+      // an impossible date of birth is the caller's mistake (400), not a server error
+      if (err instanceof RangeError) throw new BadRequestException(err.message);
+      throw err;
+    }
     const repo = manager ? manager.getRepository(PatientEntity) : this.patients;
     for (let attempt = 0; attempt < 5; attempt++) {
       const entity = repo.create({

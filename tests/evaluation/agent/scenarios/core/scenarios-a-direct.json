@@ -1,0 +1,1522 @@
+[
+ {
+  "id": "LKP-001",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "What medications is P1001 taking?",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "MEDICATION",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "Eleanor Vance",
+      "Lisinopril",
+      "Metformin"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-002",
+  "category": "lookup-by-name",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "show allergies for Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "ALLERGY",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "Penicillin",
+      "Sulfa"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-003",
+  "category": "lookup-by-id",
+  "role": "NURSE",
+  "turns": [
+   {
+    "say": "latest vitals of P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "VITALS",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1001"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "containsAny": [
+      "no vitals",
+      "none recorded",
+      "not recorded",
+      "no recent",
+      "none"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-004",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what conditions does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "Hypertension"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-005",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "summarize P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "PATIENT",
+     "modelCalls": 0,
+     "contains": [
+      "P1001",
+      "Eleanor Vance"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-006",
+  "category": "lookup-by-id",
+  "role": "ADMIN",
+  "turns": [
+   {
+    "say": "show the labs for P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "LAB",
+     "modelCalls": 0,
+     "contains": [
+      "P1001"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-007",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "What medications is P1002 taking?",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "MEDICATION",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1002",
+      "Marcus Brody"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-008",
+  "category": "lookup-by-name",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "show allergies for Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "ALLERGY",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1002",
+      "Aspirin"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-009",
+  "category": "lookup-by-id",
+  "role": "NURSE",
+  "turns": [
+   {
+    "say": "latest vitals of P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "VITALS",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1002",
+      "NEWS2"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-010",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what conditions does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "P1002",
+      "Hyperlipidemia"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-011",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "summarize P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "PATIENT",
+     "modelCalls": 0,
+     "contains": [
+      "P1002",
+      "Marcus Brody"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-012",
+  "category": "lookup-by-id",
+  "role": "ADMIN",
+  "turns": [
+   {
+    "say": "show the labs for P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "LAB",
+     "modelCalls": 0,
+     "contains": [
+      "P1002"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-013",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "What medications is P1003 taking?",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "MEDICATION",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1003",
+      "Sophia Martinez",
+      "Albuterol"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-014",
+  "category": "lookup-by-name",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "show allergies for Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "ALLERGY",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1003"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-015",
+  "category": "lookup-by-id",
+  "role": "NURSE",
+  "turns": [
+   {
+    "say": "latest vitals of P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "VITALS",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1003"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "containsAny": [
+      "no vitals",
+      "none recorded",
+      "not recorded",
+      "no recent",
+      "none"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-016",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what conditions does P1003 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "P1003",
+      "Asthma"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-017",
+  "category": "lookup-by-id",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "summarize P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "PATIENT",
+     "modelCalls": 0,
+     "contains": [
+      "P1003",
+      "Sophia Martinez"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-018",
+  "category": "lookup-by-id",
+  "role": "ADMIN",
+  "turns": [
+   {
+    "say": "show the labs for P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "entity": "LAB",
+     "modelCalls": 0,
+     "contains": [
+      "P1003"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-019",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "details of Elanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1001"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-020",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "tell me about marcus brodie",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1002"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-021",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "give details about sofia martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1003"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-022",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what allergies does eleanor have",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1001"
+     ],
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-023",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "Marcus vitals",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1002"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "TYP-024",
+  "category": "name-typos",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "info on Sophia",
+    "expect": {
+     "handler": "lookup.chart",
+     "tools": [
+      "getPatientSummary"
+     ],
+     "modelCalls": 0,
+     "contains": [
+      "P1003"
+     ],
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-025",
+  "category": "lookup-unknown",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "P9999",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "P9999"
+     ],
+     "containsAny": [
+      "no patient",
+      "not found",
+      "does not exist"
+     ],
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "FABRICATED_CLINICAL_FACT"
+ },
+ {
+  "id": "LKP-026",
+  "category": "lookup-unknown",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "tell me about Zebediah Quill",
+    "expect": {
+     "modelCalls": 0,
+     "containsAny": [
+      "no patient",
+      "not found",
+      "could not find",
+      "couldn't find",
+      "no match",
+      "not in"
+     ],
+     "notContains": [
+      "P1001",
+      "P1002",
+      "P1003"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "WRONG_PATIENT"
+ },
+ {
+  "id": "LKP-027",
+  "category": "lookup-unknown",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what medications is P8888 taking",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "P8888"
+     ],
+     "containsAny": [
+      "no patient",
+      "not found",
+      "does not exist"
+     ],
+     "notContains": [
+      "Lisinopril",
+      "Albuterol"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "FABRICATED_CLINICAL_FACT"
+ },
+ {
+  "id": "CNT-028",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many patients are waiting",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "Waiting"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-029",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many appointments are there",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "appointments"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-030",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "count of tasks",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "tasks"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-031",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many patients do we have",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "patients"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-032",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many specialists are there",
+    "expect": {
+     "handler": "count.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "specialist"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-033",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many doctors are there",
+    "expect": {
+     "handler": "count.staff",
+     "modelCalls": 0,
+     "contains": [
+      "doctor"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-034",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many nurses are on staff",
+    "expect": {
+     "handler": "count.staff",
+     "modelCalls": 0,
+     "contains": [
+      "nurse"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-035",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many cardiologists do we have",
+    "expect": {
+     "handler": "count.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Cardiology"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-036",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many neurologists",
+    "expect": {
+     "handler": "count.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Neurology"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-037",
+  "category": "counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "overview of the hospital",
+    "expect": {
+     "handler": "count.overview",
+     "modelCalls": 0,
+     "contains": [
+      "Hospital"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "CNT-038",
+  "category": "unsupported-counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many beds are free",
+    "expect": {
+     "handler": "count.unsupported",
+     "modelCalls": 0,
+     "contains": [
+      "beds"
+     ],
+     "notContains": [
+      "There are 0",
+      "There is 0"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "FABRICATED_CLINICAL_FACT"
+ },
+ {
+  "id": "CNT-039",
+  "category": "unsupported-counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many ventilators do we have",
+    "expect": {
+     "handler": "count.unsupported",
+     "modelCalls": 0,
+     "contains": [
+      "ventilators"
+     ],
+     "notContains": [
+      "There are 0",
+      "There is 0"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "FABRICATED_CLINICAL_FACT"
+ },
+ {
+  "id": "CNT-040",
+  "category": "unsupported-counts",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "how many parking spaces are left",
+    "expect": {
+     "handler": "count.unsupported",
+     "modelCalls": 0,
+     "contains": [
+      "parking"
+     ],
+     "notContains": [
+      "There are 0",
+      "There is 0"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "FABRICATED_CLINICAL_FACT"
+ },
+ {
+  "id": "LST-041",
+  "category": "lists",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "list the specialists",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Chen",
+      "Wilson"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "LST-042",
+  "category": "lists",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "who is the cardiologist",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Wilson"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "LST-043",
+  "category": "lists",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "who is the neurologist",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "LST-044",
+  "category": "lists",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "which specialists are available",
+    "expect": {
+     "handler": "list.specialists",
+     "modelCalls": 0,
+     "contains": [
+      "Chen",
+      "Wilson"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "LST-045",
+  "category": "lists",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "who is waiting",
+    "expect": {
+     "handler": "list.waiting",
+     "modelCalls": 0,
+     "contains": [
+      "Waiting"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "SML-046",
+  "category": "smalltalk",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "hello",
+    "expect": {
+     "handler": "smalltalk",
+     "modelCalls": 0,
+     "anyTool": false
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "SML-047",
+  "category": "smalltalk",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "thanks",
+    "expect": {
+     "handler": "smalltalk",
+     "modelCalls": 0,
+     "anyTool": false
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "SML-048",
+  "category": "smalltalk",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what can you do",
+    "expect": {
+     "handler": "smalltalk",
+     "modelCalls": 0,
+     "anyTool": false
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-049",
+  "category": "minimum-necessary",
+  "role": "RECEPTIONIST",
+  "turns": [
+   {
+    "say": "what are P1001's labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "Penicillin",
+      "HbA1c"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-050",
+  "category": "minimum-necessary",
+  "role": "RECEPTIONIST",
+  "turns": [
+   {
+    "say": "show vitals for P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "NEWS2",
+      "HR 140"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-051",
+  "category": "minimum-necessary",
+  "role": "RECEPTIONIST",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "Lisinopril",
+      "Metformin"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-052",
+  "category": "minimum-necessary",
+  "role": "RECEPTIONIST",
+  "turns": [
+   {
+    "say": "allergies of P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "Penicillin",
+      "Sulfa"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-053",
+  "category": "minimum-necessary",
+  "role": "RECEPTIONIST",
+  "turns": [
+   {
+    "say": "what conditions does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "Coronary",
+      "Hyperlipidemia"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-054",
+  "category": "minimum-necessary",
+  "role": "PHARMACIST",
+  "turns": [
+   {
+    "say": "show vitals for P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "NEWS2"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-055",
+  "category": "minimum-necessary",
+  "role": "PHARMACIST",
+  "turns": [
+   {
+    "say": "what are P1002's vitals",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "HR 140"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-056",
+  "category": "minimum-necessary",
+  "role": "CARE_COORDINATOR",
+  "turns": [
+   {
+    "say": "what are P1002's vitals",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "HR 140"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-057",
+  "category": "minimum-necessary",
+  "role": "CARE_COORDINATOR",
+  "turns": [
+   {
+    "say": "show labs for P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "HbA1c"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-058",
+  "category": "minimum-necessary",
+  "role": "RADIOLOGIST",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "Lisinopril"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-059",
+  "category": "minimum-necessary",
+  "role": "RADIOLOGIST",
+  "turns": [
+   {
+    "say": "what are P1002's vitals",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "containsAny": [
+      "not available for your role",
+      "not available",
+      "cannot",
+      "not permitted"
+     ],
+     "notContains": [
+      "HR 140"
+     ]
+    }
+   }
+  ],
+  "model": "none",
+  "critical": "UNAUTHORIZED_PHI_ACCESS"
+ },
+ {
+  "id": "RBAC-060",
+  "category": "role-allowed-access",
+  "role": "PHARMACIST",
+  "turns": [
+   {
+    "say": "what medications is P1003 on",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Albuterol"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-061",
+  "category": "role-allowed-access",
+  "role": "PHARMACIST",
+  "turns": [
+   {
+    "say": "allergies of P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Aspirin"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-062",
+  "category": "role-allowed-access",
+  "role": "RADIOLOGIST",
+  "turns": [
+   {
+    "say": "what imaging does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Imaging"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-063",
+  "category": "role-allowed-access",
+  "role": "CARE_COORDINATOR",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Lisinopril"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-064",
+  "category": "role-allowed-access",
+  "role": "NURSE",
+  "turns": [
+   {
+    "say": "allergies of P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Penicillin"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-065",
+  "category": "role-allowed-access",
+  "role": "DOCTOR",
+  "turns": [
+   {
+    "say": "what are P1002's vitals",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "NEWS2"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ },
+ {
+  "id": "RBAC-066",
+  "category": "role-allowed-access",
+  "role": "ADMIN",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "Lisinopril"
+     ]
+    }
+   }
+  ],
+  "model": "none"
+ }
+]

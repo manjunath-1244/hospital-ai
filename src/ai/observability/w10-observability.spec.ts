@@ -26,10 +26,13 @@ describe('W10 Agent Observability & Metrics', () => {
       });
       rec.addActionId('ACT-1001');
 
-      const built = rec.build({
-        status: 'OK',
-        threadId: 'TH-123',
-      });
+      const built = rec.build(
+        {
+          status: 'OK',
+          threadId: 'TH-123',
+        },
+        { mask: (t: string) => t, maskDeep: (x: unknown) => x } as any,
+      );
 
       expect(built.goal).toBe(
         'Check cardiology referral needs for patient P1001',
@@ -167,5 +170,22 @@ describe('W10 Agent Observability & Metrics', () => {
       expect(metrics.byType.REFERRAL).toBe(2);
       expect(metrics.byType.LAB_ORDER).toBe(1);
     });
+  });
+});
+
+describe('the stored goal never holds a raw patient name', () => {
+  it('is masked with the PHI session, hidden without one', () => {
+    const rec = new RunRecorder(
+      'chat',
+      { userId: 'u', userName: 'u', role: 'DOCTOR' },
+      'm',
+    );
+    rec.setGoal('labs of Eleanor Vance');
+    const masked = rec.build({ status: 'OK' }, {
+      mask: (t: string) => t.replace('Eleanor Vance', '[PATIENT_1]'),
+      maskDeep: (x: unknown) => x,
+    } as any);
+    expect(masked.goal).toBe('labs of [PATIENT_1]');
+    expect(rec.build({ status: 'OK' }).goal).toBe('[hidden]');
   });
 });

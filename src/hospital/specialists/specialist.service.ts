@@ -70,14 +70,35 @@ export class SpecialistService {
   }
 
   /** Staff accounts grouped by role (names only; no patient data). */
+  /**
+   * Who a role-addressed notice goes to: "NURSE" / "doctors" -> every account with that role; "CARDIOLOGY_SPECIALIST" /
+   * "Cardiology" -> the specialists of that specialty. Used by BOTH the proposal check and the executor so they agree.
+   */
+  async recipientIdsForRole(target: string): Promise<string[]> {
+    const norm = target.trim().toUpperCase().replace(/[\s-]+/g, '_');
+    const roles = await this.staffByRole();
+    const key = Object.keys(roles).find(
+      (r) => r === norm || r === norm.replace(/S$/, ''),
+    );
+    if (key) return roles[key].map((u) => u.id);
+    const specialty = target.replace(/[_\s]*specialists?$/i, '').trim();
+    return (await this.find({ specialty })).map((f) => f.id);
+  }
+
   async staffByRole() {
     const users = await this.users.find({ order: { displayName: 'ASC' } });
     const byRole: Record<
       string,
-      Array<{ name: string; specialty: string | null; isAvailable: boolean }>
+      Array<{
+        id: string;
+        name: string;
+        specialty: string | null;
+        isAvailable: boolean;
+      }>
     > = {};
     for (const u of users)
       (byRole[u.role] ??= []).push({
+        id: u.id,
         name: u.displayName,
         specialty: u.specialty,
         isAvailable: u.isAvailable,

@@ -5,20 +5,22 @@ import { FlaskConical } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { LabResultResponse, Patient } from '../../lib/types';
 import { isActiveStatus } from '../../lib/visits';
-import { ErrorBox, SuccessBox, inputCls, labelCls } from './common';
+import { ErrorBox, SuccessBox } from './common';
+import { Button, Field, Input } from './kit';
 
 interface Props {
   patientId: string;
   /** Whether the patient has an open visit. When omitted the form looks it up itself. */
   open?: boolean;
   onSaved?: () => void;
+  /** Deprecated: the button now always uses the design-system primary style. Kept so callers still compile. */
   accent?: string;
 }
 
 const EMPTY = { testName: '', value: '', unit: '', referenceRange: '' };
 
 /** POST /hospital/lifecycle/lab-result. Status (normal/abnormal/critical) is computed by the server. */
-export const LabResultForm: React.FC<Props> = ({ patientId, open, onSaved, accent = 'bg-indigo-600 hover:bg-indigo-500' }) => {
+export const LabResultForm: React.FC<Props> = ({ patientId, open, onSaved }) => {
   const [lab, setLab] = useState(EMPTY);
   const [looked, setLooked] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
@@ -69,36 +71,34 @@ export const LabResultForm: React.FC<Props> = ({ patientId, open, onSaved, accen
   };
 
   return (
-    <form data-testid="lab-form" onSubmit={submit} className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3">
-      <p className="font-bold text-slate-300 text-sm uppercase flex items-center gap-1">
-        <FlaskConical className="h-4 w-4" /> Add lab result
+    <form data-testid="lab-form" onSubmit={submit} className="space-y-3 rounded-lg border border-line bg-surface-muted p-4">
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-2">
+        <FlaskConical className="h-4 w-4 text-ink-3" aria-hidden /> Add lab result
       </p>
-      {!patientId && <p className="text-base text-slate-400">Select a patient first.</p>}
-      {patientId && !visitOpen && <p className="text-base font-semibold text-rose-400">{looked === null && open === undefined ? 'Checking visit...' : 'Patient has no open visit: lab entry is disabled.'}</p>}
-      <fieldset disabled={!patientId || !visitOpen} className={`space-y-3 min-w-0 ${!visitOpen ? 'opacity-50' : ''}`}>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <label className={labelCls}>Test name *</label>
-            <input required value={lab.testName} onChange={(e) => setLab({ ...lab, testName: e.target.value })} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Value *</label>
-            <input required value={lab.value} onChange={(e) => setLab({ ...lab, value: e.target.value })} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Unit *</label>
-            <input required value={lab.unit} onChange={(e) => setLab({ ...lab, unit: e.target.value })} className={inputCls} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Reference range</label>
-            <input value={lab.referenceRange} onChange={(e) => setLab({ ...lab, referenceRange: e.target.value })} className={inputCls} />
-          </div>
+      {!patientId && <p className="text-sm text-ink-3">Select a patient first.</p>}
+      {patientId && !visitOpen && (
+        <p className="text-sm font-semibold text-danger-700">{looked === null && open === undefined ? 'Checking visit...' : 'Patient has no open visit: lab entry is disabled.'}</p>
+      )}
+      <fieldset disabled={!patientId || !visitOpen} className={`min-w-0 space-y-3 ${!visitOpen ? 'opacity-50' : ''}`}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Test name *" className="sm:col-span-2">
+            {(id) => <Input id={id} required value={lab.testName} onChange={(e) => setLab({ ...lab, testName: e.target.value })} />}
+          </Field>
+          <Field label="Value *">
+            {(id) => <Input id={id} required value={lab.value} onChange={(e) => setLab({ ...lab, value: e.target.value })} />}
+          </Field>
+          <Field label="Unit *">
+            {(id) => <Input id={id} required value={lab.unit} onChange={(e) => setLab({ ...lab, unit: e.target.value })} />}
+          </Field>
+          <Field label="Reference range" className="sm:col-span-2">
+            {(id) => <Input id={id} value={lab.referenceRange} onChange={(e) => setLab({ ...lab, referenceRange: e.target.value })} />}
+          </Field>
         </div>
         <ErrorBox message={error} />
         <SuccessBox message={msg} />
-        <button type="submit" disabled={busy} className={`w-full rounded-xl py-3 text-base font-bold text-white disabled:opacity-50 ${accent}`}>
+        <Button type="submit" loading={busy} data-testid="lab-save" className="w-full">
           {busy ? 'Saving...' : 'Save lab result'}
-        </button>
+        </Button>
       </fieldset>
     </form>
   );

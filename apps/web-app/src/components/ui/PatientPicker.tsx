@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import { useRealtime } from '../../context/RoleContext';
 import type { Patient, PatientList } from '../../lib/types';
-import { inputCls, labelCls } from './common';
+import { Field, Select } from './kit';
 
 interface Props {
   value: string;
@@ -39,23 +39,23 @@ export const PatientPicker: React.FC<Props> = ({ value, onChange, label = 'Patie
   }, [refreshKey, rt]);
 
   return (
-    <div>
-      <label className={labelCls}>{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value, patients.find((p) => p.id === e.target.value))}
-        className={inputCls}
-        disabled={loading}
-        data-testid="patient-picker"
-      >
-        <option value="">{loading ? 'Loading patients...' : patients.length ? 'Select a patient' : 'No patients found'}</option>
-        {patients.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name} ({p.id}) — {p.age}y {p.gender}{p.visit ? ` — ${p.visit.statusLabel}` : ' — no visit'}
-          </option>
-        ))}
-      </select>
-      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
-    </div>
+    <Field label={label} error={error}>
+      {(id) => (
+        <Select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value, patients.find((p) => p.id === e.target.value))}
+          disabled={loading}
+          data-testid="patient-picker"
+        >
+          <option value="">{loading ? 'Loading patients...' : patients.length ? 'Select a patient' : 'No patients found'}</option>
+          {patients.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({p.id}) — {p.age}y {p.gender}{p.visit ? ` — ${p.visit.statusLabel}` : ' — no visit'}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
   );
 };

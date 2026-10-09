@@ -16,12 +16,12 @@ const toolsOf = (role: UserRole) =>
 
 /** tool -> the only roles that may have it */
 const ONLY: Record<string, UserRole[]> = {
-  registerOpPatient: ['RECEPTIONIST', 'ADMIN'],
-  recordDoctorConsultation: ['DOCTOR', 'ADMIN'],
+  proposeRegistration: ['RECEPTIONIST', 'ADMIN'],
+  proposeConsultation: ['DOCTOR', 'ADMIN'],
   proposeReferral: ['DOCTOR', 'NURSE', 'ADMIN'],
   proposeLabOrder: ['DOCTOR', 'NURSE', 'ADMIN'],
   reviewReferralNeed: ['DOCTOR', 'NURSE', 'ADMIN'],
-  bookAppointment: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'],
+  proposeAppointment: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'],
   // chart reads follow the same minimum-necessary rule as the patient summary endpoint
   getVitalsHistory: ['DOCTOR', 'NURSE', 'ADMIN', 'SPECIALIST'],
   getLabs: [
@@ -79,9 +79,9 @@ describe('agent tools per role', () => {
       'searchPatients',
       'getHospitalOverview',
       'searchClinicalRecords',
-      'registerOpPatient',
-      'recordDoctorConsultation',
-      'bookAppointment',
+      'proposeRegistration',
+      'proposeConsultation',
+      'proposeAppointment',
       'proposeReferral',
     ])
       expect(t).not.toContain(forbidden);
@@ -96,7 +96,7 @@ describe('agent tools per role', () => {
       'getVitalsHistory',
       'getMedications',
       'getAllergies',
-      'recordDoctorConsultation',
+      'proposeConsultation',
       'proposeReferral',
       'proposeLabOrder',
     ])
@@ -112,7 +112,7 @@ describe('agent tools per role', () => {
       for (const tool of [
         'proposeReferral',
         'proposeLabOrder',
-        'recordDoctorConsultation',
+        'proposeConsultation',
       ])
         expect(toolsOf(role)).not.toContain(tool);
   });
@@ -139,4 +139,14 @@ describe('agent tools per role', () => {
       expect(new Set(t).size).toBe(t.length);
     }
   });
+});
+
+describe('staff and specialist lookup is open to every signed-in role (names carry no patient data)', () => {
+  it.each(['getStaffSummary', 'findSpecialists', 'getSpecialistAvailability'])(
+    '%s',
+    (tool) => {
+      for (const role of USER_ROLES)
+        expect([role, toolsOf(role).includes(tool)]).toEqual([role, true]);
+    },
+  );
 });

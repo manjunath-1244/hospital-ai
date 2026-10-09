@@ -1,0 +1,386 @@
+[
+ {
+  "id": "DOC-WRD-001",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitals of p1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-002",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "meds of P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-003",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "alergies of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-004",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitlas P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-005",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is P1002 on aspirin",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1002"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-006",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what did the doctor prescribe to P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-007",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "current visit status of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "P1001",
+      "Current visit"
+     ],
+     "notContains": [
+      "Consultations (most recent"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getCurrentVisit",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-008",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what is the phone number of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "Contact details"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-009",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many docs",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "count.staff",
+     "contains": [
+      "doctor"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-010",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who is the heart doctor",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "list.specialists",
+     "contains": [
+      "Wilson"
+     ],
+     "notContains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "DOC-WRD-011",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what allergies does Eleanor Vance P9999 have",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "P9999",
+      "Eleanor"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "ambiguity"
+  }
+ },
+ {
+  "id": "DOC-WRD-012",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what allergies does Eleanor Vance P1002 have",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "more than one patient"
+     ],
+     "notContains": [
+      "Penicillin",
+      "Aspirin"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "ambiguity"
+  }
+ },
+ {
+  "id": "DOC-WRD-013",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who verifies the patient identity before giving medication",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "DOC-WRD-014",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many ESI levels does the triage protocol define",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "DOC-WRD-015",
+  "role": "DOCTOR",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is a referral needed for P1002",
+    "expect": {
+     "handler": "review.referral",
+     "modelCalls": 0,
+     "contains": [
+      "P1002"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "referral",
+   "tool": "reviewReferralNeed",
+   "behaviour": "routing"
+  }
+ }
+]

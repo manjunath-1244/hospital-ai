@@ -7,18 +7,22 @@ export interface ActionDefinition {
   rolesAllowed: UserRole[];
   expiresInMinutes: number;
   requiresOpenVisit?: boolean;
+  /** false: catalogued for the policy but no executor exists, so it can never be proposed (nothing may promise it). */
+  executable?: boolean;
 }
 
 export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   // AUTO: low risk, reversible, no clinical impact
   COMPUTE_NEWS2: {
     type: 'COMPUTE_NEWS2',
+    executable: false,
     tier: 'AUTO',
     rolesAllowed: ['DOCTOR', 'NURSE', 'ADMIN'],
     expiresInMinutes: 60,
   },
   CREATE_SELF_TASK: {
     type: 'CREATE_SELF_TASK',
+    executable: false,
     tier: 'AUTO',
     rolesAllowed: [
       'DOCTOR',
@@ -91,6 +95,7 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   },
   CLOSE_VISIT: {
     type: 'CLOSE_VISIT',
+    executable: false,
     tier: 'ASK',
     rolesAllowed: ['DOCTOR', 'ADMIN'],
     expiresInMinutes: 60,
@@ -98,6 +103,7 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
   },
   REOPEN_VISIT: {
     type: 'REOPEN_VISIT',
+    executable: false,
     tier: 'ASK',
     rolesAllowed: ['DOCTOR', 'ADMIN'],
     expiresInMinutes: 60,
@@ -135,12 +141,12 @@ export const ACTION_CATALOGUE: Record<string, ActionDefinition> = {
 
 export function getActionTier(type: string): ActionTier {
   const def = ACTION_CATALOGUE[type.toUpperCase()];
-  return def ? def.tier : 'ASK';
+  return def ? def.tier : 'NEVER'; // unknown types fail closed
 }
 
 export function canProposeAction(type: string, role: UserRole): boolean {
   const def = ACTION_CATALOGUE[type.toUpperCase()];
-  if (!def || def.tier === 'NEVER') return false;
+  if (!def || def.tier === 'NEVER' || def.executable === false) return false;
   return def.rolesAllowed.includes(role);
 }
 
@@ -169,9 +175,19 @@ export function renderActionSummary(
     case 'NOTIFICATION':
       return `Notification to ${payload.recipientTarget} (${payload.recipientType}): "${payload.message}"`;
     case 'FOLLOW_UP':
-      return `Follow-up plan for patient ${payload.patientId} (${payload.planType}, timeframe: ${payload.timeframe})`;
+      return `Follow-up plan for patient ${payload.patientId}: ${(payload.items ?? []).length} item(s)${
+        (payload.items ?? []).length
+          ? ` (${(payload.items as Array<{ type?: string }>)
+              .map((i) => String(i.type ?? 'item').toLowerCase())
+              .join(', ')})`
+          : ''
+      }`;
     case 'CONSULTATION':
-      return `Record consultation for patient ${payload.patientId}: Diagnosis "${payload.diagnosis}" (${(payload.prescriptions ?? []).length} Rx)`;
+      return `Record consultation for patient ${payload.patientId}: Diagnosis "${payload.diagnosis}" (${(payload.prescriptions ?? []).length} Rx)${
+        payload.safetyPreview && payload.safetyPreview.status !== 'SAFE'
+          ? ` [MEDICATION SAFETY: ${payload.safetyPreview.status}${payload.requiresOverride ? ', blocked unless you give an override reason' : ''}]`
+          : ''
+      }`;
     case 'CLOSE_VISIT':
       return `Complete visit ${payload.visitId ?? ''} for patient ${payload.patientId}`;
     case 'REOPEN_VISIT':

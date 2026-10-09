@@ -166,29 +166,36 @@ export class HospitalLifecycleService {
     return { success: true, patientId, deleted, fhirDeleted, ragChunksRemoved };
   }
 
+  /** Patients who may be the same person as this registration (name/phone/real DOB). Nothing is written. */
+  async previewDuplicates(
+    dto: Pick<RegistrationDto, 'name' | 'phone' | 'dob'>,
+  ) {
+    const phoneDigits = dto.phone.replace(/\D/g, '');
+    const candidates = await this.hospital.findDuplicateCandidates(
+      dto.name,
+      phoneDigits,
+    );
+    return rankMatches(candidates, {
+      name: dto.name,
+      phone: dto.phone,
+      dob: dto.dob ?? null,
+    }).map((m) => {
+      const p = candidates.find((c) => c.id === m.patientId)!;
+      return { ...m, name: p.name, age: p.age, phone: p.phone };
+    });
+  }
+
   // 1. RECEPTIONIST: register a new person and open their first visit (or flag a possible duplicate first)
   async registerOutpatient(dto: RegistrationDto, user: AuthUser) {
     if (!dto.allowDuplicate) {
-      const phoneDigits = dto.phone.replace(/\D/g, '');
-      const candidates = await this.hospital.findDuplicateCandidates(
-        dto.name,
-        phoneDigits,
-      );
-      const matches = rankMatches(candidates, {
-        name: dto.name,
-        phone: dto.phone,
-        dob: dto.dob ?? null,
-      });
+      const matches = await this.previewDuplicates(dto);
       if (matches.length) {
         throw new ConflictException({
           statusCode: 409,
           error: 'Conflict',
           message:
             'This looks like a patient who is already registered. Open their record and start a new visit, or confirm this is a different person.',
-          possibleMatches: matches.map((m) => {
-            const p = candidates.find((c) => c.id === m.patientId)!;
-            return { ...m, name: p.name, age: p.age, phone: p.phone };
-          }),
+          possibleMatches: matches,
         });
       }
     }
@@ -312,6 +319,13 @@ export class HospitalLifecycleService {
       visit: this.view(updated),
       safety,
     };
+  }
+
+  /** Read-back for an approved consultation: is it really stored for this patient? */
+  async consultationStored(patientId: string, consultationId: string) {
+    return (await this.records.listConsultations(patientId, 20)).some(
+      (c) => c.id === consultationId,
+    );
   }
 
   /** Screens a medication list against the patient's chart and latest creatinine. */

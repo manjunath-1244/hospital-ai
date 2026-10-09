@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Pill, ShieldCheck } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { PharmacyQueueItem, Safety } from '../../lib/types';
-import { Empty, ErrorBox, Loading, SafetyPanel, fmtTime, inputCls, labelCls, splitList } from '../ui/common';
+import { ErrorBox, Loading, SafetyPanel, fmtTime, splitList } from '../ui/common';
+import { Button, Card, EmptyState, Field, PageHeader, SectionTitle, StatTile, Textarea } from '../ui/kit';
 import { PatientPicker } from '../ui/PatientPicker';
 import { useRealtime } from '../../context/RoleContext';
 
@@ -51,59 +52,55 @@ export const PharmacyPortal: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl glass-panel p-7 border-l-4 border-l-purple-500">
-        <div>
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Pill className="h-8 w-8 text-purple-400" />
-          Clinical Pharmacy: Prescription Queue & Safety Audit
-        </h2>
-        <p className="text-base text-slate-300 mt-1.5">Review recent prescriptions with their safety findings, or audit medications ad hoc.</p>
-        </div>
-        <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-300">In queue</p>
-            <p className="text-3xl font-extrabold text-purple-300">{queue?.length ?? '—'}</p>
-          </div>
-      </div>
+      <PageHeader
+        icon={<Pill className="h-6 w-6" />}
+        title="Clinical Pharmacy: Prescription Queue & Safety Audit"
+        subtitle="Review recent prescriptions with their safety findings, or audit medications ad hoc."
+        actions={<div className="min-w-28"><StatTile label="In queue" value={queue?.length ?? '—'} /></div>}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <form onSubmit={runAudit} className="lg:col-span-1 glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <ShieldCheck className="h-5 w-5 text-purple-400" /> Ad-hoc Medication Audit
-          </h3>
-          <PatientPicker value={patientId} onChange={setPatientId} />
-          <div>
-            <label className={labelCls}>Medications (comma or line separated)</label>
-            <textarea rows={3} required value={meds} onChange={(e) => setMeds(e.target.value)} className={inputCls} />
-          </div>
-          <ErrorBox message={auditError} />
-          <button
-            type="submit"
-            disabled={auditing || !patientId || splitList(meds).length === 0}
-            className="w-full rounded-xl bg-purple-600 py-3 text-base font-bold text-white hover:bg-purple-500 disabled:opacity-50"
-          >
-            {auditing ? 'Auditing...' : 'Run safety audit'}
-          </button>
-          {audit && <SafetyPanel safety={audit} />}
-        </form>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card as="div" className="lg:col-span-1">
+          <form onSubmit={runAudit} className="space-y-4">
+            <SectionTitle icon={<ShieldCheck className="h-5 w-5" />} className="!mb-0">Ad-hoc Medication Audit</SectionTitle>
+            <PatientPicker value={patientId} onChange={setPatientId} />
+            <Field label="Medications (comma or line separated)">
+              {(id) => <Textarea id={id} rows={3} required value={meds} onChange={(e) => setMeds(e.target.value)} />}
+            </Field>
+            <ErrorBox message={auditError} />
+            <Button
+              type="submit"
+              loading={auditing}
+              disabled={auditing || !patientId || splitList(meds).length === 0}
+              className="w-full"
+              data-testid="pharmacy-audit-submit"
+            >
+              {auditing ? 'Auditing...' : 'Run safety audit'}
+            </Button>
+            {audit && <SafetyPanel safety={audit} />}
+          </form>
+        </Card>
 
-        <div className="lg:col-span-2 glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4">Prescription Queue</h3>
+        <Card className="space-y-4 lg:col-span-2">
+          <SectionTitle className="!mb-0">Prescription Queue</SectionTitle>
           {loading && <Loading text="Loading queue..." />}
           <ErrorBox message={error} />
-          {!loading && !error && queue?.length === 0 && <Empty text="No prescriptions in the queue." />}
+          {!loading && !error && queue?.length === 0 && (
+            <EmptyState title="No prescriptions in the queue." hint="New prescriptions appear here after a doctor consultation." />
+          )}
           <div className="space-y-3">
             {queue?.map((item) => (
-              <div key={item.consultationId} className="rounded-xl bg-slate-950 border border-slate-700 p-4 text-sm space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-white">{item.patientName} <span className="font-mono text-indigo-400">({item.patientId})</span></p>
-                  <span className="text-sm text-slate-500">{item.doctorName} • {fmtTime(item.createdAt)}</span>
+              <div key={item.consultationId} data-testid="pharmacy-queue-item" className="space-y-2 rounded-lg border border-line bg-surface-muted p-4 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-ink">{item.patientName} <span className="font-mono text-ink-3">({item.patientId})</span></p>
+                  <span className="text-sm text-ink-3">{item.doctorName} • {fmtTime(item.createdAt)}</span>
                 </div>
-                <p className="text-slate-300">{item.prescriptions.length ? item.prescriptions.join(', ') : 'No prescriptions'}</p>
+                <p className="text-ink-2">{item.prescriptions.length ? item.prescriptions.join(', ') : 'No prescriptions'}</p>
                 <SafetyPanel safety={item.safety} />
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

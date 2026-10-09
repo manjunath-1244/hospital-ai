@@ -1,0 +1,610 @@
+[
+ {
+  "id": "CCO-POL-001",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Vitals must be stable for 12 consecutive hours before discharge."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "how many hours must vitals be stable before a patient can be discharged",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "discharge-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Vitals must be stable for 12 consecutive hours before discharge.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-002",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: A glucose level above 250 raises a critical red alert."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "what glucose level triggers a critical red alert",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "emergency-escalation.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "A glucose level above 250 raises a critical red alert.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-003",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Suspend the drug and treat it as an adverse drug reaction, which must be logged."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "what do we do if a patient gets a rash after a drug",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "medication-administration-guidelines.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Suspend the drug and treat it as an adverse drug reaction, which must be logged.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-004",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Routine follow-ups must be scheduled at least 48 hours in advance."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "how far in advance must routine follow up visits be booked",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "appointment-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Routine follow-ups must be scheduled at least 48 hours in advance.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-005",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Insulin and heparin need an independent double-check by two nurses."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "double check requirement for insulin and heparin",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "medication-administration-guidelines.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Insulin and heparin need an independent double-check by two nurses.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-006",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Use non-beta-lactam antibiotics for a penicillin allergy."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "which antibiotics can be used if the patient is allergic to penicillin",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "discharge-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Use non-beta-lactam antibiotics for a penicillin allergy.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-007",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: The attending physician must sign off before an emergency patient is released."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "who must sign off before an emergency patient is released",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "emergency-escalation.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "The attending physician must sign off before an emergency patient is released.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-008",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Urgent consultation requests are routed to the Triage Nurse."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "urgent consultation request who handles it",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "appointment-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Urgent consultation requests are routed to the Triage Nurse.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-009",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: A late cancellation needs supervisory approval."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "who needs to clear a cancellation made the day before the visit",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "appointment-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "A late cancellation needs supervisory approval.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-010",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: A level 2 emergent patient must be seen within 10 minutes."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "how long can an emergent level 2 patient wait for a physician",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "emergency-triage-protocol.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "A level 2 emergent patient must be seen within 10 minutes.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-011",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: Facial droop, arm weakness and speech difficulty trigger a neurology referral."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "signs of a stroke that should trigger a neurology referral",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "neurology-referral-guidelines.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "Facial droop, arm weakness and speech difficulty trigger a neurology referral.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-012",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: No, insulin needs a second nurse for the double-check."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "can one nurse alone give insulin",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "medication-administration-guidelines.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "No, insulin needs a second nurse for the double-check.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-013",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: A beta-lactam allergy changes the antibiotic choice at discharge."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "what happens to the antibiotic choice at discharge when the patient has a beta-lactam allergy",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "discharge-and-followup-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "A beta-lactam allergy changes the antibiotic choice at discharge.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-014",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: The attending physician must sign the electronic discharge summary."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "what does the attending physician have to sign before discharge",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "discharge-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "The attending physician must sign the electronic discharge summary.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-015",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: An adverse drug reaction must be logged within 4 hours."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "within how many hours must an adverse drug reaction be logged",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "medication-administration-guidelines.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "An adverse drug reaction must be logged within 4 hours.",
+  "semanticMin": 0.5
+ },
+ {
+  "id": "CCO-POL-016",
+  "role": "CARE_COORDINATOR",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document: A cancellation with short notice needs supervisory approval."
+    }
+   ]
+  },
+  "category": "policy-rag",
+  "turns": [
+   {
+    "say": "what is the rule for cancelling an appointment with 12 hours notice",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "citesAny": [
+      "appointment-policy.md"
+     ],
+     "modelCalls": 1,
+     "notContains": [
+      "Eleanor",
+      "Marcus",
+      "Sophia",
+      "Which patient"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  },
+  "reference": "A cancellation with short notice needs supervisory approval.",
+  "semanticMin": 0.5
+ }
+]

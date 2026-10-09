@@ -128,10 +128,7 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
 
   describe('Hybrid Search with Citations', () => {
     it('executes hybrid search and returns structured citation spans', async () => {
-      const hits = await ragService.searchPoliciesHybrid(
-        'cardiology chest pain',
-        4,
-      );
+      const hits = await ragService.searchPolicies('cardiology chest pain', 4);
 
       expect(hits.length).toBe(1);
       expect(hits[0].score).toBe(0.95);
@@ -140,5 +137,68 @@ describe('W11 RAG Improvements & Hybrid Search', () => {
       );
       expect(hits[0].quote).toBeDefined();
     });
+  });
+});
+
+import { fuseRanks } from './pgvector-rag.service';
+
+const hit = (
+  source: string,
+  heading: string,
+  docType: string,
+  similarity = 0.6,
+) =>
+  ({
+    source,
+    heading,
+    content: 'x',
+    patientId: null,
+    score: similarity,
+    similarity,
+    metadata: { docType },
+  }) as SearchHit;
+
+describe('rank fusion (the production search path)', () => {
+  it('a chunk found by BOTH the vector and the keyword search outranks one found by only one', () => {
+    const a = hit('a.md', 'A', 'policy');
+    const b = hit('b.md', 'B', 'policy');
+    const c = hit('c.md', 'C', 'policy');
+    const fused = fuseRanks([b, a, c], [a], { topK: 3 });
+    expect(fused[0].source).toBe('a.md');
+  });
+  it('a preferred document type gets a bonus but cannot hide a far better match', () => {
+    const guideline = hit('g.md', 'G', 'guideline');
+    const policy = hit('p.md', 'P', 'policy');
+    // neutral: the guideline is first in both rankings
+    expect(
+      fuseRanks([guideline, policy], [guideline, policy], { topK: 2 })[0]
+        .source,
+    ).toBe('g.md');
+    // preferring policies lifts the policy when the rankings are close...
+    expect(
+      fuseRanks([guideline, policy], [policy, guideline], {
+        topK: 2,
+        preferDocTypes: ['policy'],
+      })[0].source,
+    ).toBe('p.md');
+    // ...but not when the guideline is clearly better in both
+    const many = Array.from({ length: 60 }, (_, i) =>
+      hit(`x${i}.md`, 'X', 'guideline'),
+    );
+    const out = fuseRanks([...many, policy], [...many, policy], {
+      topK: 3,
+      preferDocTypes: ['policy'],
+    });
+    expect(out.some((h) => h.source === 'p.md')).toBe(false);
+  });
+  it('keeps the best cosine similarity on fused hits', () => {
+    const v = hit('a.md', 'A', 'policy', 0.7);
+    const k = hit('a.md', 'A', 'policy', 0.5);
+    expect(fuseRanks([v], [k], { topK: 1 })[0].similarity).toBe(0.7);
+  });
+  it('works with the keyword leg empty (vector only)', () => {
+    expect(
+      fuseRanks([hit('a.md', 'A', 'policy')], [], { topK: 5 }),
+    ).toHaveLength(1);
   });
 });

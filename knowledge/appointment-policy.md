@@ -1,3 +1,6 @@
+---
+docType: policy
+---
 # 📅 Hospital Appointment & Scheduling Policy
 
 ## 1. Booking Rules

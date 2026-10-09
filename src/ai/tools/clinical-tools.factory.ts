@@ -24,6 +24,7 @@ import { buildClinicalReadTools } from './clinical/clinical-read.tools';
 import { buildClinicalAssessTools } from './clinical/clinical-assess.tools';
 import { buildSpecialistTools } from './specialist/specialist.tools';
 import { buildSchedulingTools } from './scheduling/scheduling.tools';
+import { FollowUpService } from '../../hospital/followup/follow-up.service';
 import { ReferralService } from '../../hospital/referrals/referral.service';
 import { ReferralRecommendationService } from '../../hospital/referrals/referral-recommendation.service';
 import { ActionProposalService } from '../actions/action-proposal.service';
@@ -58,6 +59,7 @@ export class ClinicalToolsFactory {
     proposals: ActionProposalService,
     referralRecommendations: ReferralRecommendationService,
     referrals: ReferralService,
+    followUp: FollowUpService,
   ) {
     this.referrals = referrals;
     this.hospital = hospital;
@@ -92,9 +94,21 @@ export class ClinicalToolsFactory {
         referrals: referralRecommendations,
       }),
       ...buildSchedulingTools({ hospital, lifecycle, overview }),
-      ...buildProposeTools(saveProposal),
+      ...buildProposeTools({
+        save: saveProposal,
+        specialists,
+        visits,
+        followUp,
+      }),
       ...buildInteropTools(fhir, orthanc, rag),
     ];
+  }
+
+  /** True when `role` may use the tool (the deterministic paths use this to tell "refused" from "failed"). */
+  toolAllowedFor(name: string, role: string): boolean {
+    return this.definitions.some(
+      (t) => t.name === name && (t.roles as string[]).includes(role),
+    );
   }
 
   /**
@@ -249,8 +263,20 @@ export class ClinicalToolsFactory {
               `tool ${def.name}`,
             );
             const durationMs = Date.now() - startedAtMs;
+            // A tool that RETURNS { success: false } (a rejected proposal, a refused lookup) did not succeed: the trace,
+            // the audit and the "was anything done?" check must all say so.
+            const softFail = (output as any)?.success === false;
             ctx.trace.record(
-              { name: def.name, args, success: true, startedAtMs, durationMs },
+              {
+                name: def.name,
+                args,
+                success: !softFail,
+                startedAtMs,
+                durationMs,
+                ...(softFail
+                  ? { error: String((output as any)?.error ?? 'rejected') }
+                  : {}),
+              },
               output,
               def.citations?.(output),
             );

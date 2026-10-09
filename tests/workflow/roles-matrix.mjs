@@ -307,6 +307,21 @@ async function main() {
       !rec.body.conditions?.length,
   );
 
+  // the plain patient record must agree with the chart summary (same minimum-necessary rules)
+  for (const [role, sees] of Object.entries(SEES)) {
+    const r = await call(ROLES[role], 'GET', `/hospital/patients/${P}`);
+    const has = (k) => Array.isArray(r.body[k]) && r.body[k].length > 0;
+    const wrong = [];
+    if (has('conditions') !== sees.includes('conditions')) wrong.push('conditions');
+    if (has('allergies') !== sees.includes('allergies')) wrong.push('allergies');
+    if (has('currentMedications') !== sees.includes('currentMedications')) wrong.push('currentMedications');
+    check(
+      `${role}: GET /hospital/patients/:id shows the same clinical parts as the summary`,
+      r.status === 200 && !wrong.length,
+      `status ${r.status}; differs: [${wrong}]`,
+    );
+  }
+
   console.log('\n▶ Unauthenticated requests are refused');
   for (const p of [
     '/hospital/patients',

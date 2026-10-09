@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { ClinicalTool, ToolRunContext } from '../tool-registry';
+import type { SpecialistService } from '../../../hospital/specialists/specialist.service';
+import type { VisitsService } from '../../../hospital/visits/visits.service';
+import type { FollowUpService } from '../../../hospital/followup/follow-up.service';
 
 /** Saves a proposal for human approval (ActionProposalService). Absent in unit tests: the tool then only returns the proposal. */
 export type ProposalSaver = (
@@ -25,18 +28,39 @@ async function finish(
       requiresApproval: true,
       ...base,
     };
-  const saved = await save({ type, payload: base.proposedAction }, ctx);
+  let saved;
+  try {
+    saved = await save({ type, payload: base.proposedAction }, ctx);
+  } catch (err: any) {
+    // A proposal that cannot work is reported to the model as a failure with what is missing or what to offer instead:
+    // no card is created and nothing is promised to the user.
+    const body = err?.response ?? {};
+    return {
+      success: false,
+      error: String(
+        body.message ?? err?.message ?? 'The proposal was rejected',
+      ),
+      ...(body.needs ? { needs: body.needs } : {}),
+      ...(body.suggestions ? { suggestions: body.suggestions } : {}),
+      ...(body.possibleMatches
+        ? { possibleMatches: body.possibleMatches }
+        : {}),
+    };
+  }
+  const waiting = saved.status === 'PENDING';
   return {
     success: true,
     proposalType: base.proposalType,
-    status: 'PENDING_APPROVAL',
+    status: waiting ? 'PENDING_APPROVAL' : saved.status,
     actionId: saved.id,
     summary: saved.summary,
     tier: saved.tier,
     expiresAt: saved.expiresAt,
-    requiresApproval: true,
+    requiresApproval: waiting,
     proposedAction: base.proposedAction,
-    message: `Proposal ${saved.id} is saved and WAITING for the user to approve it in the approval card. NOTHING has been done yet; do not say it is done.`,
+    message: waiting
+      ? `Proposal ${saved.id} is saved and WAITING for the user to approve it in the approval card. NOTHING has been done yet; do not say it is done.`
+      : `An identical request (${saved.id}) was already ${saved.status}. Tell the user exactly that; do not claim a new action.`,
   };
 }
 
@@ -47,7 +71,15 @@ const patientId = z.string().describe('Patient ID, e.g. P1001');
  * Never perform direct database writes or side effects.
  * Every proposal requires approval through the human approval layer (W6).
  */
-export function buildProposeTools(save?: ProposalSaver): ClinicalTool[] {
+export interface ProposeDeps {
+  save?: ProposalSaver;
+  specialists?: SpecialistService;
+  visits?: VisitsService;
+  followUp?: FollowUpService;
+}
+
+export function buildProposeTools(deps: ProposeDeps = {}): ClinicalTool[] {
+  const { save, specialists, visits, followUp } = deps;
   return [
     {
       name: 'proposeReferral',
@@ -107,48 +139,56 @@ export function buildProposeTools(save?: ProposalSaver): ClinicalTool[] {
     {
       name: 'proposeFollowUp',
       description:
-        'Propose a follow-up plan for a patient (appointment, lab order, task, patient notice). Returns a proposal object only and does NOT write to the database.',
-      inputSchema: z.object({
-        patientId,
-        planType: z.enum([
-          'APPOINTMENT',
-          'LAB_TEST',
-          'STAFF_TASK',
-          'PATIENT_NOTICE',
-          'COMPREHENSIVE',
-        ]),
-        timeframe: z
-          .string()
-          .describe('Suggested timeframe, e.g. 2 weeks, 1 month, next morning'),
-        instructions: z
-          .string()
-          .min(5)
-          .describe('Detailed follow-up instructions'),
-        recommendedSpecialistId: z
-          .string()
-          .optional()
-          .describe('Optional specialist doctor ID for follow-up appointment'),
-      }),
+        "Prepare the follow-up plan for the patient's open visit: it is BUILT FROM what the specialist/doctor recorded (appointment with the specialist, repeat tests, coordinator task, patient notice) and saved as ONE proposal for approval. Needs a recorded specialist assessment or consultation; otherwise it says what is missing. Does not write anything until the user approves.",
+      inputSchema: z.object({ patientId }),
       roles: ['DOCTOR', 'NURSE', 'ADMIN', 'CARE_COORDINATOR'],
       requires: { openVisit: true, patientBound: true },
       async run(i, ctx) {
-        return finish(
-          save,
-          'FOLLOW_UP',
-          {
-            proposalType: 'FOLLOW_UP',
-            proposedAction: {
-              patientId: i.patientId,
-              planType: i.planType,
-              timeframe: i.timeframe,
-              instructions: i.instructions,
-              recommendedSpecialistId: i.recommendedSpecialistId ?? null,
+        if (!followUp || !visits)
+          return {
+            success: false,
+            error: 'Follow-up planning is not available.',
+          };
+        try {
+          const visit = await visits.getActive(i.patientId);
+          if (!visit)
+            return {
+              success: false,
+              error: `Patient ${i.patientId} has no open visit.`,
+            };
+          const { plan, proposalAction } = await followUp.generateProposal(
+            visit.id,
+            ctx.user,
+            {
+              threadId: ctx.threadId ?? undefined,
+              traceId: ctx.traceId,
             },
-            message:
-              'Follow-up plan proposal created. Requires doctor approval.',
-          },
-          ctx,
-        );
+          );
+          return {
+            success: true,
+            proposalType: 'FOLLOW_UP',
+            status: 'PENDING_APPROVAL',
+            actionId: proposalAction.id,
+            summary: proposalAction.summary,
+            tier: proposalAction.tier,
+            expiresAt: proposalAction.expiresAt,
+            requiresApproval: true,
+            proposedAction: {
+              planId: plan.id,
+              patientId: plan.patientId,
+              items: plan.items.map((x) => x.summary),
+            },
+            message: `Follow-up plan ${plan.id} (${plan.items.length} items) is saved as proposal ${proposalAction.id} and WAITING for approval. NOTHING has been done yet; do not say it is done.`,
+          };
+        } catch (err: any) {
+          const body = err?.response ?? {};
+          return {
+            success: false,
+            error: String(
+              body.message ?? err?.message ?? 'Could not prepare the plan',
+            ),
+          };
+        }
       },
     },
     {
@@ -264,6 +304,140 @@ export function buildProposeTools(save?: ProposalSaver): ClinicalTool[] {
               clinicalIndication: i.clinicalIndication,
             },
             message: 'Lab order proposal created. Doctor sign-off required.',
+          },
+          ctx,
+        );
+      },
+    },
+    {
+      name: 'proposeAppointment',
+      description:
+        'Propose booking an appointment with a REAL specialist at a REAL free slot. Give the specialist (doctorId from findSpecialists) and an ISO date-time taken from getSpecialistAvailability. If something is missing or the slot is not free, this returns what is missing and the next free slots: ask the user. Saved for approval; nothing is booked until they approve.',
+      inputSchema: z.object({
+        patientId,
+        doctorId: z
+          .string()
+          .optional()
+          .describe('Doctor account id from findSpecialists'),
+        specialty: z
+          .string()
+          .optional()
+          .describe('Used to find the doctor when doctorId is not known'),
+        dateTime: z
+          .string()
+          .optional()
+          .describe('ISO 8601 slot start from getSpecialistAvailability'),
+        reason: z.string().optional(),
+      }),
+      roles: ['DOCTOR', 'NURSE', 'RECEPTIONIST', 'ADMIN'],
+      requires: { openVisit: true, patientBound: true },
+      async run(i, ctx) {
+        let doctorId = i.doctorId;
+        if (!doctorId && i.specialty && specialists) {
+          const found = await specialists.find({
+            specialty: i.specialty,
+            onlyAvailable: true,
+          });
+          if (found.length === 1) doctorId = found[0].id;
+          else if (found.length > 1)
+            return {
+              success: false,
+              error: `Several ${i.specialty} specialists are available; which one?`,
+              needs: ['doctorId'],
+              suggestions: {
+                specialists: found.map((f) => ({ id: f.id, name: f.name })),
+              },
+            };
+        }
+        if (doctorId && !i.dateTime && specialists) {
+          const free = await specialists
+            .getAvailability(doctorId, { limit: 5 })
+            .catch(() => ({ slots: [] as string[] }));
+          return {
+            success: false,
+            error: 'Which time should I book?',
+            needs: ['dateTime'],
+            suggestions: { nextFreeSlots: free.slots },
+          };
+        }
+        let reason = i.reason;
+        if (!reason && visits)
+          reason =
+            (await visits.getActive(i.patientId))?.chiefComplaint ??
+            'Follow-up appointment';
+        return finish(
+          save,
+          'APPOINTMENT',
+          {
+            proposalType: 'APPOINTMENT',
+            proposedAction: {
+              patientId: i.patientId,
+              doctorId,
+              dateTime: i.dateTime,
+              reason,
+            },
+            message:
+              'Appointment proposal created. Requires approval before it is booked.',
+          },
+          ctx,
+        );
+      },
+    },
+    {
+      name: 'proposeRegistration',
+      description:
+        'Propose registering a NEW patient (and opening their first visit). If the person may already be registered this returns the possible matches: show them to the user and only propose again with allowDuplicate=true if the user confirms it is a different person. Saved for approval; nothing is registered until they approve.',
+      inputSchema: z.object({
+        name: z.string().min(2),
+        age: z.number().int().min(0).max(130).optional(),
+        dob: z.string().optional().describe('YYYY-MM-DD'),
+        gender: z.enum(['male', 'female', 'other']),
+        phone: z.string(),
+        bloodType: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+        chiefComplaint: z.string().optional(),
+        allowDuplicate: z.boolean().optional(),
+      }),
+      roles: ['RECEPTIONIST', 'ADMIN'],
+      async run(i, ctx) {
+        return finish(
+          save,
+          'REGISTER_PATIENT',
+          {
+            proposalType: 'REGISTER_PATIENT',
+            proposedAction: { ...i, gender: String(i.gender).toLowerCase() },
+            message:
+              'Registration proposal created. Requires approval before the patient is created.',
+          },
+          ctx,
+        );
+      },
+    },
+    {
+      name: 'proposeConsultation',
+      description:
+        "Propose recording a doctor's consultation (diagnosis, prescriptions, notes). The medication safety check runs now and its findings are shown with the proposal; a CRITICAL conflict needs the doctor's written override reason when approving. Saved for the DOCTOR to approve; nothing is recorded until then.",
+      inputSchema: z.object({
+        patientId,
+        diagnosis: z.string().min(2),
+        prescriptions: z.array(z.string()).default([]),
+        notes: z.string().min(1),
+      }),
+      roles: ['DOCTOR', 'ADMIN'],
+      requires: { openVisit: true, patientBound: true },
+      async run(i, ctx) {
+        return finish(
+          save,
+          'CONSULTATION',
+          {
+            proposalType: 'CONSULTATION',
+            proposedAction: {
+              patientId: i.patientId,
+              diagnosis: i.diagnosis,
+              prescriptions: i.prescriptions,
+              notes: i.notes,
+            },
+            message:
+              'Consultation proposal created. The doctor must approve it (with an override note if the safety check blocks it).',
           },
           ctx,
         );

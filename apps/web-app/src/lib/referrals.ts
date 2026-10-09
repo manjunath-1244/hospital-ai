@@ -29,9 +29,9 @@ export const REFERRAL_URGENCIES: readonly ReferralUrgency[] = ['ROUTINE', 'URGEN
 /** Lower = more urgent (same ordering as the backend's specialist inbox). */
 export const URGENCY_RANK: Record<ReferralUrgency, number> = { EMERGENCY: 1, URGENT: 2, ROUTINE: 3 };
 export const URGENCY_BADGE: Record<ReferralUrgency, string> = {
-  EMERGENCY: 'bg-rose-600/30 text-rose-200 border-rose-500/50',
-  URGENT: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  ROUTINE: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
+  EMERGENCY: 'bg-danger-50 text-danger-700 border-danger-200',
+  URGENT: 'bg-warning-50 text-warning-700 border-warning-200',
+  ROUTINE: 'bg-surface-muted text-ink-2 border-line-strong',
 };
 
 export const REFERRAL_STATUS_LABEL: Record<ReferralStatus, string> = {
@@ -42,11 +42,11 @@ export const REFERRAL_STATUS_LABEL: Record<ReferralStatus, string> = {
   CANCELLED: 'Cancelled',
 };
 export const REFERRAL_STATUS_BADGE: Record<ReferralStatus, string> = {
-  REQUESTED: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  ACCEPTED: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  IN_PROGRESS: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-  COMPLETED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  CANCELLED: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
+  REQUESTED: 'bg-warning-50 text-warning-700 border-warning-200',
+  ACCEPTED: 'bg-info-50 text-info-700 border-info-200',
+  IN_PROGRESS: 'bg-brand-50 text-brand-700 border-brand-200',
+  COMPLETED: 'bg-success-50 text-success-700 border-success-200',
+  CANCELLED: 'bg-surface-muted text-ink-2 border-line-strong',
 };
 export const OPEN_REFERRAL_STATUSES: readonly ReferralStatus[] = ['REQUESTED', 'ACCEPTED', 'IN_PROGRESS'];
 export const isOpenReferral = (r: Pick<Referral, 'status'>) => OPEN_REFERRAL_STATUSES.includes(r.status);

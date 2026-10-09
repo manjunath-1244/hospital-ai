@@ -1,8 +1,8 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-const TOKEN_KEY = 'curaai.token';
-const USER_KEY = 'curaai.user';
+const TOKEN_KEY = 'mk.token';
+const USER_KEY = 'mk.user';
 
 export class ApiError extends Error {
   status: number;

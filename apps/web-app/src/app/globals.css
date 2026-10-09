@@ -1,144 +1,151 @@
 @import "tailwindcss";
 
-/* ---------- Design tokens ---------- */
+/*
+ * Design system: enterprise healthcare. Restrained navy + neutral, one accent, four status tones.
+ * Use the semantic utilities below (bg-surface, text-ink, border-line, bg-brand-700, text-danger-700 ...) and the
+ * components in components/ui/kit.tsx. Do not use raw slate/indigo/emerald/rose classes or gradients in screens.
+ */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Type scale (rem; html is 17px, 19px >=1600px, 21px >=2200px) */
-  --text-xs: 0.8125rem;
-  --text-xs--line-height: 1.25rem;
-  --text-sm: 0.9375rem;
-  --text-sm--line-height: 1.45rem;
+  /* Type scale (16px root): 12 / 14 / 16 / 18 / 20 / 24 / 30 */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.35rem;
   --text-base: 1rem;
   --text-base--line-height: 1.6rem;
-  --text-lg: 1.2rem;
-  --text-xl: 1.4rem;
-  --text-2xl: 1.6rem;
-  --text-3xl: 1.85rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.7rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.8rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.3rem;
 
-  /* Lift low-contrast slate shades to meet WCAG AA on the dark surfaces */
-  --color-slate-500: #94a3b8;
-  --color-slate-600: #7d8ba1;
+  /* Surfaces and lines */
+  --color-canvas: #f3f5f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9fc;
+  --color-line: #dde3ec;
+  --color-line-strong: #c4ceda;
+
+  /* Text (all >= 4.5:1 on surface) */
+  --color-ink: #0f1b2d;
+  --color-ink-2: #34445b;
+  --color-ink-3: #56667d;
+
+  /* Brand: navy */
+  --color-brand-50: #eef3fb;
+  --color-brand-100: #dbe6f6;
+  --color-brand-200: #b8cdeb;
+  --color-brand-300: #86a8da;
+  --color-brand-500: #2f5d9e;
+  --color-brand-600: #234f8c;
+  --color-brand-700: #173f75;
+  --color-brand-800: #112f58;
+  --color-brand-900: #0b2040;
+
+  /* Status tones */
+  --color-success-50: #e8f5ee;
+  --color-success-200: #a9d9bf;
+  --color-success-700: #176b40;
+  --color-warning-50: #fff5da;
+  --color-warning-200: #f0d58a;
+  --color-warning-700: #8a5a00;
+  --color-danger-50: #fdecea;
+  --color-danger-200: #f2b4ad;
+  --color-danger-600: #c0281c;
+  --color-danger-700: #a11f15;
+  --color-info-50: #eaf1fd;
+  --color-info-200: #b3cdf5;
+  --color-info-700: #1a4fb0;
+
+  --radius-card: 0.625rem;
+  --shadow-card: 0 1px 2px rgba(15, 27, 45, 0.06), 0 1px 3px rgba(15, 27, 45, 0.04);
+  --shadow-pop: 0 10px 30px -8px rgba(15, 27, 45, 0.25);
 }
 
 :root {
-  --bg-dark: #0a0f1c;
-  --surface: #111a2e;
-  --surface-elevated: #17223a;
-  --surface-inset: #0c1424;
-  --card-border: #26334f;
-  --border-strong: #3a4a6b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #b4c0d4;
-  --text-muted: #94a3b8;
-  --accent-indigo: #818cf8;
-  --accent-indigo-strong: #6366f1;
-  --accent-emerald: #34d399;
-  --accent-amber: #fbbf24;
-  --accent-rose: #fb7185;
-  --accent-cyan: #22d3ee;
-  --focus-ring: #a5b4fc;
+  --focus-ring: #2f5d9e;
+  color-scheme: light;
 }
 
 html {
-  font-size: 17px;
+  font-size: 16px;
   -webkit-text-size-adjust: 100%;
-}
-@media (min-width: 1600px) {
-  html { font-size: 19px; }
-}
-@media (min-width: 2200px) {
-  html { font-size: 21px; }
 }
 
 @layer base {
   body {
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.6;
     overflow-x: hidden;
   }
   pre, code, kbd { font-family: var(--font-mono); }
+  h1, h2, h3, h4 { color: var(--color-ink); letter-spacing: -0.01em; }
 }
 
-/* ---------- Cards / panels ---------- */
-.glass-panel {
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px -12px rgba(0, 0, 0, 0.5);
-}
-.glass-panel-hover { transition: border-color 0.2s ease; }
-.glass-panel-hover:hover { border-color: var(--border-strong); }
-
-/* Glows are intentionally reduced to a very soft shadow */
-.glow-emerald, .glow-amber, .glow-rose, .glow-indigo { box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.6); }
-
-/* ---------- Form controls (44px min height, visible focus) ---------- */
-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-select,
-textarea {
-  font-size: 1rem;
-  line-height: 1.5rem;
-}
+/* ---------- Controls: 44px touch height, visible focus ---------- */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 select {
   min-height: 2.75rem;
 }
-input::placeholder, textarea::placeholder { color: #7d8ba1; font-size: 0.9375rem; }
+input::placeholder, textarea::placeholder { color: #6b7a90; }
 input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
-  border-color: var(--accent-indigo) !important;
 }
 button { min-height: 2.5rem; cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 button, a, [role="button"], summary {
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
-button:not(:disabled):hover { filter: brightness(1.1); }
 button.btn-inline { min-height: 0; }
 
 /* ---------- Tables ---------- */
 table { border-collapse: collapse; width: 100%; }
 table thead th {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--text-muted);
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+  background: var(--color-surface-muted);
+  padding: 0.65rem 0.75rem;
   white-space: nowrap;
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
 }
 table td {
-  font-size: 0.9375rem;
-  line-height: 1.4rem;
-  padding-top: 0.8rem;
-  padding-bottom: 0.8rem;
+  font-size: 0.875rem;
+  line-height: 1.35rem;
+  padding: 0.75rem;
   vertical-align: middle;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
 }
-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
-table tbody tr:hover { background: rgba(129, 140, 248, 0.07); }
+table tbody tr:hover { background: var(--color-surface-muted); }
+table tbody tr:last-child td { border-bottom: 0; }
 
 /* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--bg-dark); }
-::-webkit-scrollbar-thumb { background: #2a3855; border-radius: 6px; border: 2px solid var(--bg-dark); }
-::-webkit-scrollbar-thumb:hover { background: #3a4a6b; }
-
-/* Replaces the old noisy pulsing animation */
-.animate-pulse-slow { animation: none; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c4ceda; border-radius: 6px; border: 2px solid var(--color-canvas); }
+::-webkit-scrollbar-thumb:hover { background: #a9b6c7; }
 
 .skip-link {
   position: absolute; left: -999px; top: 0; z-index: 100;
-  background: var(--accent-indigo-strong); color: #fff; padding: 0.75rem 1rem; border-radius: 0.75rem;
+  background: var(--color-brand-700); color: #fff; padding: 0.75rem 1rem; border-radius: 0.5rem;
 }
 .skip-link:focus { left: 1rem; top: 1rem; }
 

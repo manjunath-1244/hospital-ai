@@ -1,3 +1,6 @@
+---
+docType: policy
+---
 # 🏥 Patient Discharge Policy & Protocol
 
 ## 1. Discharge Readiness Criteria

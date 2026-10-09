@@ -1,0 +1,2078 @@
+[
+ {
+  "id": "REC-CHT-001",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-002",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-003",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Hypertension",
+      "Type 2 Diabetes",
+      "Sinusitis"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-004",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Penicillin",
+      "Sulfa"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-005",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Eleanor Vance allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Penicillin",
+      "Sulfa"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-006",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Penicillin",
+      "Sulfa"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-007",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-008",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-009",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Lisinopril",
+      "Metformin",
+      "Amoxicillin"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-010",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Creatinine",
+      "HbA1c"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-011",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Eleanor Vance's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Creatinine",
+      "HbA1c"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-012",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez",
+      "Creatinine",
+      "HbA1c"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-013",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1001",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-014",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Eleanor Vance's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-015",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-016",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1001 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-017",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-018",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-019",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1001's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-020",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Eleanor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-021",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Elaenor Vance",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Marcus Brody",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1001",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Eleanor Vance has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-022",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Hyperlipidemia",
+      "Coronary Artery Disease"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-023",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Hyperlipidemia",
+      "Coronary Artery Disease"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-024",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Hyperlipidemia",
+      "Coronary Artery Disease"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-025",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1002 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Aspirin"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-026",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Marcus Brody allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Aspirin"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-027",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Aspirin"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-028",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1002 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Atorvastatin",
+      "Amlodipine"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-029",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Atorvastatin",
+      "Amlodipine"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-030",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "Atorvastatin",
+      "Amlodipine"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-031",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-032",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Marcus Brody's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-033",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-034",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1002",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "NEWS2"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-035",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Marcus Brody's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "NEWS2"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-036",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez",
+      "NEWS2"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-037",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1002 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-038",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-039",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-040",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1002's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-041",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Marcus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-042",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Macrus Brody",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Sophia Martinez"
+     ],
+     "contains": [
+      "P1002",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Marcus Brody has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-043",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "what conditions does P1003 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Asthma"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-044",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "show the diagnoses of Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Asthma"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-045",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-conditions",
+  "turns": [
+   {
+    "say": "medical history of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Asthma"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "conditions are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-046",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "what allergies does P1003 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-047",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "is Sophia Martinez allergic to anything",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-048",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-allergies",
+  "turns": [
+   {
+    "say": "allergies of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "allergies are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-049",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "what medications is P1003 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Albuterol"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-050",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "list the current medicines of Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Albuterol"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-051",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-medications",
+  "turns": [
+   {
+    "say": "tablets for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody",
+      "Albuterol"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "medications are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-052",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "show the lab results for P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-053",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "what are Sophia Martinez's latest labs",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-054",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-labs",
+  "turns": [
+   {
+    "say": "blood tests of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "labs",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "labs are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-055",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "latest vitals of P1003",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-056",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "what is Sophia Martinez's blood pressure and heart rate",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-057",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-vitals",
+  "turns": [
+   {
+    "say": "vitals for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "vitals are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-058",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "does P1003 have any imaging",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-059",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "show the scans for Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-060",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-imaging",
+  "turns": [
+   {
+    "say": "x-rays of Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "not available for your role",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "imaging",
+   "tool": "getPatientSummary",
+   "behaviour": "rbac"
+  },
+  "reference": "imaging are not available for this role.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-061",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "when is P1003's next appointment",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-062",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "show the appointments for Sophia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-063",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-appointments",
+  "turns": [
+   {
+    "say": "bookings for Sohpia Martinez",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "notContains": [
+      "Eleanor Vance",
+      "Marcus Brody"
+     ],
+     "contains": [
+      "P1003",
+      "none",
+      "you typed"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "appointment",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  },
+  "reference": "Sophia Martinez has no appointments.",
+  "semanticMin": 0.45
+ },
+ {
+  "id": "REC-CHT-064",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-safety-alert",
+  "turns": [
+   {
+    "say": "what medications is P1001 taking",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "verifyMedicationSafety",
+   "behaviour": "safety"
+  }
+ },
+ {
+  "id": "REC-CHT-065",
+  "role": "RECEPTIONIST",
+  "model": "none",
+  "category": "chart-safety-alert",
+  "turns": [
+   {
+    "say": "what allergies does P1001 have",
+    "expect": {
+     "handler": "lookup.chart",
+     "modelCalls": 0,
+     "contains": [
+      "not available for your role"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "verifyMedicationSafety",
+   "behaviour": "safety"
+  }
+ }
+]

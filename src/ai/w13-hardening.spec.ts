@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { classifyIntent } from './routing/intent';
 import { AiRouterService } from './services/ai-router.service';
 import { AiContextService } from './services/ai-context.service';
 import { AiAnswerService } from './services/ai-answer.service';
@@ -30,14 +31,14 @@ describe('W13 Hardening & Modular AiServices', () => {
 
   describe('AiRouterService', () => {
     it('Classifies intents correctly', () => {
-      const intent = routerService.classify('Is P1001 allergic to penicillin?');
+      const intent = classifyIntent('Is P1001 allergic to penicillin?');
       expect(intent).toBeDefined();
       expect(intent.list).toBe(false);
     });
 
     it('Directly calculates NEWS2 score when all vitals are present', () => {
       const rec = new RunRecorder('test', mockDoctor, 'test-model');
-      const intent = routerService.classify(
+      const intent = classifyIntent(
         'Assess triage: HR 125, systolic BP 92, SpO2 91% on air, temp 39.2, RR 26, confused.',
       );
 
@@ -62,7 +63,7 @@ describe('W13 Hardening & Modular AiServices', () => {
 
     it('Returns clarifying question prompt when chart section requested with no patient in focus', () => {
       const rec = new RunRecorder('test', mockDoctor, 'test-model');
-      const intent = routerService.classify('what are the vitals?');
+      const intent = classifyIntent('what are the vitals?');
 
       const context = {
         charts: new Map(),

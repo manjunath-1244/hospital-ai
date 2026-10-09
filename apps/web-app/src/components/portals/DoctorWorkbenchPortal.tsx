@@ -17,7 +17,8 @@ import type {
 } from '../../lib/types';
 import type { VisitSummary } from '../../lib/visits';
 import { byUrgency, isActiveStatus, STAGE_TABS, type PatientStage } from '../../lib/visits';
-import { Empty, ErrorBox, Loading, PriorityBadge, SafetyPanel, StatusBadge, SuccessBox, fmtTime, fmtWait, inputCls, labelCls, splitList } from '../ui/common';
+import { Empty, ErrorBox, Loading, PriorityBadge, SafetyPanel, StatusBadge, SuccessBox, fmtTime, fmtWait, splitList } from '../ui/common';
+import { Alert, Badge, Button, Card, Field, Input, PageHeader, SectionTitle, TableFrame, Tabs, Textarea, cx, type Tone } from '../ui/kit';
 import { PendingActionsPanel } from './PendingActionsPanel';
 import { ReferralsPanel } from './ReferralsPanel';
 import { FollowUpPanel } from './FollowUpPanel';
@@ -164,122 +165,121 @@ export const DoctorWorkbenchPortal: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl glass-panel p-7 border-l-4 border-l-indigo-500">
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Stethoscope className="h-8 w-8 text-indigo-400" />
-          Physician EMR Workbench
-        </h2>
-        <p className="text-base text-slate-300 mt-1.5">Review a patient record and record a consultation. Prescriptions are checked by the backend medication safety audit.</p>
-      </div>
+      <PageHeader
+        icon={<Stethoscope className="h-6 w-6" />}
+        title="Physician EMR Workbench"
+        subtitle="Review a patient record and record a consultation. Prescriptions are checked by the backend medication safety audit."
+      />
 
       <PendingActionsPanel />
 
       <AppointmentBooking collapsible />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Patient list */}
-        <div className="lg:col-span-1 glass-panel p-7 rounded-2xl border border-slate-700 space-y-3">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <Search className="h-5 w-5 text-indigo-400" /> Patients
-          </h3>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or ID" className={inputCls} />
-          <div className="flex flex-wrap gap-1.5">
-            {STAGE_TABS.map((t) => (
-              <button key={t.id} type="button" onClick={() => setStage(t.id)} className={`rounded-lg px-3 py-1.5 text-sm font-bold border ${stage === t.id ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-white'}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+        <Card className="space-y-3 lg:col-span-1">
+          <SectionTitle icon={<Search className="h-5 w-5" />} className="mb-1">Patients</SectionTitle>
+          <Field label="Search patients">
+            {(id) => <Input id={id} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or ID" />}
+          </Field>
+          <Tabs label="Patient stage" tabs={STAGE_TABS.map((t) => ({ id: t.id, label: t.label }))} value={stage} onChange={(id) => setStage(id as PatientStage)} />
           {listLoading && <Loading text="Loading patients..." />}
           <ErrorBox message={listError} />
           {!listLoading && !listError && list.length === 0 && <Empty text="No patients found." />}
-          <div className="max-h-[420px] overflow-y-auto space-y-2">
+          <div className="max-h-[420px] space-y-2 overflow-y-auto">
             {list.map((pt) => (
               <button
                 key={pt.id}
+                type="button"
                 data-testid="patient-list-item"
+                aria-pressed={selectedId === pt.id}
                 onClick={() => select(pt.id)}
-                className={`w-full text-left rounded-xl border p-3 text-sm transition-all ${
-                  selectedId === pt.id ? 'bg-indigo-600/20 border-indigo-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'
-                }`}
+                className={cx(
+                  'w-full rounded-lg border p-3 text-left text-sm',
+                  selectedId === pt.id ? 'border-brand-500 bg-brand-50' : 'border-line bg-surface hover:bg-surface-muted',
+                )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-white">{pt.name}</p>
+                  <p className="font-semibold text-ink">{pt.name}</p>
                   <PriorityBadge priority={pt.visit?.priority} />
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-ink-3">
                   {pt.id} • {pt.age}y {pt.gender}{pt.visit?.waitMinutes != null ? ` • waiting ${fmtWait(pt.visit.waitMinutes)}` : ''}
                 </p>
-                <p className="text-sm text-slate-300 truncate">{pt.visit?.chiefComplaint || '—'}</p>
+                <p className="truncate text-ink-2">{pt.visit?.chiefComplaint || '—'}</p>
                 <div className="mt-1"><StatusBadge visit={pt.visit} /></div>
               </button>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* EMR + consultation */}
-        <div className="lg:col-span-2 space-y-6">
-          {!selectedId && <div className="glass-panel p-7 rounded-2xl border border-slate-700"><Empty text="Select a patient to open their record." /></div>}
-          {emrLoading && <div className="glass-panel p-7 rounded-2xl border border-slate-700"><Loading text="Loading record..." /></div>}
+        <div className="space-y-6 lg:col-span-2">
+          {!selectedId && !emrLoading && <Card as="div"><Empty text="Select a patient to open their record." /></Card>}
+          {emrLoading && <Card as="div"><Loading text="Loading record..." /></Card>}
           <ErrorBox message={emrError} />
 
           {p && emr && !emrLoading && (
             <>
-              <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4 text-sm">
-                <div className="flex items-center justify-between border-b border-slate-700 pb-4">
-                  <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-indigo-400" /> Clinical Summary
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-bold text-indigo-400">{p.id}</span>
-                    <StatusBadge visit={visit} />
-                  </div>
-                </div>
+              <Card as="div" data-testid="clinical-summary" className="space-y-4 text-sm">
+                <SectionTitle
+                  icon={<Activity className="h-5 w-5" />}
+                  className="mb-0"
+                  actions={
+                    <>
+                      <span className="font-mono text-sm font-semibold text-brand-700">{p.id}</span>
+                      <StatusBadge visit={visit} />
+                    </>
+                  }
+                >
+                  Clinical Summary
+                </SectionTitle>
                 {visit ? (
                   <VisitPanel visitId={visit.id} onChanged={() => { loadEmr(p.id, true); loadList(); }} />
                 ) : (
-                  <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/40 p-3 font-semibold text-rose-300">
-                    <Lock className="h-4 w-4 shrink-0 mt-0.5" /> This patient has no visit. The front desk must start a visit before clinical entries.
-                  </div>
+                  <Alert tone="danger">
+                    <span className="flex items-start gap-2 font-semibold"><Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> This patient has no visit. The front desk must start a visit before clinical entries.</span>
+                  </Alert>
                 )}
                 {visit && closed && (
-                  <div className="flex items-start gap-2 rounded-xl bg-rose-500/10 border border-rose-500/40 p-3 font-semibold text-rose-300">
-                    <Lock className="h-4 w-4 shrink-0 mt-0.5" />
-                    <p className="text-sm font-normal">This visit is {visit.statusLabel.toLowerCase()}{visit.closeReason ? ` — ${visit.closeReason}` : ''}. Reopen it (if allowed) to record new clinical entries.</p>
-                  </div>
+                  <Alert tone="danger">
+                    <span className="flex items-start gap-2"><Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> This visit is {visit.statusLabel.toLowerCase()}{visit.closeReason ? ` — ${visit.closeReason}` : ''}. Reopen it (if allowed) to record new clinical entries.</span>
+                  </Alert>
                 )}
-                <div className="rounded-xl bg-slate-950 p-3 border border-slate-700">
-                  <p className="font-bold text-white text-sm">{p.name}</p>
-                  <p className="text-slate-400 text-sm">
+                <div className="rounded-lg border border-line bg-surface-muted p-3">
+                  <p className="text-sm font-semibold text-ink">{p.name}</p>
+                  <p className="text-sm text-ink-3">
                     {p.age} yrs • {p.gender} • Blood type {p.bloodType} • DOB {p.dob} • {p.phone}
                   </p>
                 </div>
                 <Section title="Visit history" icon={<Activity className="h-4 w-4" />}>
                   <VisitHistory visits={emr.visits} />
                 </Section>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <ListBox title="Allergies" items={emr.meds.allergies} tone="rose" />
-                  <ListBox title="Current medications" items={emr.meds.medications} tone="indigo" icon={<Pill className="h-4 w-4" />} />
-                  <ListBox title="Conditions" items={p.conditions} tone="amber" />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <ListBox title="Allergies" items={emr.meds.allergies} tone="danger" />
+                  <ListBox title="Current medications" items={emr.meds.medications} tone="neutral" icon={<Pill className="h-4 w-4" />} />
+                  <ListBox title="Conditions" items={p.conditions} tone="warning" />
                 </div>
 
                 <Section title="Latest vitals" icon={<Activity className="h-4 w-4" />}>
                   {emr.vitals.length === 0 ? (
                     <Empty text="No vitals recorded." />
                   ) : (
-                    <table className="w-full text-left">
-                      <thead className="text-slate-400">
-                        <tr><th>When</th><th>HR</th><th>SBP</th><th>SpO2</th><th>Temp</th><th>RR</th><th>NEWS2</th></tr>
-                      </thead>
-                      <tbody className="font-mono text-slate-200">
-                        {emr.vitals.slice(0, 5).map((v) => (
-                          <tr key={v.id}>
-                            <td>{fmtTime(v.recordedAt)}</td><td>{v.heartRate}</td><td>{v.bpSystolic}</td><td>{v.spO2}</td><td>{v.tempCelsius}</td><td>{v.respiratoryRate}</td>
-                            <td>{v.news2Score} ({v.riskLevel})</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <TableFrame>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr><th scope="col">When</th><th scope="col">HR</th><th scope="col">SBP</th><th scope="col">SpO2</th><th scope="col">Temp</th><th scope="col">RR</th><th scope="col">NEWS2</th></tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          {emr.vitals.slice(0, 5).map((v) => (
+                            <tr key={v.id}>
+                              <td>{fmtTime(v.recordedAt)}</td><td>{v.heartRate}</td><td>{v.bpSystolic}</td><td>{v.spO2}</td><td>{v.tempCelsius}</td><td>{v.respiratoryRate}</td>
+                              <td>{v.news2Score} ({v.riskLevel})</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </TableFrame>
                   )}
                 </Section>
 
@@ -287,20 +287,22 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                   {emr.labs.length === 0 ? (
                     <Empty text="No lab results." />
                   ) : (
-                    <table className="w-full text-left">
-                      <thead className="text-slate-400"><tr><th>Test</th><th>Value</th><th>Reference</th><th>Status</th><th>Date</th></tr></thead>
-                      <tbody className="text-slate-200">
-                        {emr.labs.map((l) => (
-                          <tr key={l.id}>
-                            <td>{l.testName}</td>
-                            <td className="font-mono">{l.value} {l.unit}</td>
-                            <td className="text-slate-400">{l.referenceRange}</td>
-                            <td className={l.status === 'CRITICAL' ? 'text-rose-400 font-bold' : l.status === 'ABNORMAL' ? 'text-amber-400' : 'text-emerald-400'}>{l.status}</td>
-                            <td className="text-slate-400">{fmtTime(l.date)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <TableFrame>
+                      <table className="w-full text-left">
+                        <thead><tr><th scope="col">Test</th><th scope="col">Value</th><th scope="col">Reference</th><th scope="col">Status</th><th scope="col">Date</th></tr></thead>
+                        <tbody>
+                          {emr.labs.map((l) => (
+                            <tr key={l.id}>
+                              <td>{l.testName}</td>
+                              <td className="font-mono">{l.value} {l.unit}</td>
+                              <td className="text-ink-3">{l.referenceRange}</td>
+                              <td><Badge tone={l.status === 'CRITICAL' ? 'danger' : l.status === 'ABNORMAL' ? 'warning' : 'success'}>{l.status}</Badge></td>
+                              <td className="text-ink-3">{fmtTime(l.date)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </TableFrame>
                   )}
                   <div className="mt-3">
                     <LabResultForm patientId={p.id} open={!closed} onSaved={() => loadEmr(p.id, true)} />
@@ -311,63 +313,61 @@ export const DoctorWorkbenchPortal: React.FC = () => {
                   {emr.imaging.length === 0 ? (
                     <Empty text="No imaging studies." />
                   ) : (
-                    <ul className="space-y-1 text-slate-200">
+                    <ul className="space-y-1 text-ink">
                       {emr.imaging.map((s) => (
                         <li key={s.id}>
-                          <span className="font-bold">{s.modality}</span> — {s.description} ({fmtTime(s.studyDate ?? s.createdAt)})
-                          {s.impression ? <span className="text-slate-400"> • Impression: {s.impression}</span> : null}
+                          <span className="font-semibold">{s.modality}</span> — {s.description} ({fmtTime(s.studyDate ?? s.createdAt)})
+                          {s.impression ? <span className="text-ink-3"> • Impression: {s.impression}</span> : null}
                         </li>
                       ))}
                     </ul>
                   )}
                 </Section>
-              </div>
+              </Card>
 
-              <form onSubmit={submit} className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-                <fieldset disabled={closed} className={`space-y-4 min-w-0 ${closed ? 'opacity-50' : ''}`}>
-                <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-                  <FileText className="h-5 w-5 text-indigo-400" /> Record Consultation
-                </h3>
-                <div>
-                  <label className={labelCls}>Diagnosis *</label>
-                  <input required value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Prescriptions (comma or line separated)</label>
-                  <textarea rows={2} value={prescriptions} onChange={(e) => setPrescriptions(e.target.value)} className={inputCls} placeholder="e.g. Amoxicillin 500mg TID, Paracetamol 500mg PRN" />
-                </div>
-                <div>
-                  <label className={labelCls}>Clinical notes *</label>
-                  <textarea required rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
-                </div>
+              <Card as="div">
+                <form onSubmit={submit}>
+                  <fieldset disabled={closed} className={cx('min-w-0 space-y-4', closed && 'opacity-50')}>
+                    <SectionTitle icon={<FileText className="h-5 w-5" />} className="mb-0">Record Consultation</SectionTitle>
+                    <Field label="Diagnosis *">
+                      {(id) => <Input id={id} required value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} />}
+                    </Field>
+                    <Field label="Prescriptions (comma or line separated)">
+                      {(id) => <Textarea id={id} rows={2} value={prescriptions} onChange={(e) => setPrescriptions(e.target.value)} placeholder="e.g. Amoxicillin 500mg TID, Paracetamol 500mg PRN" />}
+                    </Field>
+                    <Field label="Clinical notes *">
+                      {(id) => <Textarea id={id} required rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />}
+                    </Field>
 
-                {blockSafety && (
-                  <div className="space-y-3">
-                    <SafetyPanel safety={blockSafety} />
-                    <div>
-                      <label className={labelCls}>Override reason (required to submit despite CRITICAL_BLOCK; recorded in the audit trail)</label>
-                      <input value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} className={inputCls} />
-                    </div>
-                  </div>
-                )}
-                <ErrorBox message={submitError} />
+                    {blockSafety && (
+                      <div className="space-y-3">
+                        <SafetyPanel safety={blockSafety} />
+                        <Field label="Override reason (required to submit despite CRITICAL_BLOCK; recorded in the audit trail)">
+                          {(id) => <Input id={id} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />}
+                        </Field>
+                      </div>
+                    )}
+                    <ErrorBox message={submitError} />
 
-                <button
-                  type="submit"
-                  disabled={closed || submitting || (!!blockSafety && !overrideReason.trim())}
-                  className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 py-3 text-base font-bold text-white  disabled:opacity-50"
-                >
-                  {submitting ? 'Submitting...' : blockSafety ? 'Submit with override' : 'Record consultation'}
-                </button>
+                    <Button
+                      type="submit"
+                      loading={submitting}
+                      disabled={closed || submitting || (!!blockSafety && !overrideReason.trim())}
+                      className="w-full"
+                      data-testid="consultation-submit"
+                    >
+                      {submitting ? 'Submitting...' : blockSafety ? 'Submit with override' : 'Record consultation'}
+                    </Button>
 
-                {result && (
-                  <div className="space-y-3">
-                    <SuccessBox message={`Consultation ${result.consultationId} recorded for ${result.patientName}.`} />
-                    <SafetyPanel safety={result.safety} />
-                  </div>
-                )}
-                </fieldset>
-              </form>
+                    {result && (
+                      <div className="space-y-3">
+                        <SuccessBox message={`Consultation ${result.consultationId} recorded for ${result.patientName}.`} />
+                        <SafetyPanel safety={result.safety} />
+                      </div>
+                    )}
+                  </fieldset>
+                </form>
+              </Card>
 
               <ReferralsPanel patientId={p.id} visitId={visit?.id ?? null} visitOpen={!closed} />
               {visit && <FollowUpPanel visitId={visit.id} visitOpen={!closed} />}
@@ -379,22 +379,22 @@ export const DoctorWorkbenchPortal: React.FC = () => {
   );
 };
 
-const toneCls: Record<string, string> = {
-  rose: 'text-rose-300 border-rose-500/30',
-  indigo: 'text-indigo-300 border-indigo-500/30',
-  amber: 'text-amber-300 border-amber-500/30',
+const LISTBOX_TONE: Record<string, string> = {
+  danger: 'border-danger-200 bg-danger-50 text-danger-700',
+  warning: 'border-warning-200 bg-warning-50 text-warning-700',
+  neutral: 'border-line bg-surface text-ink',
 };
 
-const ListBox: React.FC<{ title: string; items: string[]; tone: string; icon?: React.ReactNode }> = ({ title, items, tone, icon }) => (
-  <div className={`rounded-xl bg-slate-950 p-3 border ${toneCls[tone]}`}>
-    <p className="font-bold text-sm uppercase mb-1 flex items-center gap-1">{icon}{title}</p>
-    {items.length === 0 ? <p className="text-slate-500">None recorded</p> : items.map((i, idx) => <p key={idx}>{i}</p>)}
+const ListBox: React.FC<{ title: string; items: string[]; tone: Tone; icon?: React.ReactNode }> = ({ title, items, tone, icon }) => (
+  <div className={cx('rounded-lg border p-3', LISTBOX_TONE[tone])}>
+    <p className="mb-1 flex items-center gap-1 text-sm font-semibold">{icon}{title}</p>
+    {items.length === 0 ? <p className="text-ink-3">None recorded</p> : items.map((i, idx) => <p key={idx}>{i}</p>)}
   </div>
 );
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-  <div className="rounded-xl bg-slate-950 p-3 border border-slate-700 overflow-x-auto">
-    <p className="font-bold text-slate-300 text-sm uppercase mb-2 flex items-center gap-1">{icon}{title}</p>
+  <div className="rounded-lg border border-line bg-surface p-3">
+    <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-2"><span className="text-ink-3" aria-hidden>{icon}</span>{title}</h3>
     {children}
   </div>
 );

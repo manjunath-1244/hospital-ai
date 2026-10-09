@@ -46,26 +46,35 @@ export const STATUS_LABEL: Record<VisitStatus, string> = {
   LEFT_WITHOUT_SEEN: 'Left without being seen',
 };
 
+const TONE = {
+  neutral: 'bg-surface-muted text-ink-2 border-line-strong',
+  brand: 'bg-brand-50 text-brand-700 border-brand-200',
+  info: 'bg-info-50 text-info-700 border-info-200',
+  success: 'bg-success-50 text-success-700 border-success-200',
+  warning: 'bg-warning-50 text-warning-700 border-warning-200',
+  danger: 'bg-danger-50 text-danger-700 border-danger-200',
+} as const;
+
 export const STATUS_BADGE: Record<VisitStatus, string> = {
-  WAITING_TRIAGE: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  TRIAGED: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  IN_CONSULTATION: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-  UNDER_REVIEW: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  TREATMENT: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  FOLLOW_UP: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  COMPLETED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  CANCELLED: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
-  LEFT_WITHOUT_SEEN: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+  WAITING_TRIAGE: TONE.warning,
+  TRIAGED: TONE.warning,
+  IN_CONSULTATION: TONE.brand,
+  UNDER_REVIEW: TONE.info,
+  TREATMENT: TONE.info,
+  FOLLOW_UP: TONE.info,
+  COMPLETED: TONE.success,
+  CANCELLED: TONE.neutral,
+  LEFT_WITHOUT_SEEN: TONE.danger,
 };
 
 export const statusLabel = (s: VisitStatus) => STATUS_LABEL[s] ?? s;
 
 export const PRIORITY_BADGE: Record<number, string> = {
-  1: 'bg-rose-600/30 text-rose-200 border-rose-500/50',
-  2: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-  3: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  4: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  5: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
+  1: TONE.danger,
+  2: TONE.danger,
+  3: TONE.warning,
+  4: TONE.success,
+  5: TONE.neutral,
 };
 
 export type VisitOutcome =

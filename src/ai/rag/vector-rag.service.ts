@@ -4,6 +4,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { EmbeddingProvider } from './embedding.provider';
 import {
+  asDocType,
+  DocMeta,
+  DocType,
+  embeddingText,
+  firstHeading,
+  parseFrontMatter,
+} from './doc-meta';
+import { preferredDocTypes } from './query-terms';
+import {
   DocKind,
   SearchHit,
   StoredChunk,
@@ -17,6 +26,17 @@ export interface RagRecord {
   text: string;
   kind: DocKind;
   patientId?: string;
+  /** For documents: policy | sop | guideline (front matter `docType:` wins). Default policy. */
+  docType?: DocType;
+}
+
+export interface PolicySearchOptions {
+  /** Only these document types. */
+  docTypes?: DocType[];
+  /** Rank bonus for these types; by default derived from the shape of the question (who handles -> policy/SOP). */
+  preferDocTypes?: DocType[];
+  /** Keep only hits whose cosine similarity to the question is at least this (0-1). */
+  minSimilarity?: number;
 }
 
 /** Single RAG entry point: chunking + embedding + storage. Policies and patient records share one store. */
@@ -53,20 +73,39 @@ export class VectorRagService implements OnModuleInit {
   }
 
   async ingest(rec: RagRecord): Promise<number> {
-    const pieces = this.chunk(rec.text, rec.heading);
-    const rows = pieces.map((p, i) => ({
-      id: `${rec.source}#${i}`,
-      heading: p.heading,
-      content: p.content,
-      contentHash: createHash('sha256')
-        .update(`${this.embedder.modelId}\n${p.content}`)
-        .digest('hex'),
-    }));
+    // Documents carry their type and title with every chunk; patient records are indexed as they are.
+    let text = rec.text;
+    let docMeta: DocMeta | null = null;
+    if (rec.kind === 'policy') {
+      const fm = parseFrontMatter(rec.text);
+      text = fm.body;
+      docMeta = {
+        docType: asDocType(fm.meta.docType ?? rec.docType),
+        title: fm.meta.title ?? firstHeading(text, rec.heading),
+      };
+    }
+    const pieces = this.chunk(text, rec.heading);
+    const rows = pieces.map((p, i) => {
+      const embedText = docMeta
+        ? embeddingText(docMeta, p.heading, p.content)
+        : p.content;
+      return {
+        id: `${rec.source}#${i}`,
+        heading: p.heading,
+        content: p.content,
+        embedText,
+        contentHash: createHash('sha256')
+          .update(`${this.embedder.modelId}\n${embedText}`)
+          .digest('hex'),
+      };
+    });
 
     const existing = await this.store.getHashes(rec.source);
     const changed = rows.filter((r) => existing.get(r.id) !== r.contentHash);
     if (changed.length) {
-      const vectors = await this.embedder.embed(changed.map((c) => c.content));
+      const vectors = await this.embedder.embed(
+        changed.map((c) => c.embedText),
+      );
       const chunks: StoredChunk[] = changed.map((c, i) => ({
         id: c.id,
         source: rec.source,
@@ -76,6 +115,9 @@ export class VectorRagService implements OnModuleInit {
         content: c.content,
         contentHash: c.contentHash,
         embedding: vectors[i],
+        metadata: docMeta
+          ? { docType: docMeta.docType, title: docMeta.title }
+          : {},
       }));
       await this.store.upsert(chunks);
     }
@@ -120,52 +162,48 @@ export class VectorRagService implements OnModuleInit {
     return vec;
   }
 
-  async searchPolicies(query: string, topK = 4): Promise<SearchHit[]> {
-    const vec = await this.embedQueryCached(query);
-    return this.store.search(vec, { topK, kind: 'policy' });
-  }
-
-  async searchPoliciesHybrid(
+  /**
+   * THE search over hospital documents (policies, SOPs, guidelines): hybrid vector + keyword, with a document-type
+   * preference taken from the shape of the question. Every tool, the referral engine and the retrieval checks use it.
+   */
+  async searchPolicies(
     query: string,
     topK = 4,
-    metadata?: Record<string, any>,
+    opts: PolicySearchOptions = {},
   ): Promise<SearchHit[]> {
     const vec = await this.embedQueryCached(query);
-    if (typeof this.store.searchHybrid === 'function') {
-      return this.store.searchHybrid(query, vec, {
-        topK,
-        kind: 'policy',
-        metadata,
-      });
-    }
-    return this.store.search(vec, { topK, kind: 'policy' });
+    const hits = await this.store.searchHybrid(query, vec, {
+      topK: opts.minSimilarity ? Math.max(topK * 3, 12) : topK,
+      kind: 'policy',
+      docTypes: opts.docTypes,
+      preferDocTypes: opts.preferDocTypes ?? preferredDocTypes(query),
+    });
+    const kept = opts.minSimilarity
+      ? hits.filter((h) => (h.similarity ?? 0) >= opts.minSimilarity!)
+      : hits;
+    return kept.slice(0, topK);
   }
 
+  /** Dense-only search, kept for diagnostics and comparisons; production code uses `searchPolicies`. */
+  async searchPoliciesDense(query: string, topK = 4): Promise<SearchHit[]> {
+    return this.store.search(await this.embedQueryCached(query), {
+      topK,
+      kind: 'policy',
+    });
+  }
+
+  /** Patient-record search (one patient or all), hybrid like policies: exact drug names and numbers match by keyword. */
   async searchPatientRecords(
     query: string,
     patientId: string | undefined,
     topK = 4,
   ): Promise<SearchHit[]> {
     const vec = await this.embedQueryCached(query);
-    return this.store.search(vec, { topK, kind: 'patient_record', patientId });
-  }
-
-  async searchPatientRecordsHybrid(
-    query: string,
-    patientId: string | undefined,
-    topK = 4,
-    metadata?: Record<string, any>,
-  ): Promise<SearchHit[]> {
-    const vec = await this.embedQueryCached(query);
-    if (typeof this.store.searchHybrid === 'function') {
-      return this.store.searchHybrid(query, vec, {
-        topK,
-        kind: 'patient_record',
-        patientId,
-        metadata,
-      });
-    }
-    return this.store.search(vec, { topK, kind: 'patient_record', patientId });
+    return this.store.searchHybrid(query, vec, {
+      topK,
+      kind: 'patient_record',
+      patientId,
+    });
   }
 
   /** Reformulates conversational follow-up queries using context summary. */

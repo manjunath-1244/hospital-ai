@@ -45,6 +45,7 @@ export function buildPatientTools(d: {
             chiefComplaint: p.visit?.chiefComplaint ?? null,
             status: p.visit?.status ?? 'NO_VISIT',
             statusLabel: p.visit?.statusLabel ?? 'No visit yet',
+            waitMinutes: p.visit?.waitMinutes ?? null,
             registeredAt: p.registeredAt,
           })),
         };

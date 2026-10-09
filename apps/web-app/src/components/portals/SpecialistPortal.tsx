@@ -7,7 +7,8 @@ import { useRole } from '../../context/RoleContext';
 import { SpecialistConsultations } from './SpecialistConsultations';
 import { apiFetch, errorMessage } from '../../lib/api';
 import { WEEKDAYS, fmtSlot, type AppointmentRow, type AvailabilityResponse, type Specialist } from '../../lib/specialists';
-import { Empty, ErrorBox, Loading, fmtTime } from '../ui/common';
+import { ErrorBox, Loading, fmtTime } from '../ui/common';
+import { Badge, Button, Card, EmptyState, Field, PageHeader, SectionTitle, Select, TableFrame } from '../ui/kit';
 
 export const SpecialistPortal: React.FC = () => {
   const { user } = useAuth();
@@ -66,52 +67,43 @@ export const SpecialistPortal: React.FC = () => {
     }
   };
 
-  const card = 'glass-panel p-7 rounded-2xl border border-slate-700 space-y-4';
-  const h3 = 'text-xl font-semibold text-white tracking-tight border-b border-slate-700 pb-4';
   const hours = [...(avail?.weeklyHours ?? [])].sort((a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime));
   const upcoming = [...(appts ?? [])].sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+  const dept = me?.department ?? user?.department;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 rounded-2xl glass-panel p-7 border-l-4 border-l-teal-500">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Stethoscope className="h-8 w-8 text-teal-400" />
-            {ownRole === 'ADMIN' ? (me?.name ?? 'Specialist') : (user?.displayName ?? 'Specialist')}
-          </h2>
-          <p className="text-base text-slate-300 mt-1.5">
-            {me?.specialty ?? user?.specialty ?? '—'}{(me?.department ?? user?.department) ? ` • ${me?.department ?? user?.department}` : ''}
-          </p>
-        </div>
-        {me && (
-          <button
-            type="button"
-            onClick={toggle}
-            disabled={saving}
-            aria-pressed={me.isAvailable}
-            className={`rounded-xl min-h-12 border px-5 py-2 text-base font-bold disabled:opacity-50 ${me.isAvailable ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-700/40 text-slate-300 border-slate-600'}`}
-          >
-            {me.isAvailable ? 'Available for bookings' : 'Not available'} (click to change)
-          </button>
-        )}
-      </div>
+      <PageHeader
+        icon={<Stethoscope className="h-6 w-6" />}
+        title={ownRole === 'ADMIN' ? (me?.name ?? 'Specialist') : (user?.displayName ?? 'Specialist')}
+        subtitle={`${me?.specialty ?? user?.specialty ?? '—'}${dept ? ` • ${dept}` : ''}`}
+        actions={
+          me && (
+            <Button
+              variant="secondary"
+              onClick={toggle}
+              loading={saving}
+              aria-pressed={me.isAvailable}
+              data-testid="specialist-availability-toggle"
+            >
+              {me.isAvailable ? 'Available for bookings' : 'Not available'} (click to change)
+            </Button>
+          )
+        }
+      />
 
       {ownRole === 'ADMIN' && all.length > 0 && (
-        <label className="flex items-center gap-3 text-base text-slate-200">
-          Viewing the portal of
-          <select
-            data-testid="specialist-select"
-            value={chosen}
-            onChange={(e) => setChosen(e.target.value)}
-            className="rounded-xl bg-slate-950 border border-slate-700 px-4 py-2 min-h-12"
-          >
-            {all.map((sp) => (
-              <option key={sp.id} value={sp.id}>
-                {sp.name} — {sp.specialty}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Field label="Viewing the portal of" className="max-w-md">
+          {(id) => (
+            <Select id={id} data-testid="specialist-select" value={chosen} onChange={(e) => setChosen(e.target.value)}>
+              {all.map((sp) => (
+                <option key={sp.id} value={sp.id}>
+                  {sp.name} — {sp.specialty}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
       )}
 
       <ErrorBox message={error} />
@@ -119,64 +111,62 @@ export const SpecialistPortal: React.FC = () => {
 
       <SpecialistConsultations />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={card}>
-          <h3 className={h3}>Weekly hours</h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <SectionTitle hint="Weekly hours are in UTC.">Weekly hours</SectionTitle>
           {hours.length === 0 ? (
-            <Empty text="No weekly hours set." />
+            <EmptyState title="No weekly hours set." hint="Hours appear here once they are scheduled for this specialist." />
           ) : (
-            <ul className="space-y-2 text-base text-slate-200">
+            <ul className="space-y-2 text-sm text-ink">
               {hours.map((h, i) => (
-                <li key={i} className="flex justify-between rounded-xl bg-slate-950 border border-slate-700 px-4 py-2">
-                  <span className="font-bold">{WEEKDAYS[h.weekday] ?? h.weekday}</span>
-                  <span className="font-mono">{h.startTime} – {h.endTime} ({h.slotMinutes} min slots)</span>
+                <li key={i} className="flex flex-wrap justify-between gap-2 rounded-lg border border-line bg-surface-muted px-4 py-2.5">
+                  <span className="font-semibold">{WEEKDAYS[h.weekday] ?? h.weekday}</span>
+                  <span className="tabular-nums text-ink-2">{h.startTime} – {h.endTime} ({h.slotMinutes} min slots)</span>
                 </li>
               ))}
             </ul>
           )}
-          <p className="text-sm text-slate-400">Weekly hours are in UTC.</p>
-        </div>
+        </Card>
 
-        <div className={card}>
-          <h3 className={h3}>Next free slots</h3>
-          {avail && avail.slots.length === 0 && <Empty text="No free slots." />}
-          <div className="flex flex-wrap gap-2">
+        <Card>
+          <SectionTitle hint="Shown in your local time.">Next free slots</SectionTitle>
+          {avail && avail.slots.length === 0 && <EmptyState title="No free slots." hint="Open slots are listed here when hours are set and not fully booked." />}
+          <ul className="flex flex-wrap gap-2">
             {avail?.slots.map((s) => (
-              <span key={s} className="rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm font-bold text-slate-200">{fmtSlot(s)}</span>
+              <li key={s}>
+                <Badge tone="neutral" className="px-3 py-1.5 text-sm">{fmtSlot(s)}</Badge>
+              </li>
             ))}
-          </div>
-          <p className="text-sm text-slate-400">Shown in your local time.</p>
-        </div>
+          </ul>
+        </Card>
       </div>
 
-      <div className={card}>
-        <h3 className={h3}>My upcoming appointments</h3>
-        {appts && upcoming.length === 0 && <Empty text="No appointments booked." />}
+      <Card>
+        <SectionTitle>My upcoming appointments</SectionTitle>
+        {appts && upcoming.length === 0 && <EmptyState title="No appointments booked." hint="Booked appointments for this specialist will be listed here." />}
         {upcoming.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-base">
+          <TableFrame>
+            <table>
               <thead>
-                <tr className="border-b border-slate-800 text-sm text-slate-400 font-semibold uppercase tracking-wider">
-                  <th className="pb-2 px-2">When</th><th className="pb-2 px-2">Patient</th><th className="pb-2 px-2">Reason</th><th className="pb-2 px-2">Booking</th><th className="pb-2 px-2">Visit</th>
+                <tr>
+                  <th scope="col">When</th><th scope="col">Patient</th><th scope="col">Reason</th><th scope="col">Booking</th><th scope="col">Visit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                {upcoming.map((a, i) => {
-                  return (
-                    <tr key={a.id ?? i}>
-                      <td className="py-2 px-2 whitespace-nowrap">{fmtTime(a.dateTime)}</td>
-                      <td className="py-2 px-2"><span className="font-bold">{a.patientName ?? 'Unknown'}</span> <span className="font-mono text-sm text-slate-400">{a.patientId ?? ''}</span></td>
-                      <td className="py-2 px-2">{a.reason ?? '—'}</td>
-                      <td className="py-2 px-2">{a.status}</td>
-                      <td className="py-2 px-2">{a.visitStatus ?? '—'}</td>
-                    </tr>
-                  );
-                })}
+              <tbody>
+                {upcoming.map((a, i) => (
+                  <tr key={a.id ?? i}>
+                    <td className="whitespace-nowrap">{fmtTime(a.dateTime)}</td>
+                    <td><span className="font-semibold">{a.patientName ?? 'Unknown'}</span> <span className="text-xs text-ink-3">{a.patientId ?? ''}</span></td>
+                    <td>{a.reason ?? '—'}</td>
+                    <td>{a.status}</td>
+                    <td>{a.visitStatus ?? '—'}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

@@ -1,7 +1,12 @@
 export interface StaffOut {
   byRole: Record<
     string,
-    Array<{ name: string; specialty: string | null; isAvailable: boolean }>
+    Array<{
+      id?: string;
+      name: string;
+      specialty: string | null;
+      isAvailable: boolean;
+    }>
   >;
 }
 

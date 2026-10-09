@@ -19,8 +19,8 @@ export interface AgentAction {
   decidedByUserId?: string | null;
   decidedAt?: string | null;
   decisionNote?: string | null;
-  result?: Record<string, unknown> | null;
-  verification?: { verified: boolean; checks: string[]; error?: string } | null;
+  result?: Record<string, unknown> | unknown[] | null;
+  verification?: { verified: boolean; checks: string[]; error?: string; partial?: boolean } | null;
   createdAt?: string;
 }
 
@@ -35,13 +35,13 @@ export const ACTION_STATUS_LABEL: Record<ActionStatus, string> = {
 };
 
 export const ACTION_STATUS_BADGE: Record<ActionStatus, string> = {
-  PENDING: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  APPROVED: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  EXECUTING: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  DONE: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  FAILED: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-  DECLINED: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
-  EXPIRED: 'bg-slate-600/40 text-slate-300 border-slate-500/40',
+  PENDING: 'bg-warning-50 text-warning-700 border-warning-200',
+  APPROVED: 'bg-info-50 text-info-700 border-info-200',
+  EXECUTING: 'bg-info-50 text-info-700 border-info-200',
+  DONE: 'bg-success-50 text-success-700 border-success-200',
+  FAILED: 'bg-danger-50 text-danger-700 border-danger-200',
+  DECLINED: 'bg-surface-muted text-ink-2 border-line-strong',
+  EXPIRED: 'bg-surface-muted text-ink-2 border-line-strong',
 };
 
 export const TIER_LABEL: Record<ActionTier, string> = {
@@ -88,7 +88,8 @@ export interface DecisionOutcome {
   error: string;
 }
 
-const refetch = async (id: string): Promise<AgentAction | null> => {
+/** The server's current copy of one action (null if it cannot be read). */
+export const fetchAction = async (id: string): Promise<AgentAction | null> => {
   try {
     const r = await apiFetch<{ success: boolean; action?: AgentAction }>(`/ai/actions/${encodeURIComponent(id)}`);
     return r.success && r.action ? r.action : null;
@@ -103,6 +104,6 @@ export async function decideAction(id: string, decision: 'approve' | 'decline', 
     const r = await apiFetch<{ success: boolean; action: AgentAction }>(`/ai/actions/${encodeURIComponent(id)}/${decision}`, { method: 'POST', body });
     return { action: r.action, error: r.success ? '' : 'The server did not confirm the decision.' };
   } catch (e) {
-    return { action: await refetch(id), error: errorMessage(e) };
+    return { action: await fetchAction(id), error: errorMessage(e) };
   }
 }

@@ -55,11 +55,11 @@ describe('the agent never claims an action that did not happen', () => {
     expect(r.text).toContain('waiting for your approval');
     expect(proposalsFromTrace(t)).toHaveLength(1);
   });
-  it('leaves a real direct write alone', () => {
-    const t = trace([{ name: 'bookAppointment', ok: true }]);
+  it('no tool writes directly any more, so a "booked" claim without a proposal is corrected', () => {
+    const t = trace([{ name: 'getPatientSummary', ok: true }]);
     expect(
       reconcileActionClaims('I have booked the appointment.', t).text,
-    ).toBe('I have booked the appointment.');
+    ).toMatch(/No action was taken/);
   });
   it('does not touch ordinary answers', () => {
     expect(
@@ -117,7 +117,7 @@ describe('"give details" is a lookup, not a medication question', () => {
       false,
     );
     expect(classifyIntent('what did the doctor give him?').medication).toBe(
-      true,
+      false, // a chart lookup (what is recorded), not a safety question
     );
     expect(classifyIntent('is it safe to give her aspirin').medication).toBe(
       true,
@@ -145,5 +145,114 @@ describe('questions about specialists are not hospital-overview questions', () =
     expect(
       classifyIntent('is a specialist required for P1002').specialists,
     ).toBe(false);
+  });
+});
+
+import { appendClosestPassage } from './guardrails';
+
+describe('a "not in the data" answer never leaves the user empty-handed', () => {
+  const traceWith = (matches: any[]) => {
+    const t = new ToolTrace();
+    t.record(
+      { name: 'searchHospitalPolicies', args: {}, success: true },
+      { success: true, matches },
+    );
+    return t;
+  };
+  const passage = {
+    file: 'appointment-policy.md',
+    heading: '2. Cancellations & Rescheduling',
+    text: '- Appointments cancelled with less than 24 hours notice require supervisory clearance.',
+    similarity: 0.62,
+  };
+  it("shows the passage that shares the question's words", () => {
+    const out = appendClosestPassage(
+      'That is not in the data I retrieved.',
+      traceWith([passage]),
+      "Does cancelling an appointment with 12 hours notice need anyone's approval?",
+    );
+    expect(out).toContain('supervisory clearance');
+    expect(out).toContain('appointment-policy.md');
+  });
+  it('shows nothing when no retrieved passage is related', () => {
+    const unrelated = {
+      ...passage,
+      text: '- Visitors must sign in at the front desk.',
+      heading: 'Visitors',
+      similarity: 0.5,
+    };
+    expect(
+      appendClosestPassage(
+        'That is not in the data I retrieved.',
+        traceWith([unrelated]),
+        'staff parking fees',
+      ),
+    ).toBe('That is not in the data I retrieved.');
+  });
+  it('leaves a real answer alone', () => {
+    expect(
+      appendClosestPassage(
+        'Routine follow-ups need 48 hours.',
+        traceWith([passage]),
+        'follow-up booking',
+      ),
+    ).toBe('Routine follow-ups need 48 hours.');
+  });
+});
+
+describe('a claimed proposal must exist', () => {
+  it('"prepared for your approval" without a saved proposal is replaced, with the refusal reason', () => {
+    const t = trace([]);
+    t.calls.push({
+      name: 'proposeNotification',
+      args: {},
+      success: false,
+      error: 'No staff in "NURSE" to notify.',
+    });
+    const r = reconcileActionClaims('Prepared for your approval.', t);
+    expect(r.text).toMatch(/No proposal was created/);
+    expect(r.text).toContain('No staff in "NURSE" to notify.');
+  });
+  it('a real saved proposal is untouched by this rule', () => {
+    const t = trace([
+      {
+        name: 'proposeReferral',
+        ok: true,
+        output: {
+          success: true,
+          actionId: 'ACT1',
+          proposalType: 'REFERRAL',
+          summary: 'Referral',
+          tier: 'ASK',
+          status: 'PENDING_APPROVAL',
+        },
+      },
+    ]);
+    expect(
+      reconcileActionClaims('I prepared a referral for approval.', t).text,
+    ).toContain('waiting for your approval');
+  });
+});
+
+describe('plain and passive "done" claims', () => {
+  it('"I have done it for you" without an action is corrected', () => {
+    expect(
+      reconcileActionClaims('I have done it for you.', trace([])).text,
+    ).toMatch(/No action was taken/);
+  });
+  it('"Your role was changed" is corrected only when a change was requested', () => {
+    expect(
+      reconcileActionClaims('Your role was changed.', trace([]), {
+        actionRequested: true,
+      }).text,
+    ).toMatch(/No action was taken/);
+    expect(
+      reconcileActionClaims('The record was updated on 5 Oct.', trace([])).text,
+    ).toBe('The record was updated on 5 Oct.');
+  });
+  it('first-person deletion claims are always corrected', () => {
+    expect(
+      reconcileActionClaims('I deleted the record.', trace([])).text,
+    ).toMatch(/No action was taken/);
   });
 });

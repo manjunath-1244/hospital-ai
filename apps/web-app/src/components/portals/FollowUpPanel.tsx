@@ -6,7 +6,8 @@ import { useRealtime } from '../../context/RoleContext';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { AgentAction } from '../../lib/actions';
 import { ApprovalCard } from '../ai/ApprovalCard';
-import { Empty, ErrorBox, Loading, SuccessBox, fmtTime } from '../ui/common';
+import { ErrorBox, Loading, SuccessBox, fmtTime } from '../ui/common';
+import { Badge, Button, Card, EmptyState, SectionTitle } from '../ui/kit';
 
 /** Mirrors src/database/entities/follow-up-plan.entity.ts. */
 interface FollowUpPlan {
@@ -80,35 +81,39 @@ export const FollowUpPanel: React.FC<Props> = ({ visitId, visitOpen }) => {
   };
 
   return (
-    <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4">
-        <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-          <CalendarCheck className="h-5 w-5 text-indigo-400" /> Follow-up plan
-        </h3>
-        <button onClick={propose} disabled={busy || !visitOpen} className="min-h-11 rounded-xl bg-indigo-600 px-4 text-base font-bold text-white hover:bg-indigo-500 disabled:opacity-50" title={visitOpen ? '' : 'Needs an open visit'}>
-          {busy ? 'Proposing...' : 'Propose follow-up plan'}
-        </button>
+    <Card as="div" data-testid="follow-up-panel">
+      <SectionTitle
+        icon={<CalendarCheck className="h-5 w-5" />}
+        actions={
+          <Button onClick={propose} loading={busy} disabled={busy || !visitOpen} title={visitOpen ? '' : 'Needs an open visit'}>
+            {busy ? 'Proposing...' : 'Propose follow-up plan'}
+          </Button>
+        }
+      >
+        Follow-up plan
+      </SectionTitle>
+      <div className="space-y-4">
+        {plan === undefined && !error && <Loading text="Loading plan..." />}
+        <ErrorBox message={error} />
+        <SuccessBox message={msg} />
+        {plan === null && !error && <EmptyState title="No follow-up plan for this visit yet." hint={visitOpen ? 'Propose a plan to create an approval request for the follow-up items.' : undefined} />}
+        {plan && (
+          <div className="space-y-2">
+            <p className="text-sm text-ink">
+              State: <span className="font-semibold">{PLAN_STATE_LABEL[plan.status] ?? plan.status}</span> <span className="text-ink-3">• {plan.id} • {fmtTime(plan.createdAt)}</span>
+            </p>
+            <ul className="space-y-2">
+              {plan.items.map((it, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-muted px-4 py-3 text-sm text-ink">
+                  <Badge>{ITEM_TYPE_LABEL[it.type] ?? it.type}</Badge>
+                  <span>{it.summary}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {proposal && <ApprovalCard action={proposal} onChanged={load} />}
       </div>
-      {plan === undefined && !error && <Loading text="Loading plan..." />}
-      <ErrorBox message={error} />
-      <SuccessBox message={msg} />
-      {plan === null && !error && <Empty text="No follow-up plan for this visit yet." />}
-      {plan && (
-        <div className="space-y-2">
-          <p className="text-base text-slate-200">
-            State: <span className="font-bold text-white">{PLAN_STATE_LABEL[plan.status] ?? plan.status}</span> <span className="text-sm text-slate-400">• {plan.id} • {fmtTime(plan.createdAt)}</span>
-          </p>
-          <ul className="space-y-2">
-            {plan.items.map((it, i) => (
-              <li key={i} className="rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 text-base text-slate-200">
-                <span className="mr-2 rounded-full border border-slate-600 px-2.5 py-0.5 text-xs font-bold text-slate-300">{ITEM_TYPE_LABEL[it.type] ?? it.type}</span>
-                {it.summary}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {proposal && <ApprovalCard action={proposal} onChanged={load} />}
-    </div>
+    </Card>
   );
 };

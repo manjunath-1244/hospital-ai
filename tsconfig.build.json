@@ -1,4 +1,10 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "tests", "dist", "**/*spec.ts", "apps", "src/mastra", "src/ai/mcp", "src/ai/workflows"]
+  "exclude": [
+    "node_modules",
+    "tests",
+    "dist",
+    "**/*spec.ts",
+    "apps"
+  ]
 }

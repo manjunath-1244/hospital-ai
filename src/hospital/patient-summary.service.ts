@@ -5,6 +5,7 @@ import { toVisitSummary } from './visits/visit-summary';
 import { ClinicalRecordsService } from './clinical-records.service';
 import { MedicationSafetyService } from './medication-safety.service';
 import type { UserRole } from '../security/roles.decorator';
+import { mayRead } from './section-access';
 
 /**
  * One consistent, role-aware 360° view of a patient, used by both the REST API and the agent.
@@ -41,33 +42,11 @@ export class PatientSummaryService {
       : null;
     out.visitHistory = recentVisits.map((v) => toVisitSummary(v));
 
-    if (
-      can(
-        'DOCTOR',
-        'NURSE',
-        'ADMIN',
-        'PHARMACIST',
-        'RADIOLOGIST',
-        'CARE_COORDINATOR',
-        'SPECIALIST',
-      )
-    ) {
+    if (mayRead(role, 'conditions')) {
       out.conditions = p.conditions;
     }
-    if (
-      can('DOCTOR', 'NURSE', 'ADMIN', 'PHARMACIST', 'RADIOLOGIST', 'SPECIALIST')
-    )
-      out.allergies = p.allergies;
-    if (
-      can(
-        'DOCTOR',
-        'NURSE',
-        'ADMIN',
-        'PHARMACIST',
-        'CARE_COORDINATOR',
-        'SPECIALIST',
-      )
-    )
+    if (mayRead(role, 'allergies')) out.allergies = p.allergies;
+    if (mayRead(role, 'medications'))
       out.currentMedications = p.currentMedications;
 
     if (

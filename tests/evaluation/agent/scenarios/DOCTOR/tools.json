@@ -1,0 +1,670 @@
+[
+ {
+  "id": "DOC-TLS-001",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "searchPatients",
+      "args": {
+       "stage": "ALL",
+       "limit": 5
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "searchPatients"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "registration",
+   "tool": "searchPatients",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-002",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getPatientSummary",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getPatientSummary"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-003",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getCurrentVisit",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getCurrentVisit"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "consultation",
+   "tool": "getCurrentVisit",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-004",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getHospitalOverview",
+      "args": {}
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getHospitalOverview"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "registration",
+   "tool": "getHospitalOverview",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-005",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getAppointmentsAndTasks",
+      "args": {}
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getAppointmentsAndTasks"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "appointment",
+   "tool": "getAppointmentsAndTasks",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-006",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getStaffSummary",
+      "args": {}
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getStaffSummary"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "registration",
+   "tool": "getStaffSummary",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-007",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "findSpecialists",
+      "args": {}
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "findSpecialists"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-008",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getSpecialistAvailability",
+      "args": {
+       "doctorId": "USR-CARDIOLOGIST",
+       "limit": 3
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getSpecialistAvailability"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "appointment",
+   "tool": "getSpecialistAvailability",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-009",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "searchHospitalPolicies",
+      "args": {
+       "query": "discharge policy",
+       "topK": 2
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "searchHospitalPolicies"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "discharge",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-010",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "searchClinicalGuidelines",
+      "args": {
+       "query": "cardiology referral",
+       "topK": 2
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "searchClinicalGuidelines"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "referral",
+   "tool": "searchClinicalGuidelines",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-011",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "searchClinicalRecords",
+      "args": {
+       "query": "chest tightness",
+       "topK": 3
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "searchClinicalRecords"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "consultation",
+   "tool": "searchClinicalRecords",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-012",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getLabs",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getLabs"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "labs",
+   "tool": "getLabs",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-013",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getVitalsHistory",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getVitalsHistory"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "triage",
+   "tool": "getVitalsHistory",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-014",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getMedications",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getMedications"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getMedications",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-015",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "getAllergies",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "getAllergies"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "consultation",
+   "tool": "getAllergies",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-016",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "verifyMedicationSafety",
+      "args": {
+       "patientId": "P1002",
+       "medications": [
+        "Aspirin"
+       ]
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "verifyMedicationSafety"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "verifyMedicationSafety",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-017",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "assessTriage",
+      "args": {
+       "heartRate": 90,
+       "bpSystolic": 120,
+       "respiratoryRate": 16,
+       "spO2": 98,
+       "tempCelsius": 37,
+       "consciousness": "ALERT"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "assessTriage"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "triage",
+   "tool": "assessTriage",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-018",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "checkUnconsultedAlerts",
+      "args": {}
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to give aspirin together with warfarin? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "checkUnconsultedAlerts"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "registration",
+   "tool": "checkUnconsultedAlerts",
+   "behaviour": "tool-use"
+  }
+ },
+ {
+  "id": "DOC-TLS-019",
+  "role": "DOCTOR",
+  "model": {
+   "script": [
+    {
+     "tool": {
+      "name": "reviewReferralNeed",
+      "args": {
+       "patientId": "P1002"
+      }
+     }
+    },
+    {
+     "text": "Here is what I found."
+    }
+   ]
+  },
+  "category": "tool-offered",
+  "turns": [
+   {
+    "say": "Is it safe to continue the current medications for P1002? Check what you can.",
+    "expect": {
+     "toolsOk": [
+      "reviewReferralNeed"
+     ]
+    }
+   }
+  ],
+  "tags": {
+   "stage": "referral",
+   "tool": "reviewReferralNeed",
+   "behaviour": "tool-use"
+  }
+ }
+]

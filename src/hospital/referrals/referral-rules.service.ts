@@ -298,12 +298,12 @@ export class ReferralRulesService {
     const historicalConditions = ctx.conditions ?? [];
     for (const cond of historicalConditions) {
       const lcond = cond.toLowerCase();
-      if (/cardiac|coronary|hypertension|stent|mi|heart/i.test(lcond)) {
+      if (/\b(cardiac|coronary|hypertension|stent|mi|myocardial|heart)\b/i.test(lcond)) {
         if (!matches.some((m) => m.specialty === 'Cardiology')) {
           historicalOnlyCandidates.push(`Past cardiac history: ${cond}`);
         }
       }
-      if (/stroke|tia|migraine|seizure|headache/i.test(lcond)) {
+      if (/\b(stroke|tia|migraine|seizure|headache)\b/i.test(lcond)) {
         if (!matches.some((m) => m.specialty === 'Neurology')) {
           historicalOnlyCandidates.push(`Past neurological history: ${cond}`);
         }

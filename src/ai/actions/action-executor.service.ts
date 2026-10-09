@@ -81,6 +81,15 @@ export class ActionExecutorService {
       );
     }
 
+    // A consultation is signed in the approver's name, so only the clinician who proposed it may approve it.
+    if (
+      action.type === 'CONSULTATION' &&
+      action.proposedByUserId !== approver.userId
+    )
+      throw new ForbiddenException(
+        'A consultation can only be approved (and signed) by the clinician who proposed it.',
+      );
+
     if (action.tier === 'ASK_HUMAN' && action.type === 'CONSULTATION') {
       if (!decisionNote || decisionNote.trim().length < 5) {
         throw new BadRequestException(
@@ -89,11 +98,29 @@ export class ActionExecutorService {
       }
     }
 
+    // Claim the proposal atomically: of two simultaneous approvals (button + chat "yes", double click) exactly one
+    // flips PENDING -> EXECUTING; the other sees zero affected rows and never runs the executor.
+    const decidedAt = new Date();
+    const claim = await this.actionsRepo.update(
+      { id: action.id, status: 'PENDING' },
+      {
+        status: 'EXECUTING',
+        decidedByUserId: approver.userId,
+        decidedAt,
+        decisionNote,
+      },
+    );
+    if (!claim.affected) {
+      const now = await this.actionsRepo.findOne({ where: { id: action.id } });
+      if (now?.status === 'DONE') return now;
+      throw new BadRequestException(
+        `Action ${actionId} is already being handled (status ${now?.status ?? 'unknown'})`,
+      );
+    }
     action.status = 'EXECUTING';
     action.decidedByUserId = approver.userId;
-    action.decidedAt = new Date();
+    action.decidedAt = decidedAt;
     action.decisionNote = decisionNote;
-    await this.actionsRepo.save(action);
 
     let executionResult: any = null;
     let verified: boolean | undefined;
@@ -110,6 +137,15 @@ export class ActionExecutorService {
             approver,
           );
           checks.push(`Registered patient ${executionResult.patient.id}`);
+          const stored = await this.hospital.getPatientById(
+            executionResult.patient.id,
+          );
+          verified = stored?.id === executionResult.patient.id;
+          checks.push(
+            verified
+              ? `Read-back verified: patient ${stored.id} (${stored.name}) is stored.`
+              : 'Read-back FAILED: the new patient record was not found.',
+          );
           break;
         }
 
@@ -117,6 +153,15 @@ export class ActionExecutorService {
           const dto = Object.assign(new AppointmentDto(), p);
           executionResult = await this.lifecycle.bookAppointment(dto);
           checks.push(`Booked appointment ${executionResult.id ?? ''}`);
+          const booked = (
+            await this.hospital.getAppointmentsForPatient(p.patientId)
+          ).find((a) => a.id === executionResult.id);
+          verified = !!booked;
+          checks.push(
+            verified
+              ? `Read-back verified: appointment ${booked!.id} is stored for ${new Date(booked!.dateTime).toISOString()}.`
+              : 'Read-back FAILED: the appointment was not found for this patient.',
+          );
           break;
         }
 
@@ -128,6 +173,14 @@ export class ActionExecutorService {
             priority: p.priority ?? 'MEDIUM',
           });
           checks.push(`Created task ${executionResult.id ?? ''}`);
+          verified = (await this.hospital.getTasks()).some(
+            (t) => t.id === executionResult.id,
+          );
+          checks.push(
+            verified
+              ? `Read-back verified: task ${executionResult.id} is stored.`
+              : 'Read-back FAILED: the task was not found.',
+          );
           break;
         }
 
@@ -141,6 +194,15 @@ export class ActionExecutorService {
             approver,
           );
           checks.push(`Recorded consultation for patient ${p.patientId}`);
+          verified = await this.lifecycle.consultationStored(
+            p.patientId,
+            executionResult.consultationId,
+          );
+          checks.push(
+            verified
+              ? `Read-back verified: consultation ${executionResult.consultationId} is stored.`
+              : 'Read-back FAILED: the consultation was not found.',
+          );
           break;
         }
 
@@ -298,10 +360,16 @@ export class ActionExecutorService {
         `Execution failed for action ${actionId}: ${err.message}`,
       );
       action.status = 'FAILED';
+      // A multi-item action (follow-up plan) may have completed some items before one failed: say so, and keep what
+      // was created, so nobody believes nothing happened (or that everything did).
+      const partial =
+        Array.isArray(executionResult) && executionResult.length > 0;
+      if (partial) action.result = executionResult;
       action.verification = {
         verified: false,
         checks,
         error: err.message,
+        ...(partial ? { partial: true } : {}),
       };
       await this.actionsRepo.save(action);
       throw err;
@@ -325,11 +393,23 @@ export class ActionExecutorService {
       );
     }
 
+    const decided = await this.actionsRepo.update(
+      { id: action.id, status: 'PENDING' },
+      {
+        status: 'DECLINED',
+        decidedByUserId: approver.userId,
+        decidedAt: new Date(),
+        decisionNote: reason,
+      },
+    );
+    if (!decided.affected)
+      throw new BadRequestException(
+        `Action ${actionId} was already decided and cannot be declined`,
+      );
     action.status = 'DECLINED';
     action.decidedByUserId = approver.userId;
     action.decidedAt = new Date();
     action.decisionNote = reason;
-    await this.actionsRepo.save(action);
 
     try {
       this.eventsGateway.emitActionDecided({
@@ -361,8 +441,7 @@ export class ActionExecutorService {
     target: string,
   ): Promise<string[]> {
     if (type === 'USER') return target ? [target] : [];
-    const found = await this.specialists.find({ specialty: target });
-    return found.map((f) => f.id);
+    return this.specialists.recipientIdsForRole(target);
   }
 
   /** Carries out every item of an approved follow-up plan for real and reads each one back. */

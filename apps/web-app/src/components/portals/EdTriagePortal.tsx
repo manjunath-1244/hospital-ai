@@ -6,7 +6,8 @@ import { useRealtime } from '../../context/RoleContext';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { Consciousness, QueueItem, QueueResponse, TriagePayload, TriageResponse } from '../../lib/types';
 import { isActiveStatus } from '../../lib/visits';
-import { Empty, ErrorBox, PriorityBadge, StatusBadge, fmtWait, inputCls, labelCls, splitList } from '../ui/common';
+import { ErrorBox, PriorityBadge, StatusBadge, fmtWait, splitList } from '../ui/common';
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, SectionTitle, Select, cx, TONE_ALERT, type Tone } from '../ui/kit';
 import { PatientPicker } from '../ui/PatientPicker';
 
 const emptyVitals = { heartRate: '', bpSystolic: '', spO2: '', tempCelsius: '', respiratoryRate: '', painScore: '', glucoseMgDl: '' };
@@ -75,172 +76,169 @@ export const EdTriagePortal: React.FC = () => {
   };
 
   const num = (key: keyof typeof emptyVitals, label: string, required = true, step = '1') => (
-    <div>
-      <label className={labelCls}>{label}</label>
-      <input
-        type="number"
-        step={step}
-        required={required}
-        value={vitals[key]}
-        onChange={(e) => setVitals({ ...vitals, [key]: e.target.value })}
-        className={`${inputCls} font-mono`}
-      />
-    </div>
+    <Field label={label}>
+      {(id) => (
+        <Input
+          id={id}
+          type="number"
+          step={step}
+          required={required}
+          value={vitals[key]}
+          onChange={(e) => setVitals({ ...vitals, [key]: e.target.value })}
+          className="font-mono"
+        />
+      )}
+    </Field>
   );
 
-  const riskColor =
-    result?.riskLevel === 'HIGH'
-      ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-      : result?.riskLevel === 'MEDIUM'
-      ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
+  const riskTone: Tone = result?.riskLevel === 'HIGH' ? 'danger' : result?.riskLevel === 'MEDIUM' ? 'warning' : 'success';
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl glass-panel p-7 border-l-4 border-l-amber-500">
-        <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-          <AlertTriangle className="h-8 w-8 text-amber-400" />
-          ED Triage: NEWS2, SIRS & Suggested ESI
-        </h2>
-        <p className="text-base text-slate-300 mt-1.5">Vitals are submitted to the backend, which computes all scores. Suggested ESI is decision support only.</p>
-      </div>
+      <PageHeader
+        icon={<AlertTriangle className="h-6 w-6" />}
+        title="ED Triage: NEWS2, SIRS & Suggested ESI"
+        subtitle="Vitals are submitted to the backend, which computes all scores. Suggested ESI is decision support only."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="lg:col-span-2 glass-panel p-7 rounded-2xl border border-slate-700 space-y-3">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <ListOrdered className="h-5 w-5 text-amber-400" /> Waiting for Triage ({queue.length})
-          </h3>
-          <ErrorBox message={queueError} />
-          {queue.length === 0 && !queueError && <Empty text="No patients are waiting for triage." />}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-            {queue.map((i) => (
-              <button
-                key={i.visit.id}
-                type="button"
-                onClick={() => {
-                  setPatientId(i.patientId);
-                  setPatientClosed(false);
-                }}
-                className={`text-left rounded-xl border p-3 text-sm transition-all ${patientId === i.patientId ? 'bg-amber-500/10 border-amber-400' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-white">{i.name}</p>
-                  <StatusBadge visit={i.visit} />
-                </div>
-                <p className="text-slate-400">{i.age ?? '?'}y {i.gender ?? ''} • waiting {fmtWait(i.visit.waitMinutes)} <PriorityBadge priority={i.visit.priority} /></p>
-                <p className="text-slate-300 truncate">{i.chiefComplaint}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={submit} className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <Activity className="h-5 w-5 text-amber-400" /> Triage Vitals Entry
-          </h3>
-          <PatientPicker
-            value={patientId}
-            onChange={(id, p) => {
-              setPatientId(id);
-              setPatientClosed(!!id && !isActiveStatus(p?.visit?.status));
-            }}
-          />
-          {patientClosed && <ErrorBox message="This patient has no open visit. The front desk must start a new visit before triage." />}
-          <div className="grid grid-cols-2 gap-3">
-            {num('heartRate', 'Heart Rate (bpm)')}
-            {num('bpSystolic', 'Systolic BP (mmHg)')}
-            {num('spO2', 'SpO2 (%)')}
-            {num('tempCelsius', 'Temperature (°C)', true, '0.1')}
-            {num('respiratoryRate', 'Respiratory Rate (/min)')}
-            {num('painScore', 'Pain score (0-10, optional)', false)}
-            {num('glucoseMgDl', 'Glucose (mg/dL, optional)', false)}
-          </div>
-          <div>
-            <label className={labelCls}>Symptoms (comma separated, optional)</label>
-            <input value={symptoms} onChange={(e) => setSymptoms(e.target.value)} className={inputCls} placeholder="e.g. chest pain, shortness of breath" />
-            {splitList(symptoms).length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {splitList(symptoms).map((sym, i) => (
-                  <span key={i} className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-semibold text-amber-200">{sym}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className={labelCls}>Priority override (ESI)</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)} className={inputCls}>
-              <option value="">Automatic (use suggested ESI)</option>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>{n}{n === 1 ? ' – most urgent' : n === 5 ? ' – least urgent' : ''}</option>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className="lg:col-span-2">
+          <SectionTitle icon={<ListOrdered className="h-5 w-5" />}>Waiting for Triage ({queue.length})</SectionTitle>
+          <div className="space-y-3">
+            <ErrorBox message={queueError} />
+            {queue.length === 0 && !queueError && <EmptyState title="No patients are waiting for triage." hint="Newly registered patients appear here until their vitals are entered." />}
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {queue.map((i) => (
+                <button
+                  key={i.visit.id}
+                  type="button"
+                  data-testid="triage-queue-item"
+                  aria-pressed={patientId === i.patientId}
+                  onClick={() => {
+                    setPatientId(i.patientId);
+                    setPatientClosed(false);
+                  }}
+                  className={cx(
+                    'min-h-11 rounded-lg border p-3 text-left text-sm',
+                    patientId === i.patientId ? 'border-brand-500 bg-brand-50' : 'border-line bg-surface hover:bg-surface-muted',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-ink">{i.name}</p>
+                    <StatusBadge visit={i.visit} />
+                  </div>
+                  <p className="mt-1 text-ink-3">{i.age ?? '?'}y {i.gender ?? ''} • waiting {fmtWait(i.visit.waitMinutes)} <PriorityBadge priority={i.visit.priority} /></p>
+                  <p className="truncate text-ink-2">{i.chiefComplaint}</p>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Consciousness (ACVPU)</label>
-            <select value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)} className={inputCls}>
-              {(['ALERT', 'CONFUSION', 'VOICE', 'PAIN', 'UNRESPONSIVE'] as Consciousness[]).map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={onSupplementalO2} onChange={(e) => setOnSupplementalO2(e.target.checked)} />
-            On supplemental oxygen
-          </label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={spo2Scale2} onChange={(e) => setSpo2Scale2(e.target.checked)} />
-            Use SpO2 Scale 2 (hypercapnic respiratory failure)
-          </label>
-          <ErrorBox message={error} />
-          <button
-            type="submit"
-            disabled={loading || !patientId || patientClosed}
-            className="w-full rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 py-3 text-base font-bold text-white  disabled:opacity-50"
-          >
-            {loading ? 'Submitting...' : 'Submit triage vitals'}
-          </button>
-        </form>
+        </Card>
 
-        <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <Sparkles className="h-5 w-5 text-amber-400" /> Triage Result
-          </h3>
+        <Card as="div">
+          <form onSubmit={submit} className="space-y-4">
+            <SectionTitle icon={<Activity className="h-5 w-5" />} className="mb-0">Triage Vitals Entry</SectionTitle>
+            <PatientPicker
+              value={patientId}
+              onChange={(id, p) => {
+                setPatientId(id);
+                setPatientClosed(!!id && !isActiveStatus(p?.visit?.status));
+              }}
+            />
+            {patientClosed && <ErrorBox message="This patient has no open visit. The front desk must start a new visit before triage." />}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {num('heartRate', 'Heart Rate (bpm)')}
+              {num('bpSystolic', 'Systolic BP (mmHg)')}
+              {num('spO2', 'SpO2 (%)')}
+              {num('tempCelsius', 'Temperature (°C)', true, '0.1')}
+              {num('respiratoryRate', 'Respiratory Rate (/min)')}
+              {num('painScore', 'Pain score (0-10, optional)', false)}
+              {num('glucoseMgDl', 'Glucose (mg/dL, optional)', false)}
+            </div>
+            <Field label="Symptoms (comma separated, optional)">
+              {(id) => (
+                <>
+                  <Input id={id} value={symptoms} onChange={(e) => setSymptoms(e.target.value)} placeholder="e.g. chest pain, shortness of breath" />
+                  {splitList(symptoms).length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {splitList(symptoms).map((sym, i) => (
+                        <Badge key={i} tone="brand">{sym}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </Field>
+            <Field label="Priority override (ESI)">
+              {(id) => (
+                <Select id={id} value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <option value="">Automatic (use suggested ESI)</option>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n}{n === 1 ? ' – most urgent' : n === 5 ? ' – least urgent' : ''}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="Consciousness (ACVPU)">
+              {(id) => (
+                <Select id={id} value={consciousness} onChange={(e) => setConsciousness(e.target.value as Consciousness)}>
+                  {(['ALERT', 'CONFUSION', 'VOICE', 'PAIN', 'UNRESPONSIVE'] as Consciousness[]).map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <label className="flex min-h-10 items-center gap-2 text-sm text-ink">
+              <input type="checkbox" className="h-4 w-4 accent-brand-700" checked={onSupplementalO2} onChange={(e) => setOnSupplementalO2(e.target.checked)} />
+              On supplemental oxygen
+            </label>
+            <label className="flex min-h-10 items-center gap-2 text-sm text-ink">
+              <input type="checkbox" className="h-4 w-4 accent-brand-700" checked={spo2Scale2} onChange={(e) => setSpo2Scale2(e.target.checked)} />
+              Use SpO2 Scale 2 (hypercapnic respiratory failure)
+            </label>
+            <ErrorBox message={error} />
+            <Button type="submit" loading={loading} disabled={loading || !patientId || patientClosed} className="w-full" data-testid="triage-submit">
+              {loading ? 'Submitting...' : 'Submit triage vitals'}
+            </Button>
+          </form>
+        </Card>
+
+        <Card>
+          <SectionTitle icon={<Sparkles className="h-5 w-5" />}>Triage Result</SectionTitle>
           {result ? (
-            <div className="space-y-4">
-              <div className={`rounded-xl border p-4 text-sm space-y-2 ${riskColor}`}>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm flex items-center gap-2">
-                    <ShieldAlert className="h-5 w-5" /> NEWS2 {result.news2Score}
+            <div className="space-y-4" aria-live="polite">
+              <div className={cx('space-y-2 rounded-lg border p-4 text-sm', TONE_ALERT[riskTone])}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 font-semibold">
+                    <ShieldAlert className="h-5 w-5" aria-hidden /> NEWS2 {result.news2Score}
                   </span>
-                  <span className="rounded-full bg-slate-950/60 px-3 py-0.5 text-xs font-black">{result.riskLevel}</span>
+                  <Badge tone={riskTone}>{result.riskLevel}</Badge>
                 </div>
-                <p className="font-bold">Suggested ESI level: {result.suggestedEsiLevel}</p>
-                <p className="text-slate-200 font-medium">{result.rationale}</p>
+                <p className="font-semibold">Suggested ESI level: {result.suggestedEsiLevel}</p>
+                <p className="font-medium">{result.rationale}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-950 p-4 border border-slate-700 text-sm text-slate-300">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface-muted p-4 text-sm text-ink-2">
                 Visit is now <StatusBadge visit={result.visit} /> with priority <PriorityBadge priority={result.visit.priority} />
               </div>
-              <div className="rounded-xl bg-slate-950 p-4 border border-slate-700 text-sm">
-                <p className="font-bold text-indigo-400 mb-2">NEWS2 breakdown</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-slate-300">
+              <div className="rounded-lg border border-line bg-surface-muted p-4 text-sm">
+                <p className="mb-2 font-semibold text-ink">NEWS2 breakdown</p>
+                <div className="grid grid-cols-1 gap-x-4 gap-y-1 font-mono text-ink-2 sm:grid-cols-2">
                   {Object.entries(result.breakdown).map(([k, v]) => (
-                    <div key={k} className="flex justify-between"><span className="text-slate-400">{k}</span><span>{v}</span></div>
+                    <div key={k} className="flex justify-between"><span className="text-ink-3">{k}</span><span>{v}</span></div>
                   ))}
                 </div>
               </div>
-              <div className={`rounded-xl p-4 border text-sm ${result.sirs.positive ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-slate-950 border-slate-800 text-slate-300'}`}>
-                <p className="font-bold">SIRS: {result.sirs.count} criteria {result.sirs.positive ? '(positive)' : '(negative)'}</p>
+              <Alert tone={result.sirs.positive ? 'danger' : 'neutral'}>
+                <p className="font-semibold">SIRS: {result.sirs.count} criteria {result.sirs.positive ? '(positive)' : '(negative)'}</p>
                 {result.sirs.criteria.map((c, i) => (
                   <p key={i}>- {c}</p>
                 ))}
-              </div>
+              </Alert>
             </div>
           ) : (
-            <div className="flex h-64 items-center justify-center rounded-xl bg-slate-950/50 border border-dashed border-slate-800 text-slate-500 text-sm">
-              Submit vitals to see the backend-computed result.
-            </div>
+            <EmptyState title="No result yet." hint="Submit vitals to see the backend-computed result." />
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

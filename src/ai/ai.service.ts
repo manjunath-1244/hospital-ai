@@ -13,9 +13,14 @@ import { AiRouterService } from './services/ai-router.service';
 import { AiContextService } from './services/ai-context.service';
 import { AiAnswerService } from './services/ai-answer.service';
 import { proposalsFromTrace } from './guardrails';
+import {
+  QueryRouterService,
+  type RouteDecision,
+} from './query/query-router.service';
+import { PendingActionsService } from './actions/pending-actions.service';
+import type { RouteTrace } from '../database/entities/agent-run.entity';
 import type { AuthUser } from '../security/auth-user';
 
-const PATIENT_ID_ARG = /^[A-Za-z0-9-]{2,32}$/;
 
 @Injectable()
 export class AiService {
@@ -32,6 +37,8 @@ export class AiService {
     private readonly router: AiRouterService,
     private readonly contextService: AiContextService,
     private readonly answerService: AiAnswerService,
+    private readonly queryRouter: QueryRouterService,
+    private readonly pending: PendingActionsService,
   ) {}
 
   /** Every chat outcome (success or failure) is persisted as a trace; the caller gets the traceId either way. */
@@ -55,7 +62,34 @@ export class AiService {
       );
 
       session = await this.phi.createSession();
-      const intent = this.router.classify(dto.message);
+      // Understand the question first (plan + confidence); the plan, not the wording, decides everything after this.
+      const decision = await rec.step('memory', 'route', () =>
+        this.queryRouter.decide(dto.message, session!.mask(dto.message)),
+      );
+      const intent = decision.intent;
+      rec.route = this.routeTrace(decision, 'pending');
+
+      // Turns answered without fetching anything: asking back, or replying to a pending proposal.
+      const early = await this.earlyAnswer(
+        decision,
+        dto.message,
+        user,
+        thread.id,
+      );
+      if (early) {
+        rec.route = this.routeTrace(decision, early.handler);
+        return this.finishEarly(
+          rec,
+          user,
+          thread,
+          dto.message,
+          early.text,
+          session,
+          ctx,
+          early.handler,
+        );
+      }
+
       const context = await rec.step('memory', 'retrieve-context', () =>
         this.contextService.gatherContext(
           user,
@@ -78,6 +112,14 @@ export class AiService {
       // Grounded mode: when the server found the data, the model only writes the answer.
       const grounded =
         !!context.text && !intent.write && !intent.medication && !intent.triage;
+      rec.route = this.routeTrace(
+        decision,
+        directResult.directText
+          ? directResult.handler
+          : grounded
+            ? 'grounded.model'
+            : 'agent.model',
+      );
 
       const agentContext = await rec.step(
         'memory',
@@ -146,18 +188,10 @@ export class AiService {
 
       await this.memory.append(thread.id, 'user', dto.message);
       await this.memory.append(thread.id, 'assistant', response);
-      const lastPatient = [...rec.trace.calls]
-        .reverse()
-        .find(
-          (c) =>
-            c.success &&
-            typeof (c.args as any)?.patientId === 'string' &&
-            PATIENT_ID_ARG.test((c.args as any).patientId),
-        );
-      await this.memory.setActivePatient(
-        thread,
-        (lastPatient?.args as any)?.patientId,
-      );
+      // The conversation's patient changes only when THIS message names exactly one patient (or already resolved to the
+      // current one). A patient the model happened to read along the way never becomes the focus of later turns.
+      if (context.subjectIds?.length === 1)
+        await this.memory.setActivePatient(thread, context.subjectIds[0]);
 
       await this.runs.save(
         rec.build(
@@ -183,13 +217,19 @@ export class AiService {
           success: c.success,
           auto: !!c.auto,
           durationMs: c.durationMs ?? 0,
+          ...(c.error ? { error: c.error } : {}),
         })),
         citations: rec.trace.citations,
         proposals: proposalsFromTrace(rec.trace),
         guardrailStatus,
         guardrailNotes,
         hipaaShieldActive: session.active,
-        mode: grounded ? 'grounded' : 'agent',
+        mode: directResult.directText
+          ? 'direct'
+          : grounded
+            ? 'grounded'
+            : 'agent',
+        route: rec.route,
         memory: {
           summarized: ctx.summarized,
           messagesInContext: ctx.recent.length + 1,
@@ -220,88 +260,101 @@ export class AiService {
     }
   }
 
-  /** Stream chunks from model generation for streaming chat requests. */
+  /**
+   * Streaming endpoint. It runs the SAME pipeline as chat() (routing, tools, guardrails, claim reconciliation, memory,
+   * run trace) and returns the verified answer in one chunk: a separate streaming pipeline would skip those checks.
+   */
   async *chatStream(user: AuthUser, dto: ChatDto) {
-    const model = this.llm.getModel();
-    const session = await this.phi.createSession();
-    const rec = new RunRecorder('chat-stream', user, this.llm.label());
-    rec.setGoal(dto.message);
+    const result: any = await this.chat(user, dto);
+    yield result?.response ?? result?.error ?? '';
+  }
 
-    const thread = await this.memory.getOrCreateThread(
-      user,
-      dto.threadId,
-      dto.message,
-    );
-    const ctx = await this.memory.buildContext(thread, (prev, msgs) =>
-      this.summarizer.summarize(prev, msgs),
-    );
+  private routeTrace(decision: RouteDecision, handler: string): RouteTrace {
+    const p = decision.plan;
+    return {
+      intent: p.intent,
+      entity: p.entity,
+      scope: p.scope,
+      filters: p.filters as Record<string, unknown>,
+      confidence: p.confidence,
+      source: p.source,
+      usedL2: decision.usedL2,
+      decision: decision.outcome,
+      handler,
+      alternatives: p.alternatives,
+    };
+  }
 
-    const intent = this.router.classify(dto.message);
-    const context = await this.contextService.gatherContext(
-      user,
-      dto.message,
-      intent,
-      session,
-      rec,
-      thread.activePatientId,
-    );
-
-    const directResult = this.router.evaluateDirectAnswer(
-      dto.message,
-      intent,
-      context,
-      rec,
-    );
-
-    if (directResult.directText) {
-      yield directResult.directText;
-      return;
+  /**
+   * Turns that need no data lookup and no model: a question back when we cannot tell what is meant, and "yes / no"
+   * replies, which belong to the proposals waiting in THIS conversation (and to nothing else).
+   */
+  private async earlyAnswer(
+    decision: RouteDecision,
+    message: string,
+    user: AuthUser,
+    threadId: string,
+  ): Promise<{ text: string; handler: string } | null> {
+    const intent = decision.plan.intent;
+    if (decision.outcome === 'CLARIFY' && decision.clarification)
+      return { text: decision.clarification, handler: 'clarify' };
+    if (intent === 'CONFIRM' || intent === 'DECLINE') {
+      const r = await this.pending.reply(intent, message, user, threadId);
+      return {
+        text: r.text,
+        handler: intent === 'CONFIRM' ? 'pending.confirm' : 'pending.decline',
+      };
     }
+    if (intent === 'SMALLTALK')
+      return {
+        text: 'Hello. Ask me about a patient (by name or ID), the waiting room, appointments, specialists, or hospital policies. I can also prepare a referral, appointment or task for your approval.',
+        handler: 'smalltalk',
+      };
+    return null;
+  }
 
-    const grounded =
-      !!context.text && !intent.write && !intent.medication && !intent.triage;
-
-    const agentContext = this.tools.applyPolicy(
-      await this.contexts.build({
-        user,
-        subjectIds: context.subjectIds,
-        thread: {
-          id: thread.id,
-          activePatientId: thread.activePatientId,
-          summarized: ctx.summarized,
+  /** Saves the turn and returns the standard response for an answer produced without the data/model pipeline. */
+  private async finishEarly(
+    rec: RunRecorder,
+    user: AuthUser,
+    thread: { id: string },
+    message: string,
+    text: string,
+    session: { active: boolean },
+    ctx: { summarized: boolean; recent: unknown[] },
+    handler: string,
+  ) {
+    await this.memory.append(thread.id, 'user', message);
+    await this.memory.append(thread.id, 'assistant', text);
+    await this.runs.save(
+      rec.build(
+        {
+          status: 'OK',
+          guardrailStatus: 'VERIFIED_SAFE',
+          guardrailNotes: [],
+          threadId: thread.id,
         },
-      }),
+        session as any,
+      ),
     );
-
-    const messages = [
-      ...(ctx.summary
-        ? [
-            {
-              role: 'system' as const,
-              content: `Summary of the earlier conversation:\n${session.mask(ctx.summary)}`,
-            },
-          ]
-        : []),
-      ...(context.text
-        ? [{ role: 'system' as const, content: context.text }]
-        : []),
-      ...ctx.recent.map((m) => ({
-        role: m.role,
-        content: session.mask(m.content),
-      })),
-      { role: 'user' as const, content: session.mask(dto.message) },
-    ];
-
-    yield* this.answerService.streamAgent(
-      user,
-      model,
-      grounded,
-      agentContext,
-      session,
-      rec,
-      thread.activePatientId,
-      messages,
-    );
+    return {
+      success: true,
+      response: text,
+      threadId: thread.id,
+      traceId: rec.traceId,
+      toolCalls: [],
+      citations: [],
+      proposals: [],
+      guardrailStatus: 'VERIFIED_SAFE',
+      guardrailNotes: [],
+      hipaaShieldActive: session.active,
+      mode: handler.startsWith('pending') ? 'pending' : handler,
+      route: rec.route,
+      memory: {
+        summarized: ctx.summarized,
+        messagesInContext: ctx.recent.length + 1,
+      },
+    };
   }
 
   async generateDocument(user: AuthUser, dto: DocumentDto) {

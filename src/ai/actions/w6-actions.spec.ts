@@ -15,6 +15,12 @@ describe('W6 Approval Layer & Actions Policy', () => {
       expect(getActionTier('REGISTER_PATIENT')).toBe('ASK');
       expect(getActionTier('CONSULTATION')).toBe('ASK_HUMAN');
       expect(getActionTier('DELETE_PATIENT')).toBe('NEVER');
+      expect(getActionTier('SOMETHING_NEW')).toBe('NEVER'); // unknown fails closed
+    });
+
+    it('types without an executor can never be proposed', () => {
+      for (const t of ['CLOSE_VISIT', 'REOPEN_VISIT', 'COMPUTE_NEWS2'])
+        expect(canProposeAction(t, 'ADMIN')).toBe(false);
     });
 
     it('enforces role authorization on proposals', () => {
@@ -78,5 +84,18 @@ describe('W6 Approval Layer & Actions Policy', () => {
 
       expect(res.status).toBe('VERIFIED_SAFE');
     });
+  });
+});
+
+describe('follow-up proposal summary', () => {
+  it('lists the planned items, never "undefined"', () => {
+    const t = renderActionSummary('FOLLOW_UP', {
+      patientId: 'P1001',
+      items: [{ type: 'APPOINTMENT' }, { type: 'LAB_ORDER' }, { type: 'TASK' }],
+    });
+    expect(t).toBe(
+      'Follow-up plan for patient P1001: 3 item(s) (appointment, lab_order, task)',
+    );
+    expect(t).not.toContain('undefined');
   });
 });

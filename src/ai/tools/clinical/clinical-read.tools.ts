@@ -171,7 +171,9 @@ export function buildClinicalReadTools(d: {
       }),
       roles: [...ALL_STAFF, 'SPECIALIST'],
       async run({ query, topK }) {
-        const found = await d.rag.searchPolicies(query, topK);
+        const found = await d.rag.searchPolicies(query, topK, {
+          preferDocTypes: ['guideline'],
+        });
         return {
           success: true,
           count: found.length,

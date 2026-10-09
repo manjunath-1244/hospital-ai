@@ -46,19 +46,29 @@ const TRANSIENT_CODES = new Set([
 export function isRetryable(err: any, depth = 0): boolean {
   if (!err || depth > 3) return false;
   if (err instanceof TimeoutError) return true;
-  const status = err.statusCode ?? err.status ?? err.response?.status;
+  const status =
+    err.statusCode ??
+    err.status ??
+    err.response?.status ??
+    err.cause?.statusCode ??
+    err.cause?.status ??
+    err.error?.statusCode ??
+    err.error?.status;
   if (typeof status === 'number')
     return status === 408 || status === 429 || status >= 500;
   if (typeof err.code === 'string' && TRANSIENT_CODES.has(err.code))
     return true;
   if (
     typeof err.message === 'string' &&
-    /rate.?limit|overloaded|temporar|timed? ?out|socket hang up/i.test(
+    /rate.?limit|overloaded|unavailab|temporar|timed? ?out|socket hang up|50[0234]/i.test(
       err.message,
     )
   )
     return true;
-  return isRetryable(err.cause ?? err.lastError, depth + 1);
+  return (
+    isRetryable(err.cause ?? err.lastError, depth + 1) ||
+    isRetryable(err.error, depth + 1)
+  );
 }
 
 export interface RetryOptions {

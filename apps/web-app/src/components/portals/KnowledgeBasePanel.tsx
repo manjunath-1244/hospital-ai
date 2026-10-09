@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 import { apiFetch, errorMessage } from '../../lib/api';
 import type { KnowledgeDoc, KnowledgeReindexResult } from '../../lib/types';
-import { Empty, ErrorBox, Loading, SuccessBox, fmtTime, inputCls, labelCls } from '../ui/common';
+import { ErrorBox, Loading, fmtTime, inputCls } from '../ui/common';
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, SectionTitle, TableFrame, Textarea } from '../ui/kit';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = ['.md', '.txt', '.pdf'];
@@ -143,86 +144,94 @@ export const KnowledgeBasePanel: React.FC = () => {
   };
 
   return (
-    <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-      <div className="flex items-center justify-between border-b border-slate-700 pb-4">
-        <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-emerald-400" />
-          Hospital Knowledge Base (agent training documents)
-        </h3>
-        <button onClick={reindex} disabled={reindexing} className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-sm font-bold text-slate-300 hover:text-white border border-slate-700 disabled:opacity-50">
-          <RefreshCw className={`h-4 w-4 ${reindexing ? 'animate-spin' : ''}`} /> {reindexing ? 'Re-indexing...' : 'Re-index everything'}
-        </button>
-      </div>
+    <Card>
+      <SectionTitle
+        icon={<BookOpen className="h-5 w-5" />}
+        actions={
+          <Button variant="secondary" onClick={reindex} loading={reindexing} icon={<RefreshCw className="h-4 w-4" />}>
+            {reindexing ? 'Re-indexing...' : 'Re-index everything'}
+          </Button>
+        }
+      >
+        Hospital Knowledge Base (agent training documents)
+      </SectionTitle>
 
-      <SuccessBox message={msg} />
-      <ErrorBox message={error} />
+      <div className="space-y-4">
+        {msg && <Alert tone="success" live="polite">{msg}</Alert>}
+        <ErrorBox message={error} />
 
-      {!docs && !listError && <Loading text="Loading documents..." />}
-      <ErrorBox message={listError} />
-      {docs && docs.length === 0 && <Empty text="No documents indexed." />}
-      {docs && docs.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
-                <th className="pb-2 px-2">Title</th><th className="pb-2 px-2">Filename</th><th className="pb-2 px-2">Origin</th><th className="pb-2 px-2">Size</th><th className="pb-2 px-2">Chunks</th><th className="pb-2 px-2">Uploaded</th><th className="pb-2 px-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
-              {docs.map((d) => (
-                <tr key={d.id}>
-                  <td className="py-2 px-2 font-semibold text-white">{d.title}</td>
-                  <td className="py-2 px-2 font-mono break-all">{d.filename}</td>
-                  <td className="py-2 px-2">
-                    <span className={`rounded px-2 py-0.5 text-xs font-bold ${d.origin === 'builtin' ? 'bg-slate-700/50 text-slate-300' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                      {d.origin === 'builtin' ? 'built-in' : 'uploaded'}
-                    </span>
-                  </td>
-                  <td className="py-2 px-2 whitespace-nowrap">{fmtSize(d.sizeBytes)}</td>
-                  <td className="py-2 px-2">{d.chunkCount}</td>
-                  <td className="py-2 px-2 whitespace-nowrap">{d.uploadedBy ? `${d.uploadedBy} • ${fmtTime(d.createdAt)}` : '—'}</td>
-                  <td className="py-2 px-2 text-right">
-                    {d.origin === 'uploaded' && (
-                      <button onClick={() => remove(d)} disabled={deletingId === d.id} className="inline-flex items-center gap-1 rounded-lg border border-rose-500/40 px-2 py-1 text-sm font-bold text-rose-400 hover:bg-rose-500/10 disabled:opacity-50">
-                        <Trash2 className="h-4 w-4" /> {deletingId === d.id ? 'Deleting...' : 'Delete'}
-                      </button>
-                    )}
-                  </td>
+        {!docs && !listError && <Loading text="Loading documents..." />}
+        <ErrorBox message={listError} />
+        {docs && docs.length === 0 && <EmptyState title="No documents indexed." hint="Upload a file or paste text below so the agent can use it." />}
+        {docs && docs.length > 0 && (
+          <TableFrame>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Filename</th>
+                  <th scope="col">Origin</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Chunks</th>
+                  <th scope="col">Uploaded</th>
+                  <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {docs.map((d) => (
+                  <tr key={d.id}>
+                    <td className="font-medium text-ink">{d.title}</td>
+                    <td className="break-all font-mono text-xs">{d.filename}</td>
+                    <td>
+                      <Badge tone={d.origin === 'builtin' ? 'neutral' : 'brand'}>{d.origin === 'builtin' ? 'built-in' : 'uploaded'}</Badge>
+                    </td>
+                    <td className="whitespace-nowrap">{fmtSize(d.sizeBytes)}</td>
+                    <td>{d.chunkCount}</td>
+                    <td className="whitespace-nowrap">{d.uploadedBy ? `${d.uploadedBy} • ${fmtTime(d.createdAt)}` : '—'}</td>
+                    <td className="text-right">
+                      {d.origin === 'uploaded' && (
+                        <Button variant="danger" size="sm" onClick={() => remove(d)} loading={deletingId === d.id} icon={<Trash2 className="h-4 w-4" />}>
+                          {deletingId === d.id ? 'Deleting...' : 'Delete'}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <form onSubmit={uploadFile} className="space-y-3 rounded-lg border border-line bg-surface-muted p-4">
+            <SectionTitle as="h3" icon={<UploadCloud className="h-5 w-5" />} className="mb-0" hint="Maximum 5 MB.">
+              Upload a file (.md, .txt, .pdf — max 5 MB)
+            </SectionTitle>
+            <Field label="File">
+              {(id) => <input id={id} ref={fileRef} type="file" accept=".md,.txt,.pdf" onChange={onFile} disabled={busy} className={inputCls} />}
+            </Field>
+            <Field label="Title (optional)">
+              {(id) => <Input id={id} value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} disabled={busy} />}
+            </Field>
+            <Button type="submit" loading={busy} disabled={!file} data-testid="kb-upload-submit">
+              {busy ? 'Uploading & indexing...' : 'Upload & index'}
+            </Button>
+          </form>
+
+          <form onSubmit={uploadText} className="space-y-3 rounded-lg border border-line bg-surface-muted p-4">
+            <SectionTitle as="h3" className="mb-0">Paste text</SectionTitle>
+            <Field label="Title *">
+              {(id) => <Input id={id} required value={pasteTitle} onChange={(e) => setPasteTitle(e.target.value)} disabled={busy} />}
+            </Field>
+            <Field label="Content *">
+              {(id) => <Textarea id={id} required rows={4} value={pasteText} onChange={(e) => setPasteText(e.target.value)} disabled={busy} />}
+            </Field>
+            <Button type="submit" loading={busy} disabled={!pasteTitle.trim() || !pasteText.trim()} data-testid="kb-paste-submit">
+              {busy ? 'Indexing...' : 'Save & index'}
+            </Button>
+          </form>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <form onSubmit={uploadFile} className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3">
-          <p className="text-sm font-bold text-white flex items-center gap-2"><UploadCloud className="h-5 w-5 text-emerald-400" /> Upload a file (.md, .txt, .pdf — max 5 MB)</p>
-          <input ref={fileRef} type="file" accept=".md,.txt,.pdf" onChange={onFile} disabled={busy} className={inputCls} />
-          <div>
-            <label className={labelCls}>Title (optional)</label>
-            <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} disabled={busy} className={inputCls} />
-          </div>
-          <button type="submit" disabled={busy || !file} className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-2.5 text-sm font-bold text-white  disabled:opacity-50">
-            {busy ? 'Uploading & indexing...' : 'Upload & index'}
-          </button>
-        </form>
-
-        <form onSubmit={uploadText} className="rounded-xl bg-slate-950 p-4 border border-slate-700 space-y-3">
-          <p className="text-sm font-bold text-white">Paste text</p>
-          <div>
-            <label className={labelCls}>Title *</label>
-            <input required value={pasteTitle} onChange={(e) => setPasteTitle(e.target.value)} disabled={busy} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Content *</label>
-            <textarea required rows={4} value={pasteText} onChange={(e) => setPasteText(e.target.value)} disabled={busy} className={inputCls} />
-          </div>
-          <button type="submit" disabled={busy || !pasteTitle.trim() || !pasteText.trim()} className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-6 py-2.5 text-sm font-bold text-white  disabled:opacity-50">
-            {busy ? 'Indexing...' : 'Save & index'}
-          </button>
-        </form>
       </div>
-    </div>
+    </Card>
   );
 };

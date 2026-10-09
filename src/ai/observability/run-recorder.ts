@@ -4,6 +4,7 @@ import type { AuthUser } from '../../security/auth-user';
 import type { PhiSession } from '../security/phi-session';
 import type {
   AgentRunEntity,
+  RouteTrace,
   RunStep,
 } from '../../database/entities/agent-run.entity';
 
@@ -24,6 +25,8 @@ export class RunRecorder {
   retries = 0;
   /** PHI-free snapshot of what the agent knew and could do for this request (see `context/agent-context.ts`). */
   context: { hash: string; snapshot: unknown } | null = null;
+  /** How the question was routed (plan, confidence, L1/L2, handler). */
+  route: RouteTrace | null = null;
   /** High-level goal or query intent. */
   goal: string | null = null;
   /** Structured decision chain. */
@@ -130,7 +133,9 @@ export class RunRecorder {
       toolNames: this.trace.calls.map((c) => c.name),
       contextHash: this.context?.hash ?? null,
       context: this.context?.snapshot ?? null,
-      goal: this.goal,
+      route: this.route,
+      // the user's message can name a patient: store it masked, like the tool arguments
+      goal: this.goal ? (phi ? phi.mask(this.goal) : '[hidden]') : null,
       decisions: this.decisions,
       actionIds: this.actionIds,
     };

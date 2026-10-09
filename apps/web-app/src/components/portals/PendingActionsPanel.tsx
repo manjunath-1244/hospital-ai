@@ -4,16 +4,22 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ClipboardCheck, RefreshCw } from 'lucide-react';
 import { useRealtime } from '../../context/RoleContext';
 import { errorMessage } from '../../lib/api';
-import {
-  ACTION_STATUS_BADGE,
-  ACTION_STATUS_LABEL,
-  actionTypeLabel,
-  fetchActions,
-  isOpen,
-  type AgentAction,
-} from '../../lib/actions';
-import { ApprovalCard } from '../ai/ApprovalCard';
-import { Empty, ErrorBox, Loading, fmtTime } from '../ui/common';
+import { actionTypeLabel, fetchActions, isOpen, type AgentAction } from '../../lib/actions';
+import { ApprovalCard, cardState, type CardState } from '../ai/ApprovalCard';
+import { ErrorBox, Loading, fmtTime } from '../ui/common';
+import { Badge, Button, Card, EmptyState, SectionTitle, TableFrame, Tabs, type Tone } from '../ui/kit';
+
+/** Same state vocabulary as ApprovalCard (derived by its cardState) so a proposal reads the same in chat and here. */
+const STATE_LABEL: Record<CardState, { tone: Tone; label: string }> = {
+  AWAITING: { tone: 'warning', label: 'Awaiting approval' },
+  EXPIRED: { tone: 'neutral', label: 'Expired' },
+  EXECUTING: { tone: 'info', label: 'Executing' },
+  VERIFIED: { tone: 'success', label: 'Done and verified' },
+  UNVERIFIED: { tone: 'warning', label: 'Done, not verified' },
+  PARTIAL: { tone: 'danger', label: 'Partially completed' },
+  FAILED: { tone: 'danger', label: 'Failed' },
+  DECLINED: { tone: 'neutral', label: 'Declined' },
+};
 
 interface Props {
   /** Limit to one patient (doctor workbench); omit for the whole queue (nurse, admin). */
@@ -50,68 +56,79 @@ export const PendingActionsPanel: React.FC<Props> = ({ patientId, title = 'Pendi
 
   const open = (pending ?? []).filter((a) => isOpen(a));
   const stale = (pending ?? []).filter((a) => !isOpen(a));
-  const tabCls = (on: boolean) => `rounded-lg px-4 py-2 text-base font-bold border ${on ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 border-slate-700 text-slate-300 hover:text-white'}`;
 
   return (
-    <div className="glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4">
-        <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-          <ClipboardCheck className="h-5 w-5 text-indigo-400" /> {title}
-          {open.length > 0 && <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 text-sm text-amber-300">{open.length}</span>}
-        </h3>
-        <div className="flex items-center gap-2">
-          <button className={tabCls(tab === 'PENDING')} onClick={() => setTab('PENDING')}>Awaiting approval</button>
-          <button className={tabCls(tab === 'HISTORY')} onClick={() => setTab('HISTORY')}>History</button>
-          <button onClick={load} aria-label="Refresh pending actions" className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 text-slate-300 hover:text-white">
-            <RefreshCw className="h-4 w-4" />
-          </button>
-        </div>
+    <Card data-testid="pending-actions-panel">
+      <SectionTitle
+        icon={<ClipboardCheck className="h-5 w-5" />}
+        hint="Changes the assistant proposed. Nothing happens until a person approves."
+        actions={
+          <Button variant="secondary" size="sm" onClick={load} aria-label="Refresh pending actions" icon={<RefreshCw className="h-4 w-4" />}>
+            Refresh
+          </Button>
+        }
+      >
+        {title}
+      </SectionTitle>
+      <div className="mb-4">
+        <Tabs
+          label="Agent actions"
+          value={tab}
+          onChange={(id) => setTab(id as 'PENDING' | 'HISTORY')}
+          tabs={[
+            { id: 'PENDING', label: 'Awaiting approval', count: open.length },
+            { id: 'HISTORY', label: 'History' },
+          ]}
+        />
       </div>
       <ErrorBox message={error} />
       {!pending && !error && <Loading text="Loading actions..." />}
 
       {tab === 'PENDING' && pending && (
         <div className="space-y-3">
-          {open.length === 0 && <Empty text="Nothing is waiting for approval." />}
+          {open.length === 0 && <EmptyState title="Nothing is waiting for approval." hint="New proposals from the assistant appear here." />}
           {open.map((a) => <ApprovalCard key={a.id} action={a} onChanged={load} />)}
-          {stale.length > 0 && <p className="text-sm text-slate-400">{stale.length} proposal(s) passed their expiry and can no longer be approved.</p>}
+          {stale.length > 0 && <p className="text-sm text-ink-3">{stale.length} proposal(s) passed their expiry and can no longer be approved.</p>}
         </div>
       )}
 
       {tab === 'HISTORY' && history && (
         history.length === 0 ? (
-          <Empty text="No decided actions yet." />
+          <EmptyState title="No decided actions yet." hint="Approved, declined and expired proposals are listed here with their result." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-base">
+          <TableFrame>
+            <table>
               <thead>
-                <tr className="border-b border-slate-800 text-sm text-slate-400 font-semibold uppercase tracking-wider">
-                  <th className="pb-2 px-2">Action</th><th className="pb-2 px-2">Patient</th><th className="pb-2 px-2">Result</th><th className="pb-2 px-2">Decided by</th><th className="pb-2 px-2">When</th>
+                <tr>
+                  <th scope="col">Action</th><th scope="col">Patient</th><th scope="col">Result</th><th scope="col">Decided by</th><th scope="col">When</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200 align-top">
-                {history.map((a) => (
-                  <tr key={a.id}>
-                    <td className="py-2 px-2">
-                      <p className="font-bold">{actionTypeLabel(a.type)}</p>
-                      <p className="text-sm text-slate-400 max-w-sm">{a.summary}</p>
-                    </td>
-                    <td className="py-2 px-2 font-mono text-sm">{a.patientId ?? '—'}</td>
-                    <td className="py-2 px-2">
-                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${ACTION_STATUS_BADGE[a.status]}`}>{ACTION_STATUS_LABEL[a.status] ?? a.status}</span>
-                      {a.status === 'FAILED' && a.verification?.error && <p className="text-sm text-rose-300 mt-1">{a.verification.error}</p>}
-                      {a.status === 'DONE' && a.verification?.checks?.[0] && <p className="text-sm text-slate-400 mt-1">{a.verification.checks[0]}</p>}
-                      {a.decisionNote && <p className="text-sm text-slate-400 mt-1">Note: {a.decisionNote}</p>}
-                    </td>
-                    <td className="py-2 px-2 font-mono text-sm">{a.decidedByUserId ?? '—'}</td>
-                    <td className="py-2 px-2 text-sm whitespace-nowrap">{fmtTime(a.decidedAt ?? a.createdAt)}</td>
-                  </tr>
-                ))}
+              <tbody className="align-top">
+                {history.map((a) => {
+                  const view = STATE_LABEL[cardState(a)];
+                  return (
+                    <tr key={a.id} data-testid="action-history-row">
+                      <td>
+                        <p className="font-semibold">{actionTypeLabel(a.type)}</p>
+                        <p className="max-w-sm text-sm text-ink-3">{a.summary}</p>
+                      </td>
+                      <td className="text-sm">{a.patientId ?? '—'}</td>
+                      <td>
+                        <Badge tone={view.tone}>{view.label}</Badge>
+                        {(a.status === 'FAILED' || a.status === 'DONE') && a.verification?.error && <p className="mt-1 text-sm text-danger-700">{a.verification.error}</p>}
+                        {a.status === 'DONE' && a.verification?.checks?.[0] && <p className="mt-1 text-sm text-ink-3">{a.verification.checks[0]}</p>}
+                        {a.decisionNote && <p className="mt-1 text-sm text-ink-3">Note: {a.decisionNote}</p>}
+                      </td>
+                      <td className="text-sm">{a.decidedByUserId ?? '—'}</td>
+                      <td className="whitespace-nowrap text-sm">{fmtTime(a.decidedAt ?? a.createdAt)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )
       )}
-    </div>
+    </Card>
   );
 };

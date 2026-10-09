@@ -117,7 +117,9 @@ const CASES: Array<[string, Expect]> = [
   ['is it safe to give aspirin to P1002', { medication: true }],
   ['can I prescribe amoxicillin for P1001', { medication: true }],
   ['any interaction between warfarin and ibuprofen', { medication: true }],
-  ['what did the doctor give him', { medication: true }],
+  // past tense "give" asks what is in the chart; only safety/dosing wording is a medication QUESTION
+  ['what did the doctor give him', { medication: false, write: false }],
+  ['is it safe to give her aspirin', { medication: true }],
   // ---- lists, queue, policy, search, review
   ['list all patients', { list: true }],
   ['show every patient', { list: true }],

@@ -7,7 +7,8 @@ import { ApiError, apiFetch, errorMessage } from '../../lib/api';
 import type { Patient, PatientList, PossibleMatch, QueueResponse, RegisterOpResponse } from '../../lib/types';
 import { isActiveStatus } from '../../lib/visits';
 import { AppointmentBooking } from '../ui/AppointmentBooking';
-import { ErrorBox, SuccessBox, Loading, Empty, PriorityBadge, StatusBadge, fmtWait, inputCls, labelCls } from '../ui/common';
+import { ErrorBox, SuccessBox, Loading, PriorityBadge, StatusBadge, fmtWait } from '../ui/common';
+import { Button, Card, EmptyState, Field, Input, PageHeader, SectionTitle, Select, StatTile, TableFrame, Textarea } from '../ui/kit';
 
 const emptyForm = { name: '', age: '', dob: '', gender: 'Male', phone: '', bloodType: 'O+', chiefComplaint: '' };
 
@@ -161,25 +162,17 @@ export const ReceptionistPortal: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-2xl glass-panel p-7 border-l-4 border-l-emerald-500">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-            <UserPlus className="h-8 w-8 text-emerald-400" />
-            Front-Desk Outpatient Registration & Queue
-          </h2>
-          <p className="text-base text-slate-300 mt-1.5">Register walk-in patients and monitor the live waiting queue.</p>
-        </div>
-        <div className="hidden sm:flex gap-3">
-          <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-400">In Queue</p>
-            <p className="text-3xl font-extrabold text-emerald-400">{queue?.items.length ?? '—'}</p>
-          </div>
-          <div className="rounded-xl bg-slate-950 px-5 py-3 text-center border border-slate-700 min-w-28">
-            <p className="text-sm text-slate-400">For doctor</p>
-            <p className="text-3xl font-extrabold text-amber-400">{queue ? waiting : '—'}</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={<UserPlus className="h-6 w-6" />}
+        title="Front-Desk Outpatient Registration & Queue"
+        subtitle="Register walk-in patients and monitor the live waiting queue."
+        actions={
+          <>
+            <div className="min-w-28"><StatTile label="In queue" value={queue?.items.length ?? '—'} /></div>
+            <div className="min-w-28"><StatTile label="For doctor" value={queue ? waiting : '—'} tone="warning" /></div>
+          </>
+        }
+      />
 
       <SuccessBox message={successMsg} />
       <SuccessBox message={actionMsg} />
@@ -187,169 +180,176 @@ export const ReceptionistPortal: React.FC = () => {
 
       <AppointmentBooking collapsible />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2 border-b border-slate-700 pb-4">
-            <UserPlus className="h-5 w-5 text-emerald-400" />
-            OP Patient Registration
-          </h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="space-y-4 lg:col-span-1">
+          <SectionTitle icon={<UserPlus className="h-5 w-5" />} className="!mb-0">OP Patient Registration</SectionTitle>
           <div className="space-y-2">
-            <label className={labelCls}>Already registered? Search by name, phone or ID</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-slate-500" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Type at least 2 characters" className={`${inputCls} pl-11`} />
-            </div>
-            {found && found.length === 0 && <p className="text-sm text-slate-400">No existing patient found. Register below.</p>}
+            <Field label="Already registered? Search by name, phone or ID">
+              {(id) => (
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-ink-3" aria-hidden />
+                  <Input id={id} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Type at least 2 characters" className="pl-10" />
+                </div>
+              )}
+            </Field>
+            {found && found.length === 0 && <p className="text-sm text-ink-3">No existing patient found. Register below.</p>}
             {found?.map((p) => (
-              <div key={p.id} className="rounded-xl bg-slate-950 border border-slate-700 p-3 flex items-center justify-between gap-3">
+              <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface-muted p-3">
                 <div className="min-w-0">
-                  <p className="font-bold text-white truncate">{p.name} <span className="font-mono text-sm text-indigo-400">{p.id}</span></p>
-                  <p className="text-sm text-slate-400">{p.age}y {p.gender} • {p.phone}</p>
+                  <p className="truncate font-semibold text-ink">{p.name} <span className="font-mono text-sm text-ink-3">{p.id}</span></p>
+                  <p className="text-sm text-ink-3">{p.age}y {p.gender} • {p.phone}</p>
                   <div className="mt-1"><StatusBadge visit={p.visit} /></div>
                 </div>
                 {isActiveStatus(p.visit?.status) ? (
-                  <span className="text-xs text-slate-400 text-right">Visit already open</span>
+                  <span className="text-right text-xs text-ink-3">Visit already open</span>
                 ) : (
-                  <button type="button" disabled={startingId === p.id} onClick={() => startVisit(p.id, p.name)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
+                  <Button size="sm" disabled={startingId === p.id} onClick={() => startVisit(p.id, p.name)} className="shrink-0">
                     {startingId === p.id ? 'Starting...' : 'Start new visit'}
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className={labelCls}>Full Name *</label>
-              <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputCls} />
+            <Field label="Full Name *">
+              {(id) => <Input id={id} type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />}
+            </Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label={`Age ${formData.dob ? '(optional)' : '*'}`}>
+                {(id) => <Input id={id} type="number" min={0} max={130} value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />}
+              </Field>
+              <Field label="Gender *">
+                {(id) => (
+                  <Select id={id} value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </Select>
+                )}
+              </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Age {formData.dob ? '(optional)' : '*'}</label>
-                <input type="number" min={0} max={130} value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Gender *</label>
-                <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })} className={inputCls}>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
-                </select>
-              </div>
+            <Field label="Date of birth (optional)">
+              {(id) => <Input id={id} type="date" value={formData.dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} />}
+            </Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Phone *">
+                {(id) => <Input id={id} type="text" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />}
+              </Field>
+              <Field label="Blood Type">
+                {(id) => (
+                  <Select id={id} value={formData.bloodType} onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}>
+                    {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((b) => (
+                      <option key={b}>{b}</option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
             </div>
-            <div>
-              <label className={labelCls}>Date of birth (optional)</label>
-              <input type="date" value={formData.dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} className={inputCls} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Phone *</label>
-                <input type="text" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Blood Type</label>
-                <select value={formData.bloodType} onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })} className={inputCls}>
-                  {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((b) => (
-                    <option key={b}>{b}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>Chief Complaint</label>
-              <textarea rows={2} value={formData.chiefComplaint} onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })} className={inputCls} />
-            </div>
+            <Field label="Chief Complaint">
+              {(id) => <Textarea id={id} rows={2} value={formData.chiefComplaint} onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })} />}
+            </Field>
             <ErrorBox message={formError} />
             {matches.length > 0 && (
-              <div className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-                <p className="text-sm font-bold text-amber-200">Possible existing patient{matches.length > 1 ? 's' : ''}</p>
+              <div className="space-y-3 rounded-lg border border-warning-200 bg-warning-50 p-4">
+                <p className="text-sm font-semibold text-warning-700">Possible existing patient{matches.length > 1 ? 's' : ''}</p>
                 {matches.map((m) => (
-                  <div key={m.patientId} className="rounded-lg bg-slate-950 border border-slate-700 p-3 space-y-2">
-                    <p className="font-bold text-white">{m.name} <span className="font-mono text-sm text-indigo-400">{m.patientId}</span></p>
-                    <p className="text-sm text-slate-400">{m.age}y • {m.phone} • {m.strength} match ({m.reasons.map((r) => r.replace('SAME_', 'same ').toLowerCase()).join(', ')})</p>
-                    <button type="button" disabled={startingId === m.patientId} onClick={() => startVisit(m.patientId, m.name)} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
+                  <div key={m.patientId} className="space-y-2 rounded-lg border border-line bg-surface p-3">
+                    <p className="font-semibold text-ink">{m.name} <span className="font-mono text-sm text-ink-3">{m.patientId}</span></p>
+                    <p className="text-sm text-ink-3">{m.age}y • {m.phone} • {m.strength} match ({m.reasons.map((r) => r.replace('SAME_', 'same ').toLowerCase()).join(', ')})</p>
+                    <Button size="sm" disabled={startingId === m.patientId} onClick={() => startVisit(m.patientId, m.name)}>
                       Open this patient / start new visit
-                    </button>
+                    </Button>
                   </div>
                 ))}
-                <button type="button" disabled={submitting} onClick={() => register(true)} className="w-full rounded-lg bg-slate-800 border border-slate-600 px-3 py-2 text-sm font-bold text-slate-100 hover:bg-slate-700 disabled:opacity-50">
+                <Button variant="secondary" disabled={submitting} onClick={() => register(true)} className="w-full">
                   This is a different person – register anyway
-                </button>
+                </Button>
               </div>
             )}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-xl min-h-12 bg-emerald-600 hover:bg-emerald-500 py-3 text-base font-bold text-white disabled:opacity-50"
-            >
+            <Button type="submit" disabled={submitting} className="w-full" data-testid="register-op-submit">
               {submitting ? 'Registering...' : 'Register OP Patient'}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
 
-        <div className="lg:col-span-2 glass-panel p-7 rounded-2xl border border-slate-700 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-700 pb-4">
-            <h3 className="text-xl font-semibold text-white tracking-tight flex items-center gap-2">
-              <Clock className="h-5 w-5 text-indigo-400" />
-              Outpatient Queue
-            </h3>
-            {queue && <span className="text-sm text-slate-400 font-mono">Wait alert after {queue.waitAlertMinutes} min</span>}
-          </div>
+        <Card className="space-y-4 lg:col-span-2">
+          <SectionTitle
+            icon={<Clock className="h-5 w-5" />}
+            className="!mb-0"
+            actions={queue ? <span className="text-sm text-ink-3">Wait alert after {queue.waitAlertMinutes} min</span> : undefined}
+          >
+            Outpatient Queue
+          </SectionTitle>
 
           {queueLoading && <Loading text="Loading queue..." />}
           <ErrorBox message={queueError} />
-          {!queueLoading && !queueError && queue?.items.length === 0 && <Empty text="The queue is empty." />}
+          {!queueLoading && !queueError && queue?.items.length === 0 && (
+            <EmptyState title="The queue is empty." hint="Registered patients appear here until their visit is completed." />
+          )}
 
           {queue && queue.items.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <TableFrame>
+              <table data-testid="op-queue-table">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
-                    <th className="pb-3 px-2">Patient ID</th>
-                    <th className="pb-3 px-2">Name & Info</th>
-                    <th className="pb-3 px-2">Wait</th>
-                    <th className="pb-3 px-2">Chief Complaint</th>
-                    <th className="pb-3 px-2">Priority</th>
-                    <th className="pb-3 px-2">Status</th>
-                    <th className="pb-3 px-2 text-right">Actions</th>
+                  <tr>
+                    <th scope="col">Patient ID</th>
+                    <th scope="col">Name & Info</th>
+                    <th scope="col">Wait</th>
+                    <th scope="col">Chief Complaint</th>
+                    <th scope="col">Priority</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-medium">
-                  {queue.items.map((item) => (
-                    <tr key={item.patientId} className="hover:bg-slate-900/60 transition-colors">
-                      <td className="py-3 px-2 font-mono font-bold text-indigo-400">{item.patientId}</td>
-                      <td className="py-3 px-2">
-                        <p className="font-bold text-white">{item.name}</p>
-                        <p className="text-sm text-slate-400">{item.age ?? '?'} yrs • {item.gender ?? '—'}</p>
-                      </td>
-                      <td className={`py-3 px-2 font-mono ${(item.visit.waitMinutes ?? 0) >= queue.waitAlertMinutes ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
-                        {fmtWait(item.visit.waitMinutes)}
-                      </td>
-                      <td className="py-3 px-2 text-slate-300 max-w-[150px] truncate" title={item.chiefComplaint}>{item.chiefComplaint}</td>
-                      <td className="py-3 px-2"><PriorityBadge priority={item.visit.priority} /></td>
-                      <td className="py-3 px-2"><StatusBadge visit={item.visit} /></td>
-                      <td className="py-3 px-2 text-right space-x-2">
-                        <button
-                          onClick={() => printToken(item.name, item.patientId)}
-                          className="rounded-lg bg-slate-900 p-1.5 text-slate-300 hover:text-white border border-slate-700"
-                          title="Print OP token"
-                        >
-                          <Printer className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => notifyDoctor(item.name, item.patientId)}
-                          className="rounded-lg bg-indigo-600/30 p-1.5 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30"
-                          title="Create a task for the doctor"
-                        >
-                          <Bell className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody>
+                  {queue.items.map((item) => {
+                    const overdue = (item.visit.waitMinutes ?? 0) >= queue.waitAlertMinutes;
+                    return (
+                      <tr key={item.patientId}>
+                        <td className="font-mono font-semibold text-ink">{item.patientId}</td>
+                        <td>
+                          <p className="font-semibold text-ink">{item.name}</p>
+                          <p className="text-sm text-ink-3">{item.age ?? '?'} yrs • {item.gender ?? '—'}</p>
+                        </td>
+                        <td className={overdue ? 'font-semibold text-danger-700' : 'text-ink-2'}>
+                          {fmtWait(item.visit.waitMinutes)}
+                          {overdue && <span className="block text-xs">Over limit</span>}
+                        </td>
+                        <td className="max-w-[150px] truncate text-ink-2" title={item.chiefComplaint}>{item.chiefComplaint}</td>
+                        <td><PriorityBadge priority={item.visit.priority} /></td>
+                        <td><StatusBadge visit={item.visit} /></td>
+                        <td className="whitespace-nowrap text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => printToken(item.name, item.patientId)}
+                              title="Print OP token"
+                              aria-label={`Print OP token for ${item.name}`}
+                              className="!min-h-10 !min-w-10 !px-2"
+                            >
+                              <Printer className="h-4 w-4" aria-hidden />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => notifyDoctor(item.name, item.patientId)}
+                              title="Create a task for the doctor"
+                              aria-label={`Create a task for the doctor about ${item.name}`}
+                              className="!min-h-10 !min-w-10 !px-2"
+                            >
+                              <Bell className="h-4 w-4" aria-hidden />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-            </div>
+            </TableFrame>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

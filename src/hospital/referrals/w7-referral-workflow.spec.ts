@@ -85,12 +85,14 @@ describe('W7 Referral Workflow & Notifications', () => {
     mockActionRepo = {
       findOne: jest.fn(),
       save: jest.fn((e) => Promise.resolve(e)),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
 
     mockEventsGateway = {
       emitNotificationToUser: jest.fn(),
       emitReferralCreated: jest.fn(),
       emitReferralUpdated: jest.fn(),
+      emitVisitUpdated: jest.fn(),
       emitActionExecuted: jest.fn(),
       emitActionDecided: jest.fn(),
     };
@@ -115,7 +117,9 @@ describe('W7 Referral Workflow & Notifications', () => {
         .fn()
         .mockResolvedValue({ id: 'P1001', name: 'Eleanor Vance' }),
     };
-    mockVisits = { transition: jest.fn() };
+    mockVisits = {
+      transition: jest.fn(async (v: any) => ({ ...v, status: 'FOLLOW_UP' })),
+    };
 
     referralService = new ReferralService(
       mockReferralRepo,

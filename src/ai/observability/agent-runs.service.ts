@@ -148,11 +148,54 @@ export class AgentRunsService {
     const window = computeMetrics(current, hours);
     const baseline = computeMetrics(base, baselineHours);
     const proposals = await this.proposalMetrics(hours);
+    const routing = await this.routeMetrics(hours);
     return {
       window,
       baseline,
       drift: detectDrift(window, baseline),
       proposals,
+      routing,
+    };
+  }
+
+  /**
+   * How questions were understood and routed in the window: which handlers answered, how often the model planner (L2)
+   * was needed, how often we asked back, and how confident the parser was. A rising L2/agent share or falling confidence
+   * is routing drift.
+   */
+  async routeMetrics(hours = 24) {
+    const since = new Date(Date.now() - hours * 3_600_000);
+    const rows = await this.repo.find({
+      where: { at: MoreThan(since) },
+      select: { id: true, route: true },
+      take: 5000,
+    });
+    const routed = rows.filter((r) => r.route);
+    const n = routed.length;
+    const count = (
+      f: (r: NonNullable<(typeof routed)[number]['route']>) => boolean,
+    ) => routed.filter((r) => f(r.route!)).length;
+    const byHandler: Record<string, number> = {};
+    for (const r of routed)
+      byHandler[r.route!.handler] = (byHandler[r.route!.handler] ?? 0) + 1;
+    const rate = (x: number) => (n ? Number((x / n).toFixed(3)) : 0);
+    return {
+      hours,
+      routedQuestions: n,
+      byHandler,
+      avgConfidence: n
+        ? Number(
+            (routed.reduce((a, r) => a + r.route!.confidence, 0) / n).toFixed(
+              3,
+            ),
+          )
+        : 0,
+      l2Rate: rate(count((r) => r.usedL2)),
+      clarifyRate: rate(count((r) => r.decision === 'CLARIFY')),
+      agentFallbackRate: rate(
+        count((r) => r.decision === 'AGENT' || r.handler === 'agent.model'),
+      ),
+      lowConfidenceRate: rate(count((r) => r.confidence < 0.75)),
     };
   }
 

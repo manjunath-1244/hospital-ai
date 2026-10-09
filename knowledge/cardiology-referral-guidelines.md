@@ -1,3 +1,6 @@
+---
+docType: guideline
+---
 # 🫀 Cardiology Specialist Referral Clinical SOP & Guidelines
 
 ## 1. Acute Indications for Specialist Cardiology Referral

@@ -109,6 +109,7 @@ export class ReferralRecommendationService {
       const hits = await this.rag.searchPolicies(
         `${primaryMatch.specialty} referral SOP guidelines`,
         2,
+        { docTypes: ['guideline'] },
       );
       guidelineCitations = hits.map(
         (h) => `Guideline (${h.source}): ${h.heading}`,

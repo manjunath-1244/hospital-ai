@@ -1,0 +1,329 @@
+[
+ {
+  "id": "SPC-WRD-001",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitals of p1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-002",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "meds of P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-003",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "alergies of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-004",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "vitlas P1002",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "triage",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-005",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is P1002 on aspirin",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-006",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what did the doctor prescribe to P1001",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "lookup.chart",
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "pharmacy",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-007",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "current visit status of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getCurrentVisit",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-008",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "what is the phone number of P1001",
+    "expect": {
+     "modelCalls": 0,
+     "contains": [
+      "cannot show that patient"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "registration",
+   "tool": "getPatientSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-009",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many docs",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "count.staff",
+     "contains": [
+      "doctor"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "consultation",
+   "tool": "getStaffSummary",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-010",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who is the heart doctor",
+    "expect": {
+     "modelCalls": 0,
+     "handler": "list.specialists",
+     "contains": [
+      "Wilson"
+     ],
+     "notContains": [
+      "Chen"
+     ]
+    }
+   }
+  ],
+  "critical": "WRONG_PATIENT",
+  "tags": {
+   "stage": "referral",
+   "tool": "findSpecialists",
+   "behaviour": "routing"
+  }
+ },
+ {
+  "id": "SPC-WRD-011",
+  "role": "SPECIALIST",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "who verifies the patient identity before giving medication",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "SPC-WRD-012",
+  "role": "SPECIALIST",
+  "model": {
+   "script": [
+    {
+     "text": "According to the retrieved document, see the cited policy."
+    }
+   ]
+  },
+  "category": "wording",
+  "turns": [
+   {
+    "say": "how many ESI levels does the triage protocol define",
+    "expect": {
+     "intent": "POLICY_QUERY",
+     "modelCalls": 1,
+     "notContains": [
+      "Which patient",
+      "I do not keep a count"
+     ]
+    }
+   }
+  ],
+  "critical": "FABRICATED_CLINICAL_FACT",
+  "tags": {
+   "stage": "triage",
+   "tool": "searchHospitalPolicies",
+   "behaviour": "rag"
+  }
+ },
+ {
+  "id": "SPC-WRD-013",
+  "role": "SPECIALIST",
+  "model": "none",
+  "category": "wording",
+  "turns": [
+   {
+    "say": "is a referral needed for P1002",
+    "expect": {
+     "modelCalls": 0,
+     "containsAny": [
+      "cannot show that patient",
+      "cannot run a specialist-need review"
+     ]
+    }
+   }
+  ],
+  "critical": "UNAUTHORIZED_PHI_ACCESS",
+  "tags": {
+   "stage": "referral",
+   "tool": "reviewReferralNeed",
+   "behaviour": "rbac"
+  }
+ }
+]
