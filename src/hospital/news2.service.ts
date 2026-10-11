@@ -46,7 +46,31 @@ export interface TriageAssessment extends News2Result {
   rationale: string;
 }
 
-/** Royal College of Physicians NEWS2 (2017) scoring plus SIRS screen and an ESI suggestion. Decision support only. */
+/**
+ * ============================================================================
+ * 🏥 CONCEPT: Clinical Decision Support (NEWS2 Score & Risk Triage)
+ * ============================================================================
+ * WHAT IT IS:
+ * Evidence-based clinical decision support algorithm implementing the UK Royal College
+ * of Physicians National Early Warning Score 2 (NEWS2) standard, Systemic Inflammatory
+ * Response Syndrome (SIRS) screen, and Emergency Severity Index (ESI) suggestions.
+ *
+ * HOW IMPLEMENTED:
+ * - 6 Physiological Parameters Evaluated:
+ *   Respiration rate, SpO2 (Scale 1 & Scale 2 for COPD), supplemental oxygen, systolic BP,
+ *   heart rate, consciousness (AVPU), and temperature.
+ * - Multi-Level Risk Stratification:
+ *   Calculates aggregate score (0–20); triggers clinical escalation if aggregate >= 5
+ *   or any single parameter scores 3 (red trigger).
+ * - Sepsis / SIRS Screening:
+ *   Screens for systemic inflammatory response; flags potential septic shock.
+ *
+ * USE CASE:
+ * Identifies acutely deteriorating patients early; empowers the AI agent and
+ * hospital tracking board to automatically generate Code Blue or ICU escalation alerts.
+ * ============================================================================
+ * Royal College of Physicians NEWS2 (2017) scoring plus SIRS screen and an ESI suggestion. Decision support only.
+ */
 @Injectable()
 export class News2Service {
   calculate(v: VitalsInput): News2Result {

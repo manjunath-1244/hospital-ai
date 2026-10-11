@@ -1,7 +1,29 @@
 import type { UserRole } from '../../security/roles.decorator';
 import type { AgentContext } from './agent-context';
 
-/** What a tool declares about itself; the policy below is the only code that interprets it. */
+/**
+ * ============================================================================
+ * 🔒 CONCEPT: Dynamic Context Fencing & Cross-Patient Leakage Prevention
+ * ============================================================================
+ * WHAT IT IS:
+ * Runtime policy enforcement engine that prevents AI agents from executing tools
+ * on closed visits or targeting patients outside the active conversational boundary.
+ *
+ * HOW IMPLEMENTED:
+ * - Dynamic Visit State Guards (`withheldReason`):
+ *   Automatically withholds tools (e.g. consultations, appointments, tasks) if the
+ *   patient's encounter has already been discharged or closed.
+ * - Cross-Patient Access Barriers (`bindingViolation`):
+ *   Inspects tool call arguments; if a tool attempts to act on a `patientId` not
+ *   explicitly authorized in `ctx.allowedPatientIds`, actively blocks the call:
+ *   "Refused: [ID] is not the patient this conversation is about."
+ *
+ * USE CASE:
+ * Prevents dangerous medical mix-ups and cross-patient contamination where an AI model
+ * might inadvertently modify Patient B's medical chart while conversing about Patient A.
+ * ============================================================================
+ * What a tool declares about itself; the policy below is the only code that interprets it.
+ */
 export interface ToolRequirements {
   /** Needs the patient's visit to be open (no consultations, bookings or tasks on a finished visit). */
   openVisit?: boolean;

@@ -1,4 +1,26 @@
 /**
+ * ============================================================================
+ * 🛡️ CONCEPT: Indirect Prompt Injection Defense & Data Fencing
+ * ============================================================================
+ * WHAT IT IS:
+ * Security boundary that prevents untrusted external text (patient notes, EHR entries,
+ * uploaded lab documents) from hijacking the LLM's system instructions or executing
+ * unauthorized tool commands.
+ *
+ * HOW IMPLEMENTED:
+ * - Structural Data Enclosure (`<DATA source="...">`):
+ *   Fences all retrieved knowledge, database records, and tool outputs inside isolated XML tags.
+ * - Marker Neutralization (`neutraliseInjection`):
+ *   Actively strips out fake system/developer role labels (`system:`, `assistant:`),
+ *   jailbreak prompt prefixes, and special LLM tokenizer delimiters (`<|...|>`).
+ * - Delimiter Stripping (`stripFence`):
+ *   Removes technical markup before answers reach the end user so formatting remains clean.
+ *
+ * USE CASE:
+ * Protects clinical agents from adversarial attacks where malicious text embedded
+ * inside a medical chart attempts to trick the AI into leaking other patients' data
+ * or ordering inappropriate medications.
+ * ============================================================================
  * Retrieved text (chart notes, uploaded documents, tool output) is DATA. It is fenced so that text inside it cannot
  * pose as a system instruction, a new fence end or a chat role marker.
  */

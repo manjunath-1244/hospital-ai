@@ -104,13 +104,13 @@ export class AiAnswerService {
       : stripFence(session.restore(result.text));
 
     const completed =
-      intent.list || intent.waiting
+      intent?.list || intent?.waiting
         ? appendOmittedPatients(response, rec.trace)
         : { text: response, omitted: 0 };
 
     response = completed.text;
     const reconciled = reconcileActionClaims(response, rec.trace, {
-      actionRequested: intent.plan.intent === 'ACTION' || intent.write,
+      actionRequested: intent?.plan?.intent === 'ACTION' || !!intent?.write,
     });
     response = appendClosestPassage(reconciled.text, rec.trace, dtoMessage);
     const guard = checkGuardrails(response, rec.trace, knownText);

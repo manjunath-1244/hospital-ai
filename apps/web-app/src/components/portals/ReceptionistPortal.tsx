@@ -7,6 +7,7 @@ import { ApiError, apiFetch, errorMessage } from '../../lib/api';
 import type { Patient, PatientList, PossibleMatch, QueueResponse, RegisterOpResponse } from '../../lib/types';
 import { isActiveStatus } from '../../lib/visits';
 import { AppointmentBooking } from '../ui/AppointmentBooking';
+import { PatientManagementPanel } from './PatientManagementPanel';
 import { ErrorBox, SuccessBox, Loading, PriorityBadge, StatusBadge, fmtWait } from '../ui/common';
 import { Button, Card, EmptyState, Field, Input, PageHeader, SectionTitle, Select, StatTile, TableFrame, Textarea } from '../ui/kit';
 
@@ -351,6 +352,8 @@ export const ReceptionistPortal: React.FC = () => {
           )}
         </Card>
       </div>
+
+      <PatientManagementPanel />
     </div>
   );
 };

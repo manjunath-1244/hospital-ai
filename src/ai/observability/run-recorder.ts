@@ -17,7 +17,42 @@ export interface RunOutcome {
   threadId?: string | null;
 }
 
-/** Collects the spans of one agent run (memory, LLM, tools) and turns them into a persistable trace. */
+/**
+ * ============================================================================
+ * 📝 CONCEPT: Logging (Execution Recording)
+ * 👀 CONCEPT: Observability (Health & Production Telemetry)
+ * 🔍 CONCEPT: Tracing (Distributed Multi-Step Execution Spans)
+ * 💰 CONCEPT: Cost (Token & API Usage Monitoring)
+ * ⚡ CONCEPT: Performance (Latency & Throughput Tracking)
+ * ============================================================================
+ * WHAT THEY ARE:
+ * Complete instrumentation suite that tracks every agent execution, records
+ * sub-millisecond execution spans, logs sanitized inputs/outputs, captures token
+ * expenditures, and monitors live system health.
+ *
+ * HOW IMPLEMENTED:
+ * - 🔍 Tracing (`RunRecorder`):
+ *   - Assigns a unique distributed `traceId` (UUID) to every user turn.
+ *   - Instruments nested execution spans (`spans`): memory retrieval, LLM generation,
+ *     and individual tool executions with start offsets and durations.
+ * - 📝 Logging:
+ *   - Persists execution records in PostgreSQL (`AgentRunEntity`).
+ *   - Sanitizes all tool arguments and user goals through `phi.maskDeep()`
+ *     so raw PHI is never stored in log records.
+ * - ⚡ Performance:
+ *   - Tracks request duration (`durationMs`), step offset delays, and retry counts.
+ * - 💰 Cost:
+ *   - Extracts token usage metrics (`inputTokens`, `outputTokens`, `totalTokens`)
+ *     from provider responses for cost attribution and quota enforcement.
+ * - 👀 Observability:
+ *   - Captures guardrail status, routing path, intent decisions, and action IDs.
+ *
+ * USE CASE:
+ * Gives hospital DevOps and clinical administrators complete visibility into
+ * agent latency, system reliability, token costs, and forensic audit logs.
+ * ============================================================================
+ * Collects the spans of one agent run (memory, LLM, tools) and turns them into a persistable trace.
+ */
 export class RunRecorder {
   readonly traceId = randomUUID();
   readonly trace = new ToolTrace();

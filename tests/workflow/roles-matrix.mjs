@@ -64,8 +64,8 @@ const MATRIX = [
     'DELETE',
     `/hospital/patients/${P}`,
     null,
-    ['ADMIN'],
-    'no ?confirm => 400 for admin, nothing deleted',
+    ['ADMIN', 'RECEPTIONIST'],
+    'no ?confirm => 400 for allowed roles, nothing deleted',
   ],
   // --- front desk, triage, consultation, labs, imaging ---
   ['POST', '/hospital/lifecycle/register-op', {}, ['RECEPTIONIST', 'ADMIN']],

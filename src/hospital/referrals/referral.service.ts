@@ -52,6 +52,33 @@ const ALLOWED_TRANSITIONS: Record<ReferralStatus, ReferralStatus[]> = {
   CANCELLED: [],
 };
 
+/**
+ * ============================================================================
+ * 🔄 CONCEPT: Cross-Departmental Clinical Referrals Workflow
+ * ============================================================================
+ * WHAT IT IS:
+ * Inter-departmental clinical consultation management system that coordinates
+ * medical handoffs between primary attending physicians and medical specialists
+ * (e.g. Emergency/Internal Medicine -> Cardiology, Neurology, Orthopedics).
+ *
+ * HOW IMPLEMENTED:
+ * - State Machine Transitions:
+ *   `REQUESTED` -> `ACCEPTED` -> `IN_PROGRESS` -> `COMPLETED` (or `CANCELLED`).
+ * - Urgency Triage & Prioritization:
+ *   Classifies referrals by urgency (`EMERGENCY`, `URGENT`, `ROUTINE`) with clinical rationale
+ *   and AI evidence suggestions.
+ * - Automatic Notifications & Socket Streaming:
+ *   Alerts assigned specialists, primary physicians, and patients; broadcasts live
+ *   updates through `HospitalEventsGateway`.
+ * - Handoff Lifecycle Integration:
+ *   When a specialist marks a referral as `COMPLETED`, automatically advances the patient's
+ *   clinical visit to `FOLLOW_UP`.
+ *
+ * USE CASE:
+ * Eliminates lost referrals, prevents communication breakdowns between clinical departments,
+ * and maintains continuous physician accountability throughout multi-specialty care.
+ * ============================================================================
+ */
 @Injectable()
 export class ReferralService {
   private readonly logger = new Logger(ReferralService.name);

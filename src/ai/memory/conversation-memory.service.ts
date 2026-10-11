@@ -20,6 +20,23 @@ export interface BuiltContext {
 }
 
 /**
+ * ============================================================================
+ * 🧠 CONCEPT: MEMORY (Short-Term Window & Long-Term Rolling Summary)
+ * ============================================================================
+ * WHAT IT IS:
+ * Dual-tier conversational memory enabling natural multi-turn medical dialogues:
+ * 1. Short-Term Memory: Stores full verbatim conversation turns (user & assistant)
+ *    persisted in PostgreSQL (`chat_messages`), bounded by a token window (`AI_CONTEXT_TOKENS`).
+ * 2. Long-Term Memory: When the token budget is reached, older turns are automatically
+ *    summarized into a high-density clinical summary (`chat_threads.summary`), preserving
+ *    key findings (e.g. "discussed P1001 diabetes labs") without overflowing LLM context.
+ * 3. Active Patient Focus: Tracks `activePatientId` across turns so pronouns ("her", "him", "them")
+ *    naturally resolve to the active patient.
+ *
+ * PRIVACY & ISOLATION:
+ * - Thread-level access isolation: Users can only read/continue their own threads.
+ * - Thread titles are generated safely from first turn text.
+ * ============================================================================
  * Persistent conversation memory. Short-term = the recent turns that fit the token budget;
  * long-term = a rolling summary of everything older, plus the patient currently in focus.
  */

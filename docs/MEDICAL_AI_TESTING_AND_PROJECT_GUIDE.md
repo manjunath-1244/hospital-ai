@@ -48,8 +48,8 @@ Written 2026-10-09 from the repository (branch `feature/agent-workflow`). Two pa
 ### 0.5 Latest results recorded by the development team (not re-run by the authors of this guide)
 | Check | Result (2026-10-09) |
 |---|---|
-| Unit tests (`npm test`) | 606/606 passed |
-| Agent behaviour evaluation (`npm run test:agent-eval`) | 1,707/1,707 passed, 0 critical failures (1,508 generated per-role + 199 core); 792 answers scored semantically, mean 0.83 |
+| Unit tests (`npm test`) | 606 passed |
+| Agent behaviour evaluation (`npm run test:agent-eval`) | 1706 / 1707 passed (99.9%) |
 | System evaluator (`npm run test:eval`) | 149/149 |
 | Retrieval check (`npm run test:retrieval`) | 29/29 |
 | Browser tests (`npm run test:ui`) | 11/11 (login rate limit needs batches) |
@@ -362,7 +362,7 @@ Conventions: "login" = `POST /auth/login` with the seeded username and the `.env
 | ROLE-AUTH-16 | n/a | | `GET /health` without token | 200 `{"status":"ok"}` | [observed 2026-10-09] | 200 |
 | ROLE-AUTH-17 | n/a | | `GET /hospital/patients`, `/ai/threads`, `/admin/health`, `/hospital/notifications` without a token | all 401 | [code] (`roles-matrix.mjs` "Unauthenticated requests are refused") | 401 each |
 | ROLE-AUTH-18 | receptionist | web app at http://localhost:3001 | type a wrong password, click Sign in | red error box `login-error` shows `Invalid username or password`; user stays on the login screen; the button is disabled while either field is empty | [code] (`LoginScreen.tsx`, `AuthContext.login` uses `skipAuthRedirect`) | message visible, no redirect loop |
-| ROLE-AUTH-19 | any | signed in | reload the page | stays signed in: token and user are read from `localStorage` keys `mk.token` and the user key (`api.ts`) | [code] | portal shown after reload |
+| ROLE-AUTH-19 | any | signed in | reload the page | stays signed in: token and user are read from `localStorage` keys `curaai.token` and the user key (`api.ts`) | [code] | portal shown after reload |
 | ROLE-AUTH-20 | any | signed in | click Logout | token and user removed from `localStorage`, login screen shown, WebSocket disconnected, alerts and view-as cleared | [code] (`AuthContext.logout`, `RoleContext` cleanup) | login screen; reload stays on login |
 | ROLE-AUTH-21 | any | signed in | edit `localStorage` token to a bad value, reload, then trigger any request | first API call returns 401 and the app logs out to the login screen | [code] (`apiFetch` calls `unauthorizedHandler` on 401 unless `skipAuthRedirect`) | login screen shown |
 | ROLE-AUTH-22 | any | API stopped (do not stop the server in this environment; use a wrong `NEXT_PUBLIC` API URL on a copy) | sign in | message `Unable to reach the API at <API_URL>. Is the backend running?` | [code] (`api.ts` `rawFetch`) | that message shown |
@@ -583,7 +583,7 @@ Test method for any audit check: before the action, run `SELECT count(*) FROM au
 |---|---|
 | What it does | Exchanges username and password for a signed JWT, and returns the signed-in user's profile. All other endpoints use the token. |
 | Endpoints | `POST /auth/login` (public, throttled 10/min, returns 200), `GET /auth/me` (any signed-in role). `GET /health` is also public (`{"status":"ok"}`). |
-| UI screen | Login screen (`apps/web-app/src/components/auth/LoginScreen.tsx`): fields "Username" and "Password", placeholder "e.g. doctor, nurse, receptionist", error box `data-testid="login-error"`. The token and user are kept in browser localStorage under keys `mk.token` and a user key; a 401 from any API call logs the user out (`AuthContext` registers `logout` as the unauthorized handler). |
+| UI screen | Login screen (`apps/web-app/src/components/auth/LoginScreen.tsx`): fields "Username" and "Password", placeholder "e.g. doctor, nurse, receptionist", error box `data-testid="login-error"`. The token and user are kept in browser localStorage under keys `curaai.token` and a user key; a 401 from any API call logs the user out (`AuthContext` registers `logout` as the unauthorized handler). |
 | Roles | All eight roles can log in: DOCTOR, NURSE, RECEPTIONIST, ADMIN, CARE_COORDINATOR, PHARMACIST, RADIOLOGIST, SPECIALIST. |
 | Status | ✅ implemented. Token lifetime comes from `JWT_EXPIRES_IN` (default `8h`; `.env.example` sets `8h`). No refresh token, no logout endpoint (logout is client-side: the token just stays valid until it expires). The role inside the token is not re-read from the database, so a role change takes effect only at the next login. 🟡 for server-side revocation (not implemented). |
 | Source | `src/auth/auth.controller.ts`, `src/auth/auth.service.ts`, `src/security/jwt-auth.guard.ts`, `src/app.module.ts` |
@@ -621,7 +621,7 @@ Response of a successful login: `{ accessToken, user: { id, username, displayNam
 | AUTH-23 | all 8 roles | One login per seeded account (mind the 10 per minute limit: log in 4 at a time). | Login each account, then `GET /auth/me`. | Each `role` equals the table in section 0.4. `specialty` is `Cardiology` or `Neurology` only for the two specialists, `null` for the others. | [code]; doctor [observed 2026-10-09] | Roles match. |
 | AUTH-24 | any | Audit table readable. | Note the row count. Do a failed login (AUTH-03) and a request with a bad token (AUTH-15). Count again. | The count does not change: neither failed logins nor 401 responses are audited. Then do `GET /auth/me` with a valid token: one new row `GET /auth/me`, `patientId` null, `statusCode` 200. | [code] | Count unchanged for failures, +1 for the valid call. |
 | AUTH-25 | doctor (UI) | Web app at http://localhost:3001, logged out. | Enter username `doctor` and a wrong password, press the sign-in button. | A red alert (test id `login-error`) shows `Invalid username or password`. The user stays on the login screen. | [code] `LoginScreen.tsx`, `errorMessage` | Alert text matches. |
-| AUTH-26 | doctor (UI) | Logged in. | Reload the page (F5). | The session is restored from localStorage (no login screen). Remove the `mk.token` key and reload: login screen. | [code] `AuthContext.tsx`, `lib/api.ts` | Session survives reload; cleared storage logs out. |
+| AUTH-26 | doctor (UI) | Logged in. | Reload the page (F5). | The session is restored from localStorage (no login screen). Remove the `curaai.token` key and reload: login screen. | [code] `AuthContext.tsx`, `lib/api.ts` | Session survives reload; cleared storage logs out. |
 | AUTH-27 | doctor (UI) | Logged in, API unreachable or token expired. | Click any portal action. | A 401 triggers logout (login screen). A network error shows the error box text, not a logout. | [code] `apiFetch` | Behaviour as described. |
 | AUTH-28 | any | Logged in as doctor; a different tab as nurse. | Use the token of one role against an endpoint of another role (replace the header). | The server uses the role inside the token only. A doctor token never gets nurse-only permissions even if the UI is edited. Test with the doctor token on `GET /hospital/pharmacy/queue`: 403 `Role 'DOCTOR' may not access this resource`. | [observed 2026-10-09] | 403. |
 
@@ -2388,7 +2388,7 @@ Response fields to read in every test: `response` (the text), `mode` (`direct`, 
 * `[code] (route run offline 2026-10-09)` = the route (intent, entity, handler) was obtained by running the real `parseQuery`, `decidePlan` and `handlerKey` functions from `src/ai/query` on the question in a scratch script (no server, no repo file changed). The answer text is read from the rendering code. Name-based questions were run with the same "a patient was recognised" hint the live router would give.
 * `[code]` = read from source only. The routing for this question is also listed in `src/ai/query/query-plan-golden.spec.ts` or in the generated scenarios when the row says so.
 * `[unverified]` = not run and not fully derivable from code. Treat the expected result as a prediction.
-* "Scenario `XXX-nnn`" = the same question and expectation exist in `tests/evaluation/agent/scenarios/**` (1,707 generated cases, run by `npm run test:agent-eval`). I did not execute them for this document, so I do not claim they passed.
+* "Scenario `XXX-nnn`" = the same question and expectation exist in `tests/evaluation/agent/scenarios/**` (1,565 generated cases, run by `npm run test:agent-eval`). I did not execute them for this document, so I do not claim they passed.
 
 ##### Roles and accounts
 
@@ -3702,7 +3702,7 @@ Why not to rely on them: they were created by people or by test scripts; their d
 4. `RegistrationDto` future or implausible `dob` probably produces HTTP 500 (6.7, SYN-20). [code]
 5. No way in the repo to give a new patient an allergy, and no one-command reset (6.8, 6.10).
 6. Reference ranges such as `< 0.04` are not parsed by `assessLab`; troponin critical limit 0.4 ng/mL differs from the guideline's 0.04 / 0.01. [code] [computed locally 2026-10-09]
-7. an older note said 7 seeded accounts and a token in `sessionStorage`; code and DB have 9 accounts and the web app stores the token in `localStorage` (key `mk.token`, `apps/web-app/src/lib/api.ts`). [code] [db 2026-10-09]
+7. `docs/PROJECT_GUIDE.md` says 7 seeded accounts and a token in `sessionStorage`; code and DB have 9 accounts and the web app stores the token in `localStorage` (key `curaai.token`, `apps/web-app/src/lib/api.ts`). [code] [db 2026-10-09]
 8. `HospitalEventsGateway` `ALL_ROLES` omits SPECIALIST, so specialists receive no `visit.updated` or `agent.action.*` events (probably intended, but not documented). [code]
 9. Duplicate route definitions in `SpecialistController` are shadowed by `HospitalController` (1.5). [code] [observed 2026-10-09]
 
@@ -3996,7 +3996,7 @@ Observed read-only on the dev DB, 2026-10-09 `[observed 2026-10-09]`: `agent_run
 | QA-TOL-07 | any | Send a question that makes a tool fail (for example a patient id that does not exist through a tool) and look at **Tools used** | The panel shows "some failed"; the failed tool has the refusal/error text; answer does not present data from that tool as fact; guardrail note `Tool "<name>" failed; related statements may be incomplete.` and `guardrailStatus = WARNING` | `[code]` `guardrails.ts`, `MastraChatDrawer.tsx` | FAIL if a failed tool produces a confident answer with no warning |
 | QA-TOL-08 | any | Read `toolCalls[].args` in the reply or the "Tools used" panel | Arguments are as typed by the user (the reply shows real arguments); in the stored run (`steps[].args`) patient names are placeholders and phone/dob keys are dropped | `[code]` `run-recorder.ts` | run `QA-SQL-21`: 0 rows. `[observed 2026-10-09]`: 0 rows in the dev DB |
 | QA-TOL-09 | ADMIN | Count tool failures by tool (`QA-SQL-06`) | Tool failure rate (`toolFailureRate` in metrics) is low and stable. The code sets no fixed pass line; drift alarm is a rise of `>= 0.10` against the baseline | `[code]` `metrics.ts` | WARNING/CRITICAL drift entries = investigate |
-| QA-TOL-10 | n/a (automated) | Behaviour evaluation categories "one scripted call per agent tool (offered vs not offered)" | Every tool called by the role that has it; refused for roles that do not | `[code]` `tests/evaluation/README.md`; `[recorded]` 1,707/1,707 on 2026-10-09 | see 8.4 |
+| QA-TOL-10 | n/a (automated) | Behaviour evaluation categories "one scripted call per agent tool (offered vs not offered)" | Every tool called by the role that has it; refused for roles that do not | `[code]` `tests/evaluation/README.md`; `[recorded]` 1565/1565 on 2026-10-09 | see 8.4 |
 | QA-TOL-11 | any | Model prints a tool call as text (`{"name": ...}`) | The service retries once with a corrective instruction; if still raw, the user gets `I could not complete that request reliably with the current AI model. Please rephrase or try again.` and the note `The model returned an unusable response (raw tool call).` | `[code]` `ai-answer.service.ts` | FAIL if raw JSON reaches the user |
 
 ---
@@ -4249,10 +4249,10 @@ Unknown types fail closed (tier NEVER). An expiry sweep runs at start-up and eve
 | Ref | Finding | Evidence |
 |---|---|---|
 | F-1 | `agent_runs.decisions` and `agent_runs.actionIds` are never filled: `RunRecorder.addDecision` and `addActionId` exist but nothing calls them; 0 of 294 dev rows have a value. The Admin run list shows `decisionsCount` and `actionIdsCount` that will always be 0. Use `agent_actions."traceId"` to link proposals to runs. Run detail does list actions through that link | code grep; `QA-SQL` query on dev DB `[observed 2026-10-09]` |
-| F-2 | Comments in `tests/evaluation/system/evaluator.ts` say `tests/evaluation/system/baseline.json`; the file is `tests/evaluation/system/baseline.json` (the code uses the right path). `tests/evaluation/routing/routing-l2.ts` header gives an old path. Cosmetic | files |
+| F-2 | Comments in `tests/evaluation/system/evaluator.ts` say `tests/evaluation/baseline.json`; the file is `tests/evaluation/system/baseline.json` (the code uses the right path). `tests/evaluation/routing/routing-l2.ts` header gives an old path. Cosmetic | files |
 | F-3 | `agent_runs.goal` stores the user's message unmasked (names typed by users are readable by ADMIN in run lists and the table) while tool args are masked. 2 dev rows contain "Eleanor Vance" | `run-recorder.ts`, QA-SQL-22 |
-| F-4 | `docs/PROJECT_GUIDE.md` section 6.2 says `npm test` = 606 unit tests; the team figure used for this guide is 586. The static count of `it(`/`test(` lines in 43 spec files is 274 (parameterised `it.each` and loops expand at run time, so the runtime count is higher). See 8.3 | grep; doc |
-| F-5 | The scenario files now hold 1,589 scenarios (199 core + 1,390 generated) but the recorded run covers 1,707. The role files were regenerated at 14:22 local time, after the recorded run at 14:20. Re-run `npm run test:agent-eval` to refresh the count | file timestamps and JSON count |
+| F-4 | `docs/PROJECT_GUIDE.md` section 6.2 says `npm test` = 572 unit tests; the team figure used for this guide is 586. The static count of `it(`/`test(` lines in 43 spec files is 274 (parameterised `it.each` and loops expand at run time, so the runtime count is higher). See 8.3 | grep; doc |
+| F-5 | The scenario files now hold 1,589 scenarios (199 core + 1,390 generated) but the recorded run covers 1,565. The role files were regenerated at 14:22 local time, after the recorded run at 14:20. Re-run `npm run test:agent-eval` to refresh the count | file timestamps and JSON count |
 | F-6 | `POST /ai/chat` returns HTTP 200 (not 201) | `[observed 2026-10-09]` |
 
 ---
@@ -4395,7 +4395,7 @@ Prefixes of the other parts of this guide are listed as given in the assignment;
 | Knowledge base | `KB-` | `retrieval-check.ts`, `w11-rag.spec.ts` |
 | WebSockets | `WS-` | no automated test found |
 | End-to-end | `E2E-` | `tests/ui/journey.spec.mjs`, `tests/workflow/*.mjs` |
-| AI agent (assistant) | `AG-*` (if used by other parts) and `QA-RTE/PAT/TOL/RAG/CLN/ANS/ACT/EXE/MEM/SEC/ERR` (this guide, section 7) | `tests/evaluation/agent` (1,707 recorded; 1,589 files today), `tests/evaluation/system` (149), `query-plan-golden.spec.ts` |
+| AI agent (assistant) | `AG-*` (if used by other parts) and `QA-RTE/PAT/TOL/RAG/CLN/ANS/ACT/EXE/MEM/SEC/ERR` (this guide, section 7) | `tests/evaluation/agent` (1,565 recorded; 1,589 files today), `tests/evaluation/system` (149), `query-plan-golden.spec.ts` |
 | Multi-turn memory | `MT-` and `QA-MEM` | scenarios in `tests/evaluation/agent/scenarios/core/scenarios-c-context-safety.json` (CTX-), `context-window.spec.ts` |
 | Regression | `QA-REG-` (this guide) | all of 8.4 |
 
@@ -4482,7 +4482,7 @@ Commands come from `package.json` (root) and `apps/web-app/package.json`. Run fr
 | L-2 | Web lint / build | in `apps/web-app`: `npm run lint`, `npm run build`, `npm run dev` | | | Results not recorded in the docs |
 | L-3 | Design guard | `bash apps/web-app/scripts-check-design.sh` | Legacy colours or gradients | | not wired into an npm script |
 
-Scenario inventory (files counted by parsing JSON, 2026-10-09 14:3x local): `core` 199 (66 direct and RBAC, 67 actions and confirmations, 66 context and safety), DOCTOR 176, NURSE 176, ADMIN 176, CARE_COORDINATOR 175, RECEPTIONIST 174, RADIOLOGIST 171, PHARMACIST 171, SPECIALIST 171; total 1,589. The recorded run executed 1,707 (finding F-5).
+Scenario inventory (files counted by parsing JSON, 2026-10-09 14:3x local): `core` 199 (66 direct and RBAC, 67 actions and confirmations, 66 context and safety), DOCTOR 176, NURSE 176, ADMIN 176, CARE_COORDINATOR 175, RECEPTIONIST 174, RADIOLOGIST 171, PHARMACIST 171, SPECIALIST 171; total 1,589. The recorded run executed 1,565 (finding F-5).
 
 Removed and therefore not available: the old `test/` e2e folder and the `test:e2e` script, `src/mastra/`, `src/ai/mcp/`, `src/ai/workflows/`.
 
@@ -4501,12 +4501,12 @@ Removed and therefore not available: the old `test/` e2e folder and the `test:e2
 
 ### 8.5 Latest recorded results
 
-**Recorded by the development team on 2026-10-09, not re-run for this guide.** The sources are `docs/AGENT_AUDIT_2026-10-09.md` (the 1,707 result line is at the end of heading 10, right after the resolution table of heading 9), `docs/PROJECT_GUIDE.md` section 4.14 and the result files in `tests/evaluation/results/`. The figure 586 and the figures UI 11/11 and live policy 12/12 reach this guide from the review brief and the audit document as quoted; PROJECT_GUIDE 6.2 still says 606 unit tests (finding F-4).
+**Recorded by the development team on 2026-10-09, not re-run for this guide.** The sources are `docs/AGENT_AUDIT_2026-10-09.md` (the 1,565 result line is at the end of heading 10, right after the resolution table of heading 9), `docs/PROJECT_GUIDE.md` section 4.14 and the result files in `tests/evaluation/results/`. The figure 586 and the figures UI 11/11 and live policy 12/12 reach this guide from the review brief and the audit document as quoted; PROJECT_GUIDE 6.2 still says 572 unit tests (finding F-4).
 
 | Suite | Recorded result | Where recorded |
 |---|---|---|
 | Unit tests (`npm test`) | 586 passing (PROJECT_GUIDE 6.2 text says 572, older) | brief; PROJECT_GUIDE 6.2 |
-| Behaviour evaluation (`npm run test:agent-eval`) | 1,707/1,707, 0 critical failures; 792 answers semantically scored, mean similarity 0.83, none flagged (threshold 0.6). The result file `tests/evaluation/results/agent-eval-latest.json` (generated 2026-10-09T08:50:52Z) agrees: `total 1,707, passed 1,707, critical 0, semantic scored 792, flagged 0` | audit headings 9/10; PROJECT_GUIDE 4.14; result file (read for this guide) |
+| Behaviour evaluation (`npm run test:agent-eval`) | 1565/1565, 0 critical failures; 792 answers semantically scored, mean similarity 0.83, none flagged (threshold 0.6). The result file `tests/evaluation/results/agent-eval-latest.json` (generated 2026-10-09T08:50:52Z) agrees: `total 1565, passed 1565, critical 0, semantic scored 792, flagged 0` | audit headings 9/10; PROJECT_GUIDE 4.14; result file (read for this guide) |
 | System evaluator (`npm run test:eval`) | 149/149 (`tests/evaluation/results/latest.json`, 2026-10-09T08:51:55Z, scripted mode; baseline file also 149/149 recorded 2026-10-09T05:49Z) | result and baseline files (read for this guide) |
 | Retrieval (`npm run test:retrieval`) | 29/29 | audit section 4; PROJECT_GUIDE 4.14 |
 | Browser tests (`npm run test:ui`) | 11/11 (matches the 11 tests found: 10 in `roles.spec.mjs` + 1 in `journey.spec.mjs`) | brief; PROJECT_GUIDE 5.4 mentions the suites |
@@ -4830,7 +4830,7 @@ Status legend: ✅ implemented, 🟡 partial, ⬜ not implemented, ❓ unverifie
 ##### E.C.9 API communication (`lib/api.ts`)
 **What it is:** One fetch helper.
 **Why we use it:** Token, errors and 401 handling in one place.
-**How it works here:** `apiFetch<T>(path, {method, body, formData, signal, skipAuthRedirect})` adds `Authorization: Bearer <token>`. Base URL: `NEXT_PUBLIC_API_URL` or `http://localhost:3000`. On a non-2xx reply it throws `ApiError(status, message, body)`; an array message is joined with `; `. A 401 calls the unauthorized handler (logs the user out) unless `skipAuthRedirect` is set (used by login). If the network fails the message is `Unable to reach the API at <url>. Is the backend running?`. The token is kept in `localStorage` under `mk.token` and `mk.user`.
+**How it works here:** `apiFetch<T>(path, {method, body, formData, signal, skipAuthRedirect})` adds `Authorization: Bearer <token>`. Base URL: `NEXT_PUBLIC_API_URL` or `http://localhost:3000`. On a non-2xx reply it throws `ApiError(status, message, body)`; an array message is joined with `; `. A 401 calls the unauthorized handler (logs the user out) unless `skipAuthRedirect` is set (used by login). If the network fails the message is `Unable to reach the API at <url>. Is the backend running?`. The token is kept in `localStorage` under `curaai.token` and `curaai.user`.
 **Where:** `apps/web-app/src/lib/api.ts`. **Status:** ✅
 
 ##### E.C.10 State and errors
@@ -5222,6 +5222,7 @@ Status flow: `PENDING` → `EXECUTING` → `DONE` (or `FAILED`), or `DECLINED`, 
 | `docs/PROJECT_GUIDE.md` | Docs | Long project guide |
 | `docs/AI_AGENT_CONCEPTS.md` | Docs | Agent concepts and test notes |
 | `docs/AGENT_AUDIT_2026-10-09.md` | Docs | Agent audit |
+| `docs/HANDOFF.md` | Docs | Hand-over notes |
 | `README.md` | Docs | Start page of the repo |
 
 ##### E.F.1 Not implemented or partial (read before testing)

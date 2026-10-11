@@ -1,4 +1,30 @@
-/** Failure-handling primitives for calling an unreliable dependency (the LLM provider). Pure and unit-tested. */
+/**
+ * ============================================================================
+ * 🔁 CONCEPT: Reliability (Retry, Timeout, Circuit Breaker & Graceful Recovery)
+ * ============================================================================
+ * WHAT IT IS:
+ * Resilience infrastructure that shields the clinical application from failures,
+ * transient provider latency spikes, network drops, and outages in external
+ * LLM or healthcare APIs.
+ *
+ * HOW IMPLEMENTED:
+ * - Strict Timeouts (`withTimeout`):
+ *   Aborts hung calls after configurable thresholds (e.g. 45s for LLMs, 8s for FHIR)
+ *   to avoid blocking clinician workflows.
+ * - Exponential Backoff Retries (`withRetry`):
+ *   Automatically retries transient network/provider errors (408, 429, 500+, ECONNRESET)
+ *   with jittered backoff, avoiding retry storms on validation or auth errors.
+ * - Circuit Breaker (`CircuitBreaker`):
+ *   Monitors consecutive failures across all requests; opens when threshold is reached
+ *   (e.g. 5 failures), immediately fast-failing and protecting the provider until
+ *   cooldown window expires.
+ *
+ * USE CASE:
+ * Guarantees high availability in emergency clinical settings; prevents hung screens
+ * and provides graceful degradation with actionable error messages when external AI services fail.
+ * ============================================================================
+ * Failure-handling primitives for calling an unreliable dependency (the LLM provider). Pure and unit-tested.
+ */
 
 export class TimeoutError extends Error {
   constructor(label: string, ms: number) {

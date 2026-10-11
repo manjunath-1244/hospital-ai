@@ -9,6 +9,7 @@ import type { AuditLogEntry, HealthResponse, OverviewResponse } from '../../lib/
 import { AgentObservability } from './AgentObservability';
 import { KnowledgeBasePanel } from './KnowledgeBasePanel';
 import { PatientManagementPanel } from './PatientManagementPanel';
+import { UserManagementPanel } from './UserManagementPanel';
 import { PendingActionsPanel } from './PendingActionsPanel';
 import { SpecialistsCard } from './SpecialistsCard';
 import { ErrorBox, Loading, fmtTime } from '../ui/common';
@@ -170,6 +171,7 @@ export const AdminPortal: React.FC = () => {
 
       <SpecialistsCard />
 
+      <UserManagementPanel />
       <KnowledgeBasePanel />
       <PatientManagementPanel />
 

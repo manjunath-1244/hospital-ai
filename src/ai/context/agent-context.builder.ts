@@ -7,7 +7,25 @@ import { isActiveStatus } from '../../hospital/visits/visit-status';
 import type { AuthUser } from '../../security/auth-user';
 import type { AgentContext } from './agent-context';
 
-/** Assembles the per-request context from the database (the permissions part is added by `applyToolPolicy`). */
+/**
+ * ============================================================================
+ * 📦 CONCEPT: CONTEXT (Dynamic Per-Request Context Management & Fence)
+ * ============================================================================
+ * WHAT IT IS:
+ * Controls and shapes exactly what data, permissions, and patient scopes are
+ * allowed into the AI agent's execution window for a specific turn.
+ *
+ * HOW IMPLEMENTED:
+ * - Patient Scoping: Binds `allowedPatientIds` and active visit state. The agent is
+ *   cryptographically fenced from performing write actions on patients not present
+ *   in its context snapshot.
+ * - Role-Based Tool Policy: Injects role metadata (`user.role`, `user.specialty`)
+ *   so the tool policy builder can withhold disallowed tools.
+ * - Context Hash: Calculates a SHA256 context hash stored with the trace for auditability.
+ * - PHI-Free: Context structures only contain entity IDs and status labels, zero raw PHI.
+ * ============================================================================
+ * Assembles the per-request context from the database (the permissions part is added by `applyToolPolicy`).
+ */
 @Injectable()
 export class AgentContextBuilder {
   constructor(

@@ -51,6 +51,33 @@ How to answer:
 - Be concise and structured (short lists). You support clinicians; you do not replace clinical judgement.${focusPatientId ? `\n- The conversation is currently about patient ${focusPatientId}; assume that patient when the user says "the patient" or "they", but still fetch facts with tools.` : ''}`.trim();
 }
 
+/**
+ * ============================================================================
+ * 👥 CONCEPT: MULTI-AGENT ARCHITECTURE
+ * ============================================================================
+ * WHAT IT IS:
+ * Instead of one monolithic agent doing everything, the system decomposes tasks
+ * across specialized agents with dedicated system instructions and toolsets:
+ * 1. Hospital AI Coordinator: Autonomous coordinator equipped with clinical tools.
+ * 2. Grounded Answerer: Strict zero-tool agent restricted to answering purely from
+ *    server-injected RAG context, preventing unverified external knowledge.
+ * 3. Document Writer (in ai-answer.service.ts): Specialized clinical document author
+ *    for SBAR handoffs, prior-authorizations, and discharge instructions.
+ *
+ * 🔄 CONCEPT: TOOL CALLING (Autonomous Tool Execution)
+ * ============================================================================
+ * WHAT IT IS:
+ * The agent autonomously selects and executes server-side functions (tools)
+ * based on user queries, receiving JSON arguments and returning validated results.
+ *
+ * HOW IMPLEMENTED:
+ * Built on Mastra Agent with dynamically filtered tool suites matching the user's role.
+ *
+ * USE CASE:
+ * Looking up patient charts, calculating triage scores, verifying drug safety,
+ * and staging clinical actions for clinician approval.
+ * ============================================================================
+ */
 export function createHospitalAgent(opts: {
   model: any;
   role: UserRole;

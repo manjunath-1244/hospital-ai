@@ -20,6 +20,16 @@ export interface AuthUser {
   department?: string | null;
 }
 
+export interface UserAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  role: BackendRole;
+  specialty: string | null;
+  department: string | null;
+  isAvailable: boolean;
+}
+
 export interface LoginResponse {
   accessToken: string;
   user: AuthUser;

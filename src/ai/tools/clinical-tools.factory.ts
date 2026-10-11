@@ -33,6 +33,31 @@ import { buildInteropTools } from './interop/interop.tools';
 import { withTimeout } from '../reliability/resilience';
 
 /**
+ * ============================================================================
+ * 🔧 CONCEPT: TOOLS (Agent Function & API Registry)
+ * ============================================================================
+ * WHAT IT IS:
+ * Real executable APIs and computational functions provided to the AI agent,
+ * allowing it to inspect hospital databases, calculate medical scores, and
+ * stage clinical actions.
+ *
+ * HOW IMPLEMENTED:
+ * Built using Mastra `createTool` with strict Zod input validation schemas.
+ * Includes 17 specialized hospital tools divided across domains:
+ * - Patient Tools: searchPatients, getPatientSummary
+ * - Clinical Read Tools: searchClinicalRecords, listVitals, listLabs, listImaging
+ * - Clinical Assessment Tools: assessTriage (NEWS2), verifyMedicationSafety
+ * - Specialist Tools: findSpecialists, checkAvailability, reviewReferralNeed
+ * - Scheduling Tools: getHospitalOverview, getQueueStatus
+ * - Action Tools: proposeReferral, proposeConsultation, proposeAppointment, etc.
+ * - Interop Tools: queryFhirPatient, queryDicomStudies
+ *
+ * SAFETY & POLICY:
+ * - Role-Based Filtering: Tools are filtered according to user role (e.g. Receptionist
+ *   never gets clinical prescription/lab tools).
+ * - Specialists can only access records of patients explicitly referred to them.
+ * - Inputs are unmasked, outputs are HIPAA PHI-masked, and all executions are timed.
+ * ============================================================================
  * Builds the Mastra tool set for ONE request. All services come from Nest DI (the same instances the REST API uses),
  * tools are filtered by the caller's role, inputs are un-masked and outputs PHI-masked, and every call is traced.
  */

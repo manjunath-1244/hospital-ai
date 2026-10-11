@@ -22,6 +22,33 @@ import { KnowledgeDocumentsService } from '../../../src/ai/rag/knowledge-documen
 import type { AuthUser } from '../../../src/security/auth-user';
 
 /**
+ * ============================================================================
+ * 🧪 CONCEPT: Evals (Automated Quality & Clinical Safety Evaluation)
+ * 📈 CONCEPT: Regression (Detection of Quality & Behavioral Degradation)
+ * ============================================================================
+ * WHAT THEY ARE:
+ * - Evals: Systematic testing harnesses that evaluate agent accuracy, clinical role
+ *   adherence, tool-calling correctness, and factual fidelity across hundreds of scenarios.
+ * - Regression: Comparing current test results against locked golden baselines
+ *   (`baseline.json`) to catch any loss in reasoning capability or newly introduced bugs.
+ *
+ * HOW IMPLEMENTED:
+ * - Multi-layered Evaluation Framework:
+ *   - System Evals (`evaluator.ts`): Tests 149 comprehensive assertions against the real
+ *     dependency graph (Postgres, pgvector, PHI shield, circuit breakers, role gates).
+ *   - Agent Harness (`harness.ts`): Over 1,500 generated role-based scenarios testing
+ *     permitted vs prohibited tool access, proposal boundaries, and memory retention.
+ *   - Regression Gate:
+ *     Compares run results against `tests/evaluation/baseline.json`. If ANY test that
+ *     passed previously now fails, exits with non-zero error code, failing the CI pipeline.
+ *   - Critical Failure Gates (Zero-Tolerance):
+ *     Instantly flags: `WRONG_PATIENT`, `FABRICATED_CLINICAL_FACT`, `UNAUTHORIZED_PHI_ACCESS`,
+ *     `UNAUTHORIZED_ACTION`, `FALSE_ACTION_SUCCESS`.
+ *
+ * USE CASE:
+ * Ensures model upgrades, prompt modifications, or code changes never silently break
+ * clinical safety boundaries or degrade hospital diagnostic assistance.
+ * ============================================================================
  * Evaluation + regression tracking against the REAL application graph (Postgres, pgvector, tools, PHI shield, memory,
  * resilience, tracing). Every check is recorded; results are compared with tests/evaluation/baseline.json and the
  * process exits non-zero if any check that passed in the baseline now fails (a regression).

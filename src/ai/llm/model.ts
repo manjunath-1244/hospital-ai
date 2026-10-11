@@ -3,6 +3,23 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
 /**
+ * ============================================================================
+ * 🧠 CONCEPT: LLM (Model, Prompting, Reasoning)
+ * ============================================================================
+ * WHAT IT IS:
+ * The foundational Large Language Model layer that provides clinical reasoning,
+ * natural language comprehension, and dynamic generation.
+ *
+ * HOW IMPLEMENTED:
+ * - Provider-agnostic abstraction supporting:
+ *   - Local Ollama (e.g. llama3.2-hospital, private & HIPAA compliant on-premise)
+ *   - Cloud providers (OpenAI GPT-4o, Google Gemini 1.5, Groq Llama-3.3-70b, Anthropic)
+ * - Low-temperature deterministic sampling (0.1) for clinical reproducibility.
+ *
+ * USE CASE:
+ * Powers agent decision-making, clinical reasoning about lab values and medications,
+ * document drafting (SBAR/prior-auth), and conversational responses.
+ * ============================================================================
  * Resolves the chat model from env. The explicit LLM_PROVIDER wins; returns null when its key is missing,
  * so callers can fail clearly instead of silently picking a different provider.
  */

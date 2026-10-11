@@ -29,7 +29,31 @@ export interface SpecialistView {
 
 const DEFAULT_RANGE_DAYS = 14;
 
-/** Who can be referred to / booked with, and when they are free. Read side for the referral workflow and the agent. */
+/**
+ * ============================================================================
+ * 📅 CONCEPT: Specialist Availability & Appointment Scheduling Engine
+ * ============================================================================
+ * WHAT IT IS:
+ * Real-time clinician calendar and appointment availability manager that computes
+ * open consultation slots, enforces working windows, and prevents booking conflicts.
+ *
+ * HOW IMPLEMENTED:
+ * - Weekly Working Windows (`DoctorAvailabilityEntity`):
+ *   Configures weekly shift intervals (weekday, start time, end time) per physician.
+ * - Dynamic Slot Generation (`generateSlots`):
+ *   Computes unallocated appointment time slots over configurable planning horizons (14-60 days).
+ * - Conflict Detection & Invariant Guards:
+ *   `assertBookable()` throws `409 Conflict` if the requested slot is already reserved,
+ *   outside working hours, or if the doctor is on leave.
+ * - Multi-Specialty Lookups:
+ *   Filters specialists by department, medical field, or on-duty status.
+ *
+ * USE CASE:
+ * Powers instantaneous appointment booking during patient registration, follow-up
+ * planning, and specialist referrals without double-booking doctors.
+ * ============================================================================
+ * Who can be referred to / booked with, and when they are free. Read side for the referral workflow and the agent.
+ */
 @Injectable()
 export class SpecialistService {
   constructor(

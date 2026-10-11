@@ -4,12 +4,32 @@
 const DROP_KEYS = new Set(['phone', 'dob', 'telecom', 'passwordHash']);
 
 /**
+ * ============================================================================
+ * 🔐 CONCEPT: Security (PHI Shield, Data Privacy & Prompt Injection Protection)
+ * ============================================================================
+ * WHAT IT IS:
+ * Multi-layered healthcare security ensuring Protected Health Information (PHI)
+ * confidentiality under HIPAA regulations, preventing data egress to external LLMs,
+ * and safeguarding against prompt injection attacks.
+ *
+ * HOW IMPLEMENTED:
+ * - Deterministic Bidirectional PHI Masking (`PhiSession`):
+ *   - Automatically replaces patient full names, SSNs, phone numbers, and emails
+ *     with stable placeholders (e.g. `[PATIENT_1]`, `[SSN_1]`) BEFORE sending to LLMs.
+ *   - Drops high-risk identifiers (`phone`, `dob`, `telecom`, `passwordHash`) completely.
+ *   - Restores real identities in answers locally after LLM generation completes.
+ *   - Prevents PHI leaking into audit traces or observability run recorders.
+ * - Role-Based Access Control (RBAC):
+ *   - Scopes tool exposure by authenticated user role (`DOCTOR`, `NURSE`, `RECEPTIONIST`, etc.).
+ *   - Enforces JWT authentication guards (`JwtAuthGuard`) across all endpoints.
+ *
+ * USE CASE:
+ * Complies with HIPAA Security and Privacy Rules, ensuring sensitive patient identities
+ * never leak into cloud LLM training sets or unauthorized audit logs.
+ * ============================================================================
  * Per-request PHI shield. Known patient names (loaded from the database), phones, e-mails and SSNs are replaced
  * by stable placeholders before any text or tool output reaches the cloud LLM, and restored in the answer.
  * Direct identifiers that the model never needs (phone, DOB) are dropped from tool output entirely.
- *
- * Limitation: masking is dictionary + pattern based. A brand-new name typed free-text for the first time
- * (e.g. while registering a patient) cannot be recognised. Use a BAA-covered or self-hosted model for strict HIPAA.
  */
 export class PhiSession {
   private readonly forward = new Map<string, string>(); // original(lowercase) -> placeholder

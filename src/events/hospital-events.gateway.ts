@@ -25,6 +25,30 @@ const ALL_ROLES: UserRole[] = [
 const CLINICAL: UserRole[] = ['DOCTOR', 'NURSE', 'ADMIN'];
 
 /**
+ * ============================================================================
+ * ⚡ CONCEPT: Real-Time WebSocket Events (Live Hospital Event Streaming)
+ * ============================================================================
+ * WHAT IT IS:
+ * Full-duplex WebSocket event gateway that streams live hospital telemetry,
+ * emergency physiological alerts, and AI action lifecycle transitions directly
+ * to clinician web portals without polling.
+ *
+ * HOW IMPLEMENTED:
+ * - JWT Handshake Authentication:
+ *   Validates bearer tokens during initial socket handshake; immediately binds
+ *   the connection to the user's role-based room (`role:${payload.role}`) and
+ *   user room (`user:${payload.sub}`).
+ * - Role-Scoped Event Broadcasting:
+ *   Ensures clinical privacy by delivering events strictly to authorized roles
+ *   (e.g. `alert.news2_deterioration` only to CLINICAL; `dicom.uploaded` to RADIOLOGIST).
+ * - Agent Action Lifecycle Streaming:
+ *   Broadcasts `agent.action.proposed`, `agent.action.decided`, and `agent.action.executed`
+ *   to update interactive UI cards in real time.
+ *
+ * USE CASE:
+ * Eliminates browser refresh delays; ensures doctors and nurses are instantly
+ * notified of deteriorating vital signs, panic lab results, and pending approval cards.
+ * ============================================================================
  * Authenticated, role-scoped realtime channel. Clients must present a valid JWT in the handshake
  * (`io(url, { auth: { token } })`); each socket joins a room for its role, and events are only
  * delivered to the roles that need them (no global broadcast of patient data).

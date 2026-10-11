@@ -15,7 +15,29 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { CircuitBreaker } from '../reliability/resilience';
 
-/** HL7 FHIR R4 REST client (HAPI). Failures throw: callers decide how to degrade; nothing fabricates data. */
+/**
+ * ============================================================================
+ * 🔗 CONCEPT: MCP / Standard External Tool & Healthcare Data Connectors
+ * ============================================================================
+ * WHAT IT IS:
+ * Standardized protocol and connectors allowing the AI agent to interface with
+ * external healthcare subsystems, electronic health records (EHR), and imaging servers
+ * rather than existing in an isolated silo.
+ *
+ * HOW IMPLEMENTED:
+ * - HL7 FHIR R4 standard client (`FhirHapiClient`) interacting with HAPI FHIR server:
+ *   - Creates/syncs `Patient`, `Observation` (lab results), and `ImagingStudy` resources.
+ *   - Cascading deletions and capability health checks.
+ *   - DICOM Orthanc integration (`OrthancClient`) for PACS medical imaging (CT/X-ray).
+ *   - Circuit breaker (`CircuitBreaker`) resilience protection against external network timeouts.
+ *   - Exposed to AI agents through structured tools (e.g. `queryLiveHapiFhirPatients`).
+ *
+ * USE CASE:
+ * Enables interoperability with hospital EHRs (Epic, Cerner) and PACS imaging archives,
+ * allowing AI-assisted workflows to sync seamlessly with international healthcare standards.
+ * ============================================================================
+ * HL7 FHIR R4 REST client (HAPI). Failures throw: callers decide how to degrade; nothing fabricates data.
+ */
 @Injectable()
 export class FhirHapiClient {
   private readonly logger = new Logger(FhirHapiClient.name);

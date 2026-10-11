@@ -1,4 +1,25 @@
 /**
+ * ============================================================================
+ * 🧬 CONCEPT: Patient Identity Resolution & De-duplication
+ * ============================================================================
+ * WHAT IT IS:
+ * Deterministic patient matching and de-duplication engine that identifies existing
+ * electronic medical records (EMR) during patient registration and clinical encounters.
+ *
+ * HOW IMPLEMENTED:
+ * - Multi-Factor Candidate Scoring:
+ *   Evaluates Unicode normalized names (`NFKD`), phone number suffixes (>= 7 digits),
+ *   and dates of birth (DOB).
+ * - Match Strength Stratification:
+ *   Classifies match confidence as `HIGH` (name + phone/DOB agree) or `MEDIUM` (single strong signal).
+ * - Non-Blocking Advice:
+ *   Presents candidate duplicates to receptionists for visual confirmation rather than
+ *   silently blocking registrations or creating duplicate medical records.
+ *
+ * USE CASE:
+ * Prevents split medical records, ensuring a patient's historical diagnoses,
+ * allergies, and prescriptions are consolidated under a single medical identity.
+ * ============================================================================
  * Duplicate detection when registering a patient. Pure functions so the rules are easy to read and test.
  * A "match" is advice for the receptionist (show it, let them decide); it never blocks silently.
  */

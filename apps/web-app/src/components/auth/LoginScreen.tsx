@@ -55,7 +55,7 @@ export const LoginScreen: React.FC = () => {
             />
           )}
         </Field>
-        <Field label="Password" hint="Hint: see SEED_USER_PASSWORD in the backend .env">
+        <Field label="Password">
           {(id) => (
             <Input
               id={id}

@@ -28,6 +28,32 @@ export interface KnowledgeDocView {
 }
 
 /**
+ * ============================================================================
+ * 📄 CONCEPT: Dynamic Knowledge Ingestion, Multi-Format Parsing & Atomic Indexing
+ * ============================================================================
+ * WHAT IT IS:
+ * Real-time knowledge management pipeline allowing hospital administrators to upload
+ * clinical policy guidelines, SOPs, and medical research documents (PDF, Markdown, TXT)
+ * that are immediately parsed, vectorized, and made searchable to the AI agent.
+ *
+ * HOW IMPLEMENTED:
+ * - Multi-Format Buffer Parsing (`extractText`):
+ *   Extracts raw UTF-8 text from Markdown and plain text files; dynamically invokes
+ *   `pdf-parse` to extract text streams from binary PDF clinical protocols.
+ * - Atomic Persistence & Searchability:
+ *   Saves document metadata and content in PostgreSQL (`KnowledgeDocumentEntity`);
+ *   immediately computes vector embeddings and ingests chunks into `pgvector`.
+ * - Transactional Rollback Protection:
+ *   If vector indexing fails, automatically deletes the database entity and purges
+ *   partial chunks, ensuring the system never enters an inconsistent state.
+ * - Bootstrap Re-Embedding:
+ *   On application startup, scans and verifies all uploaded documents against the active
+ *   embedding model, guaranteeing zero vector drift after model upgrades.
+ *
+ * USE CASE:
+ * Enables hospital administrators to publish new hospital clinical guidelines or epidemic
+ * outbreak protocols in real time, making them instantly accessible to AI agents across the facility.
+ * ============================================================================
  * Admin-managed hospital documents. Uploaded text is stored in Postgres (source of truth) and indexed into the vector
  * store immediately, so the agent can answer from it on the very next question. Files in /knowledge are built-in seeds.
  */

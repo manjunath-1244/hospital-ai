@@ -20,6 +20,33 @@ export interface RouteDecision {
 }
 
 /**
+ * ============================================================================
+ * 🚦 CONCEPT: L1/L2 Query Router & Intent Classifier
+ * ============================================================================
+ * WHAT IT IS:
+ * Multi-tier query routing engine that inspects inbound natural language questions
+ * and decides whether to route them to instantaneous deterministic handlers (L1),
+ * consult a lightweight semantic LLM planner (L2), or delegate directly to the
+ * full multi-turn AI Agent.
+ *
+ * HOW IMPLEMENTED:
+ * - Tier 1 (L1 Rules & Lexicon Matching):
+ *   Uses regex patterns, tokenizers, and clinical vocabulary (`l1-parser.ts`) to resolve
+ *   queries in <10ms with confidence scoring (0.0 to 1.0).
+ * - Tier 2 (L2 Model Planner):
+ *   If L1 confidence is below threshold (< 0.70), calls `L2PlannerService` to predict
+ *   the `entity`, `target`, and `action` using structured JSON output.
+ * - Disambiguation & Clarification:
+ *   If confidence remains low, generates a clarification response rather than guessing.
+ * - Agent Delegation / Bypass:
+ *   When `ENABLE_ROUTER=false` is set in `.env`, the router is bypassed so all turns
+ *   flow directly to the Mastra AI Agent with full conversational history and tools.
+ *
+ * USE CASE:
+ * Delivers sub-10ms latency for repetitive high-frequency administrative queries
+ * (e.g. waiting list counts, active bed counts) while preserving agent reasoning
+ * for complex clinical inquiries.
+ * ============================================================================
  * question -> QueryPlan (L1 rules; L2 model only when unsure) -> decision.
  * Never guesses: below the minimum confidence it asks or hands the question to the agent.
  */

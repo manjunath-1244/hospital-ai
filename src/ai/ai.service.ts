@@ -62,6 +62,199 @@ export class AiService {
       );
 
       session = await this.phi.createSession();
+
+      // =========================================================================
+      // ROUTING STRATEGY TOGGLE: ENABLE_ROUTER (defaults to true)
+      //
+      // WHY THIS WAS ADDED:
+      // The L1/L2 rule router can cause issues with conversational follow-up questions:
+      // 1. Pronoun/Context Blindness: Questions like "what are those names" or "and what
+      //    about her" can be misclassified because the router inspects the turn in isolation.
+      // 2. Action Misclassification: Prompts like "create consultation for [Patient] to [Doctor]"
+      //    can fail to bind patientRef or mislabel the entity as STAFF, leading to agent timeouts.
+      //
+      // HOW TO USE:
+      // - ENABLE_ROUTER=false: Completely bypasses the rule router. Every message goes directly
+      //   to the Mastra AI Agent with full conversation history and role-based clinical tools.
+      // - ENABLE_ROUTER=true (or unset): Uses deterministic L1/L2 routing for sub-100ms database
+      //   responses on standalone counts and overview queries.
+      // =========================================================================
+      const isRouterEnabled =
+        (process.env.ENABLE_ROUTER ?? 'true').toLowerCase() !== 'false';
+
+      if (!isRouterEnabled) {
+        // Direct reply handling for pending action confirmation/decline
+        const lower = dto.message.trim().toLowerCase();
+        if (['yes', 'confirm', 'approve', 'ok', 'go ahead'].includes(lower)) {
+          const r = await this.pending.reply('CONFIRM', dto.message, user, thread.id);
+          if (r.text) {
+            rec.route = {
+              intent: 'CONFIRM',
+              entity: 'NONE',
+              scope: 'HOSPITAL',
+              filters: {},
+              confidence: 1,
+              source: 'L1',
+              usedL2: false,
+              decision: 'HANDLE',
+              handler: 'pending.confirm',
+              alternatives: [],
+            };
+            return this.finishEarly(
+              rec,
+              user,
+              thread,
+              dto.message,
+              r.text,
+              session,
+              ctx,
+              'pending.confirm',
+            );
+          }
+        } else if (['no', 'cancel', 'decline', 'stop'].includes(lower)) {
+          const r = await this.pending.reply('DECLINE', dto.message, user, thread.id);
+          if (r.text) {
+            rec.route = {
+              intent: 'DECLINE',
+              entity: 'NONE',
+              scope: 'HOSPITAL',
+              filters: {},
+              confidence: 1,
+              source: 'L1',
+              usedL2: false,
+              decision: 'HANDLE',
+              handler: 'pending.decline',
+              alternatives: [],
+            };
+            return this.finishEarly(
+              rec,
+              user,
+              thread,
+              dto.message,
+              r.text,
+              session,
+              ctx,
+              'pending.decline',
+            );
+          }
+        }
+
+        // Direct agent path: assemble tools for user's role and pass full conversation history
+        const agentContext = await rec.step(
+          'memory',
+          'build-agent-context',
+          async () =>
+            this.tools.applyPolicy(
+              await this.contexts.build({
+                user,
+                subjectIds: thread.activePatientId ? [thread.activePatientId] : [],
+                thread: {
+                  id: thread.id,
+                  activePatientId: thread.activePatientId,
+                  summarized: ctx.summarized,
+                },
+              }),
+            ),
+        );
+        rec.context = { hash: contextHash(agentContext), snapshot: agentContext };
+
+        const messages = [
+          ...(ctx.summary
+            ? [
+                {
+                  role: 'system' as const,
+                  content: `Summary of the earlier conversation:\n${session.mask(ctx.summary)}`,
+                },
+              ]
+            : []),
+          ...ctx.recent.map((m) => ({
+            role: m.role,
+            content: session!.mask(m.content),
+          })),
+          { role: 'user' as const, content: session.mask(dto.message) },
+        ];
+
+        rec.route = {
+          intent: 'AGENT',
+          entity: 'NONE',
+          scope: 'HOSPITAL',
+          filters: {},
+          confidence: 1,
+          source: 'L1',
+          usedL2: false,
+          decision: 'AGENT',
+          handler: 'agent.model',
+          alternatives: [],
+        };
+
+        const knownText = `${ctx.summary ?? ''}\n${ctx.recent.map((m) => m.content).join('\n')}\n${dto.message}`;
+        const outcome = await this.answerService.executeAgent(
+          user,
+          model,
+          false,
+          agentContext,
+          session,
+          rec,
+          thread.activePatientId,
+          messages,
+          dto.message,
+          { plan: { intent: 'AGENT' }, write: false, list: false, waiting: false },
+          knownText,
+        );
+
+        await this.memory.append(thread.id, 'user', dto.message);
+        await this.memory.append(thread.id, 'assistant', outcome.response);
+
+        const touchedPatient = (rec.trace.calls.find(
+          (c) =>
+            ['getPatientSummary', 'searchClinicalRecords'].includes(c.name) &&
+            typeof (c.args as any)?.patientId === 'string' &&
+            (c.args as any).patientId,
+        )?.args as any)?.patientId;
+        if (touchedPatient) {
+          await this.memory.setActivePatient(thread, touchedPatient);
+        }
+
+        await this.runs.save(
+          rec.build(
+            {
+              status: 'OK',
+              guardrailStatus: outcome.guardrailStatus,
+              guardrailNotes: outcome.guardrailNotes,
+              usage: outcome.result?.usage ?? outcome.result?.totalUsage,
+              threadId: thread.id,
+            },
+            session,
+          ),
+        );
+
+        return {
+          success: true,
+          response: outcome.response,
+          threadId: thread.id,
+          traceId: rec.traceId,
+          toolCalls: rec.trace.calls.map((c) => ({
+            name: c.name,
+            args: c.args,
+            success: c.success,
+            auto: !!c.auto,
+            durationMs: c.durationMs ?? 0,
+            ...(c.error ? { error: c.error } : {}),
+          })),
+          citations: rec.trace.citations,
+          proposals: proposalsFromTrace(rec.trace),
+          guardrailStatus: outcome.guardrailStatus,
+          guardrailNotes: outcome.guardrailNotes,
+          hipaaShieldActive: session.active,
+          mode: 'agent',
+          route: rec.route,
+          memory: {
+            summarized: ctx.summarized,
+            messagesInContext: ctx.recent.length + 1,
+          },
+        };
+      }
+
       // Understand the question first (plan + confidence); the plan, not the wording, decides everything after this.
       const decision = await rec.step('memory', 'route', () =>
         this.queryRouter.decide(dto.message, session!.mask(dto.message)),

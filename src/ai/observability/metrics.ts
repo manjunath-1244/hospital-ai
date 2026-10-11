@@ -1,3 +1,32 @@
+/**
+ * ============================================================================
+ * ⚡ CONCEPT: Performance (Latency & System Throughput)
+ * 💰 CONCEPT: Cost (Token Volume & Consumption Analytics)
+ * 👀 CONCEPT: Observability (Aggregate Health Metrics)
+ * 🌊 CONCEPT: Drift (Statistical Anomaly & Degradation Detection)
+ * ============================================================================
+ * WHAT THEY ARE:
+ * Production telemetry engine that computes statistical rollups of agent performance,
+ * resource costs, and error rates, while continuously auditing for operational drift.
+ *
+ * HOW IMPLEMENTED:
+ * - Statistical Performance Rollups (`computeMetrics`):
+ *   - p50 and p95 latency quantiles (`p50LatencyMs`, `p95LatencyMs`).
+ *   - Total run volume and error rate (`errorRate`).
+ *   - Guardrail warning rate (`guardrailWarnRate`).
+ * - Token & Cost Accounting:
+ *   - Average tokens consumed per query (`avgTokens`).
+ * - Automated Drift Detection (`detectDrift`):
+ *   - Flags critical alerts if p95 latency spikes >= 2.5x over baseline.
+ *   - Flags warning if error rate or guardrail rate increases by >= 10%.
+ *   - Detects tool calling pattern shifts (average tool calls changing >= 40%).
+ *   - Warns on unexpected primary model switches.
+ *
+ * USE CASE:
+ * Delivers SLA guarantees for healthcare operations and alerts SREs to degraded
+ * clinical AI performance before it impacts patient care.
+ * ============================================================================
+ */
 export interface RunRow {
   status: 'OK' | 'ERROR';
   durationMs: number;

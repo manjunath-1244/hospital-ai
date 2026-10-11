@@ -1,25 +1,30 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import * as bcrypt from 'bcryptjs';
 import { KnowledgeDocumentsService } from '../ai/rag/knowledge-documents.service';
 import { FhirDicomIngestService } from '../ai/rag/fhir-dicom-ingest.service';
 import { AuthUser, CurrentUser } from '../security/auth-user';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { Roles } from '../security/roles.decorator';
+import { Roles, UserRole } from '../security/roles.decorator';
 import { AuditLogEntity } from '../database/entities/audit-log.entity';
+import { UserEntity } from '../database/entities/user.entity';
 import { FhirHapiClient } from '../ai/fhir/fhir-hapi.client';
 import { OrthancClient } from '../ai/dicom/orthanc.client';
 import { EmbeddingProvider } from '../ai/rag/embedding.provider';
@@ -33,6 +38,25 @@ export class KnowledgeUploadDto {
   @IsOptional() @IsString() @MaxLength(150) title?: string;
   @IsOptional() @IsString() @MaxLength(250_000) content?: string;
   @IsOptional() @IsString() @MaxLength(200) filename?: string;
+}
+
+export class CreateUserDto {
+  @IsString() @MaxLength(50) username: string;
+  @IsString() @MaxLength(100) displayName: string;
+  @IsString() role: string;
+  @IsOptional() @IsString() password?: string;
+  @IsOptional() @IsString() specialty?: string;
+  @IsOptional() @IsString() department?: string;
+  @IsOptional() @IsBoolean() isAvailable?: boolean;
+}
+
+export class UpdateUserDto {
+  @IsOptional() @IsString() @MaxLength(100) displayName?: string;
+  @IsOptional() @IsString() role?: string;
+  @IsOptional() @IsString() password?: string;
+  @IsOptional() @IsString() specialty?: string;
+  @IsOptional() @IsString() department?: string;
+  @IsOptional() @IsBoolean() isAvailable?: boolean;
 }
 
 type Status = 'UP' | 'DOWN';
@@ -77,6 +101,8 @@ export class AdminController {
     private readonly ingest: FhirDicomIngestService,
     @InjectRepository(AuditLogEntity)
     private readonly audit: Repository<AuditLogEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepo: Repository<UserEntity>,
   ) {}
 
   @Get('health')
@@ -207,5 +233,87 @@ export class AdminController {
       chunks: docs.chunks,
       patients: records.patients,
     };
+  }
+
+  // --- User & Role Management ---
+  @Get('users')
+  async listUsers() {
+    const list = await this.usersRepo.find({
+      order: { role: 'ASC', displayName: 'ASC' },
+    });
+    return list.map(({ passwordHash, ...user }) => user);
+  }
+
+  @Post('users')
+  async createUser(@Body() dto: CreateUserDto) {
+    const username = dto.username?.trim().toLowerCase();
+    if (!username) throw new BadRequestException('Username is required.');
+    const existing = await this.usersRepo.findOne({ where: { username } });
+    if (existing)
+      throw new ConflictException(
+        `User with username '${username}' already exists.`,
+      );
+
+    const defaultPwd =
+      process.env.SEED_USER_PASSWORD || 'ChangeMe-Demo-2026';
+    const pwd = dto.password?.trim() || defaultPwd;
+    const passwordHash = await bcrypt.hash(pwd, 12);
+
+    const user = this.usersRepo.create({
+      id: `USR-${username.toUpperCase()}`,
+      username,
+      displayName: dto.displayName?.trim() || username,
+      role: dto.role as UserRole,
+      specialty: dto.specialty?.trim() || null,
+      department: dto.department?.trim() || null,
+      isAvailable: dto.isAvailable ?? true,
+      passwordHash,
+    });
+    const saved = (await this.usersRepo.save(user)) as UserEntity;
+    const { passwordHash: _, ...result } = saved;
+    return result;
+  }
+
+  @Put('users/:id')
+  async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    const user = await this.usersRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`User ${id} not found.`);
+
+    if (dto.displayName !== undefined)
+      user.displayName = dto.displayName.trim();
+    if (dto.role !== undefined) user.role = dto.role as UserRole;
+    if (dto.specialty !== undefined)
+      user.specialty = dto.specialty ? dto.specialty.trim() : null;
+    if (dto.department !== undefined)
+      user.department = dto.department ? dto.department.trim() : null;
+    if (dto.isAvailable !== undefined) user.isAvailable = dto.isAvailable;
+    if (dto.password && dto.password.trim()) {
+      user.passwordHash = await bcrypt.hash(dto.password.trim(), 12);
+    }
+
+    const saved = (await this.usersRepo.save(user)) as UserEntity;
+    const { passwordHash: _, ...result } = saved;
+    return result;
+  }
+
+  @Delete('users/:id')
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: AuthUser,
+  ) {
+    const user = await this.usersRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`User ${id} not found.`);
+
+    if (
+      user.id === currentUser.userId ||
+      user.username === currentUser.userName
+    ) {
+      throw new BadRequestException(
+        'Cannot delete your own active admin session account.',
+      );
+    }
+
+    await this.usersRepo.remove(user);
+    return { success: true, deletedId: id, username: user.username };
   }
 }

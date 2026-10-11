@@ -98,7 +98,33 @@ const INTERACTIONS: Array<{
   },
 ];
 
-/** Deterministic prescription screening against allergies, current meds, interactions and renal function. */
+/**
+ * ============================================================================
+ * 💊 CONCEPT: Pharmacological Decision Support & Medication Safety Gate
+ * ============================================================================
+ * WHAT IT IS:
+ * Deterministic pharmacological screening engine that audits medical prescriptions
+ * and consultation orders before proposal generation or physician signing.
+ *
+ * HOW IMPLEMENTED:
+ * - Direct & Class Allergy Screening:
+ *   Normalizes drug names and cross-references patient allergy history against drug classes
+ *   (e.g., penicillin, cephalosporin, sulfonamide, NSAID) with cross-reactivity warnings.
+ * - Drug-Drug Interactions (DDI):
+ *   Detects dangerous clinical combinations (e.g., Warfarin + NSAID bleeding risk,
+ *   PDE5 inhibitors + Nitrates severe hypotension, Simvastatin + Macrolide rhabdomyolysis).
+ * - Renal Dose Adjustments (CKD-EPI 2021 eGFR):
+ *   Calculates estimated Glomerular Filtration Rate from serum creatinine; flags renal
+ *   contraindications (e.g., Metformin contraindicated if eGFR < 30).
+ * - Safety Status Enforcement:
+ *   Returns `CRITICAL_BLOCK`, `WARNING`, or `SAFE`.
+ *
+ * USE CASE:
+ * Prevents adverse drug events (ADEs), fatal drug-drug interactions, and contraindicated
+ * prescribing in hospitalized and ambulatory patients.
+ * ============================================================================
+ * Deterministic prescription screening against allergies, current meds, interactions and renal function.
+ */
 @Injectable()
 export class MedicationSafetyService {
   /** "Amoxicillin 500mg TID" -> "amoxicillin" */

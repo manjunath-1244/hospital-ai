@@ -14,6 +14,23 @@ filters.specialty must be one of the known specialties. filters.role is a staff 
 If you are not sure, use intent UNKNOWN and confidence below 0.5. Never invent patient ids. confidence is 0-1.`;
 
 /**
+ * ============================================================================
+ * 📝 CONCEPT: STRUCTURED OUTPUT (Schema-Validated JSON Generation)
+ * ============================================================================
+ * WHAT IT IS:
+ * Forcing the LLM to output strictly formatted, type-safe JSON adhering to a
+ * formal Zod schema (`QueryPlanSchema`), instead of unstructured conversational text.
+ *
+ * HOW IMPLEMENTED:
+ * Uses Vercel AI SDK's `generateObject` parameterized with:
+ * - `schema: QueryPlanSchema`
+ * - `temperature: 0` (zero randomness)
+ * - Strict enum constraints on intents, entities, scopes, and specialties.
+ *
+ * USE CASE:
+ * Safely parses ambiguous natural language questions into an actionable,
+ * machine-readable QueryPlan with intent, entity, and confidence score.
+ * ============================================================================
  * L2: used ONLY when the deterministic parser is unsure. A tool-free, schema-validated model call that returns a plan.
  * It can read and classify; it can never create an action (see `accept`).
  */

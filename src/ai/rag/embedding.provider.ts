@@ -2,7 +2,27 @@ import { Logger } from '@nestjs/common';
 import { createOpenAI } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 
-/** Swappable text-embedding backend (Liskov: any implementation is usable wherever this is expected). */
+/**
+ * ============================================================================
+ * 📐 SOLID ARCHITECTURE PATTERNS
+ * ============================================================================
+ * 1. Open/Closed Principle (OCP):
+ *    The embedding subsystem is open for extension (e.g. adding Ollama, OpenAI,
+ *    Cohere, or local hash providers) without modifying downstream consumers like
+ *    VectorRagService.
+ *
+ * 2. Liskov Substitution Principle (LSP):
+ *    Every concrete provider (`OpenAiEmbeddingProvider`, `OllamaEmbeddingProvider`,
+ *    `LocalHashEmbeddingProvider`) faithfully implements the abstract contract
+ *    `embed(texts: string[]): Promise<number[][]>`, guaranteeing any subclass can
+ *    substitute for `EmbeddingProvider` without altering program correctness.
+ *
+ * 3. Dependency Inversion Principle (DIP):
+ *    Vector retrieval services depend upon the abstract `EmbeddingProvider` abstraction
+ *    rather than hardcoded SDK clients, injected cleanly via NestJS IoC.
+ * ============================================================================
+ * Swappable text-embedding backend (Liskov: any implementation is usable wherever this is expected).
+ */
 export abstract class EmbeddingProvider {
   abstract readonly modelId: string;
   abstract readonly dimensions: number;

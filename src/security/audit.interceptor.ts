@@ -10,7 +10,31 @@ import { Repository } from 'typeorm';
 import { Observable, tap } from 'rxjs';
 import { AuditLogEntity } from '../database/entities/audit-log.entity';
 
-/** Records who touched which patient record (HIPAA-style access audit). Never blocks or fails the request. */
+/**
+ * ============================================================================
+ * 📜 CONCEPT: HIPAA Access Audit & Non-Repudiation Logging Interceptor
+ * ============================================================================
+ * WHAT IT IS:
+ * Enterprise interceptor implementing the HIPAA §164.312(b) Audit Controls standard,
+ * recording an immutable ledger of every healthcare worker who accesses or mutates
+ * protected patient records.
+ *
+ * HOW IMPLEMENTED:
+ * - Request Pipeline Interception:
+ *   Intercepts all HTTP mutations via NestJS `NestInterceptor` and RxJS `tap()`.
+ * - Forensic Ledger (`AuditLogEntity`):
+ *   Extracts the authenticated user ID, clinical role, HTTP method, URL endpoint,
+ *   associated patient ID, and response status code.
+ * - Non-Blocking Asynchronous Persistence:
+ *   Writes audit rows asynchronously so logging never delays clinician requests or
+ *   causes transaction rollbacks.
+ *
+ * USE CASE:
+ * Delivers non-repudiation forensic evidence required during regulatory HIPAA audits,
+ * medical malpractice inquiries, and hospital compliance investigations.
+ * ============================================================================
+ * Records who touched which patient record (HIPAA-style access audit). Never blocks or fails the request.
+ */
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditInterceptor.name);

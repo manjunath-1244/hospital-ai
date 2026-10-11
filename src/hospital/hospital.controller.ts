@@ -239,7 +239,7 @@ export class HospitalController {
   }
 
   @Delete('patients/:id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'RECEPTIONIST')
   remove(@Param('id') id: string, @Query('confirm') confirm?: string) {
     return this.lifecycle.deletePatient(id, confirm);
   }

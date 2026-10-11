@@ -26,6 +26,30 @@ import {
   AppointmentDto,
 } from '../../hospital/dto/hospital.dto';
 
+/**
+ * ============================================================================
+ * 🔀 CONCEPT: Workflows (Multi-Step Execution Control & Human-in-the-Loop)
+ * ============================================================================
+ * WHAT IT IS:
+ * Deterministic multi-step execution control that orchestrates complex operations
+ * with validation, role authorizations, state transitions, atomic database commits,
+ * and read-back verifications.
+ *
+ * HOW IMPLEMENTED:
+ * - Human-in-the-Loop (HITL) Life Cycle:
+ *   1. AI Agent creates a proposal with tier classification (`AUTO` vs `ASK_HUMAN`).
+ *   2. Proposal saved in PostgreSQL as `PENDING` with expiration time (`expiresAt`).
+ *   3. Clinician receives interactive UI card or reviews in action queue.
+ *   4. Atomically transitions state: `PENDING` -> `EXECUTING` (prevents double execution).
+ *   5. Executes step payload (e.g. register patient, book specialist, record Rx, order lab).
+ *   6. Performs deterministic read-back verification directly from database.
+ *   7. Marks status as `DONE` or `FAILED` and broadcasts via WebSocket events.
+ *
+ * USE CASE:
+ * Prevents autonomous AI from directly altering clinical records or ordering medications
+ * without licensed clinician review, ensuring complete clinical auditability and patient safety.
+ * ============================================================================
+ */
 @Injectable()
 export class ActionExecutorService {
   private readonly logger = new Logger(ActionExecutorService.name);

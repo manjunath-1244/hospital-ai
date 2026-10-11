@@ -14,6 +14,26 @@ import { AdminModule } from './admin/admin.module';
 import { JwtAuthGuard } from './security/jwt-auth.guard';
 import { AuditInterceptor } from './security/audit.interceptor';
 
+/**
+ * ============================================================================
+ * 🏛️ SYSTEM DESIGN CONCEPT: Modular Clean Architecture & Cross-Cutting Concerns
+ * ============================================================================
+ * WHAT IT IS:
+ * The root IoC container orchestrating independent business domains, persistence
+ * infrastructure, and enterprise cross-cutting security pipelines.
+ *
+ * HOW IMPLEMENTED:
+ * - Domain Separation of Concerns:
+ *   - `AuthModule`: Identity and authentication token issuing.
+ *   - `HospitalModule`: Core clinical encounters, vitals, beds, and specialist domains.
+ *   - `AiModule`: Autonomous reasoning, tools, memory, RAG, and HITL executor.
+ *   - `AdminModule`: Forensic audits, analytics, and tenant user administration.
+ * - Cross-Cutting Security Pipeline:
+ *   - `ThrottlerGuard`: Distributed rate-limiting (120 req/min) preventing DDoS and brute-force.
+ *   - `JwtAuthGuard`: Perimeter authentication and `@Roles(...)` RBAC enforcement.
+ *   - `AuditInterceptor`: Non-repudiation audit logging intercepting every mutating API call.
+ * ============================================================================
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

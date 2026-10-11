@@ -39,7 +39,33 @@ export interface PolicySearchOptions {
   minSimilarity?: number;
 }
 
-/** Single RAG entry point: chunking + embedding + storage. Policies and patient records share one store. */
+/**
+ * ============================================================================
+ * 🔎 CONCEPT: RAG (Retrieval-Augmented Generation)
+ * ============================================================================
+ * WHAT IT IS:
+ * Retrieval-Augmented Generation dynamically retrieves domain knowledge and
+ * relevant factual context from a vector database before invoking the LLM,
+ * injecting verified clinical documents directly into the prompt.
+ *
+ * HOW IMPLEMENTED:
+ * - Chunking & Ingestion: Parses Markdown hospital guidelines, triage SOPs,
+ *   and clinical policies under `/knowledge/*.md` with frontmatter extraction.
+ * - Deduplication: Uses SHA-256 chunk hashes (`chunkHash`) to skip unchanged
+ *   files, ensuring instantaneous server restarts.
+ * - Embeddings: Generates vector representations using local Ollama (`nomic-embed-text`)
+ *   or custom embedding providers.
+ * - Vector Database: Stored in PostgreSQL using `pgvector` with cosine similarity (`<=>`).
+ * - Hybrid Retrieval: Filters by document type (policy, SOP, clinical guideline)
+ *   and cosine similarity thresholds (`minSimilarity: 0.65`).
+ *
+ * USE CASE:
+ * Prevents clinical hallucinations by grounding LLM responses in real hospital SOPs
+ * (e.g. Code Blue protocols, controlled substance handling, discharge checklists)
+ * and patient-specific medical history.
+ * ============================================================================
+ * Single RAG entry point: chunking + embedding + storage. Policies and patient records share one store.
+ */
 @Injectable()
 export class VectorRagService implements OnModuleInit {
   private readonly logger = new Logger(VectorRagService.name);

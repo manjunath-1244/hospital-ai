@@ -62,7 +62,34 @@ export abstract class VectorStore {
   abstract countBySource(source: string): Promise<number>;
 }
 
-/** PostgreSQL + pgvector implementation: `vector(N)` column, HNSW index, cosine distance in SQL. */
+/**
+ * ============================================================================
+ * 🗄️ DATABASE ARCHITECTURE: PostgreSQL + pgvector vs. ChromaDB / Pinecone
+ * ============================================================================
+ * WHY WE DO NOT USE CHROMADB:
+ * In enterprise medical platforms, external vector databases like ChromaDB or Pinecone
+ * introduce the "Dual Database Problem":
+ * 1. Distributed State Desynchronization: Relational records (Patients, Visits, Consultations)
+ *    live in PostgreSQL, while vector embeddings live in ChromaDB. When a patient record
+ *    is modified or purged, ChromaDB requires distributed two-phase commits. If ChromaDB
+ *    fails or drops packets, the vector database becomes desynchronized from clinical reality.
+ * 2. Foreign Key & Atomic Cascades: In pgvector, vectors are native columns inside PostgreSQL.
+ *    Deleting a patient or consultation automatically cascades atomically in a single ACID transaction
+ *    (`DELETE FROM document_embeddings WHERE patient_id = $1`).
+ * 3. Relational Hybrid Search (RRF): Enables SQL-level hybrid search joining full-text search
+ *    (`to_tsvector`, `ts_rank_cd`) and vector cosine similarity (`embedding <=> $1::vector`)
+ *    fused through Reciprocal Rank Fusion (`fuseRanks`).
+ * 4. HIPAA & Zero Operational Overhead: One single database engine (PostgreSQL 16) to secure,
+ *    encrypt at rest, backup, and audit. Zero extra network latency or external microservices.
+ *
+ * HOW IMPLEMENTED:
+ * - Extension: `CREATE EXTENSION IF NOT EXISTS vector`
+ * - Table: `document_embeddings` with `vector(${dims})` column and JSONB metadata.
+ * - Index: Hierarchical Navigable Small World (`HNSW`) cosine index (`vector_cosine_ops`)
+ *   for sub-millisecond approximate nearest neighbor (ANN) retrieval.
+ * ============================================================================
+ * PostgreSQL + pgvector implementation: `vector(N)` column, HNSW index, cosine distance in SQL.
+ */
 export class PgVectorStore extends VectorStore {
   private readonly logger = new Logger(PgVectorStore.name);
 

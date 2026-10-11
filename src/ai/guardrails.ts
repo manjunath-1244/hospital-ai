@@ -9,7 +9,34 @@ export interface GuardrailResult {
 // Matches seeded ids (P1001) and generated ids (P + 6 unambiguous chars).
 const PATIENT_ID = /\bP(?:\d{4}|[A-HJ-NP-Z2-9]{6})\b/g;
 
-/** Post-generation checks: failed tools, unretrieved IDs, and unverified completion claims. */
+/**
+ * ============================================================================
+ * 🛡️ CONCEPT: Guardrails (Safety, Factuality & Non-Fabrication)
+ * ============================================================================
+ * WHAT IT IS:
+ * Post-generation and pre-presentation safety barriers that inspect LLM output
+ * to detect hallucinations, prevent false claims, enforce citation integrity,
+ * and intercept unauthorized actions before showing responses to clinicians.
+ *
+ * HOW IMPLEMENTED:
+ * - Patient ID Hallucination Check (`checkGuardrails`):
+ *   Extracts patient IDs in generated text; if the ID was never retrieved by
+ *   any tool call nor typed by the user, flags an immediate warning.
+ * - False Completion Claim Interception (`reconcileActionClaims`):
+ *   Checks for claims like "I have registered / booked / deleted". If no action
+ *   was executed this turn, replaces the hallucinated claim with the actual
+ *   truth (e.g. "I prepared a proposal waiting for your approval").
+ * - Citation & Omission Fallbacks:
+ *   - `appendClosestPassage`: Recovers policy text when LLM falsely claims "not found".
+ *   - `appendOmittedPatients`: Injects patients omitted by small model context windows.
+ *   - `looksLikeRawToolCall`: Catches raw JSON tool call leaks.
+ *
+ * USE CASE:
+ * Protects patients from medical errors caused by AI hallucinations, ensuring
+ * that phantom patient records or false order completions never reach clinical staff.
+ * ============================================================================
+ * Post-generation checks: failed tools, unretrieved IDs, and unverified completion claims.
+ */
 export function checkGuardrails(
   response: string,
   trace: ToolTrace,
